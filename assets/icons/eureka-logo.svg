@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <linearGradient id="eurekaBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00D4FF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0099FF;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="eurokaText" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#E0E0E0;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background Circle -->
+  <circle cx="100" cy="100" r="95" fill="url(#eurekaBg)" stroke="#0077CC" stroke-width="2"/>
+  
+  <!-- Eureka Lightbulb Icon -->
+  <g transform="translate(100, 60)">
+    <!-- Bulb -->
+    <circle cx="0" cy="-8" r="18" fill="url(#eurokaText)" stroke="#0077CC" stroke-width="1.5"/>
+    
+    <!-- Glow effect -->
+    <circle cx="0" cy="-8" r="20" fill="none" stroke="#FFFFFF" stroke-width="2" opacity="0.3"/>
+    
+    <!-- Filament -->
+    <path d="M -6 10 Q -3 15 0 18 Q 3 15 6 10" fill="none" stroke="#0077CC" stroke-width="2" stroke-linecap="round"/>
+    
+    <!-- Base/Socket -->
+    <rect x="-8" y="18" width="16" height="4" fill="#0077CC" rx="1"/>
+    <rect x="-10" y="22" width="20" height="3" fill="#0077CC" rx="1"/>
+  </g>
+  
+  <!-- Text: EUREKA -->
+  <text x="100" y="145" font-family="Arial, sans-serif" font-size="20" font-weight="bold" text-anchor="middle" fill="white" letter-spacing="2">
+    EUREKA
+  </text>
+  
+  <!-- Subtitle: Core -->
+  <text x="100" y="165" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#E0E0E0" letter-spacing="1" opacity="0.9">
+    CORE
+  </text>
+</svg>
