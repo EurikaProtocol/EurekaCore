@@ -44,3 +44,28 @@ const observer = new IntersectionObserver(entries => {
 }, {threshold:.12});
 
 document.querySelectorAll(".section > *, .chain-card, .token-panel").forEach(el => observer.observe(el));
+
+// Wallet Connection
+const connectBtn = document.getElementById("connectBtn");
+const walletInfo = document.getElementById("walletInfo");
+const address = document.getElementById("walletAddress");
+
+connectBtn.onclick = async () => {
+  if (!window.ethereum) {
+    showToast("Install MetaMask");
+    return;
+  }
+
+  try {
+    const accounts = await window.ethereum.request({
+      method: "eth_requestAccounts"
+    });
+
+    address.innerText = accounts[0].slice(0, 6) + "..." + accounts[0].slice(-4);
+    walletInfo.style.display = "block";
+    connectBtn.style.display = "none";
+  } catch (error) {
+    showToast("Failed to connect wallet");
+    console.error("Wallet connection error:", error);
+  }
+};
