@@ -15,6 +15,34 @@ function showToast(message) {
   toastTimer = setTimeout(() => toast.classList.remove("show"), 2600);
 }
 
+// Wallet connection
+const connectBtn = document.getElementById("connectBtn");
+const walletInfo = document.getElementById("walletInfo");
+const address = document.getElementById("walletAddress");
+
+if (connectBtn) {
+  connectBtn.onclick = async () => {
+    if (!window.ethereum) {
+      showToast("Install MetaMask");
+      return;
+    }
+
+    try {
+      const accounts = await window.ethereum.request({
+        method: "eth_requestAccounts"
+      });
+
+      address.innerText = accounts[0].slice(0, 6) + "..." + accounts[0].slice(-4);
+      walletInfo.style.display = "block";
+      connectBtn.style.display = "none";
+      showToast("Wallet connected!");
+    } catch (error) {
+      showToast("Failed to connect wallet");
+      console.error("Wallet connection error:", error);
+    }
+  };
+}
+
 document.querySelectorAll(".chain-card").forEach(card => {
   card.addEventListener("click", () => {
     const chain = card.dataset.chain;
