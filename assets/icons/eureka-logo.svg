@@ -1,22 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#22F0C7"/><stop offset="100%" stop-color="#29B6FF"/></linearGradient></defs>
-<rect width="1024" height="1024" fill="#020B2F"/>
-<g fill="none" stroke="url(#g)" stroke-linecap="round">
-<path d="M245 270 A300 300 0 0 1 760 210" stroke-width="34"/>
-<path d="M780 340 A300 300 0 0 1 380 760" stroke-width="34"/>
-<path d="M230 610 L820 210" stroke-width="32"/>
-</g>
-<g fill="url(#g)">
-<g transform="translate(512 410)">
-<rect x="-22" y="-160" width="44" height="68" rx="6"/>
-<rect x="74" y="-132" width="42" height="64" rx="6" transform="rotate(30)"/>
-<rect x="-116" y="-132" width="42" height="64" rx="6" transform="rotate(-30)"/>
-<rect x="-160" y="-22" width="44" height="68" rx="6" transform="rotate(-90)"/>
-<rect x="116" y="-22" width="44" height="68" rx="6" transform="rotate(90)"/>
-<rect x="-116" y="74" width="42" height="64" rx="6" transform="rotate(-150)"/>
-<rect x="74" y="74" width="42" height="64" rx="6" transform="rotate(150)"/>
-<rect x="-22" y="92" width="44" height="68" rx="6"/>
-</g>
-</g>
-<text x="512" y="835" font-family="Arial, Helvetica, sans-serif" font-size="150" font-weight="700" text-anchor="middle" fill="url(#g)" letter-spacing="8">EUREKA</text>
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1024 1024'>
+<defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stop-color='#22F0D0'/><stop offset='100%' stop-color='#29B6FF'/></linearGradient></defs>
+<rect width='1024' height='1024' fill='#020B3A'/>
+<g stroke='url(#g)' fill='none' stroke-linecap='round'>
+<path d='M240 260 A320 320 0 0 1 760 220' stroke-width='36'/>
+<path d='M784 380 A320 320 0 0 1 350 820' stroke-width='36'/>
+<path d='M220 610 L790 220' stroke-width='30'/></g>
+<g fill='url(#g)'>
+<path d='M420 285 l40 -22 12 70 -52 -8z'/><path d='M500 250 h48 v72 h-48z'/><path d='M595 280 l42 20 -30 62 -42 -20z'/><path d='M335 360 l52 32 -24 58 -52 -18z'/><path d='M295 450 l62 -2 -8 60 -54 6z'/><path d='M330 560 l54 -18 22 54 -46 26z'/><path d='M470 710 l54 8 -8 54 -52 -6z'/><path d='M545 710 h42 v54 h-42z'/><path d='M625 650 l46 24 -30 48 -44 -24z'/><path d='M660 520 l54 22 -22 50 -50 -18z'/></g>
+<text x='512' y='910' font-family='Arial,Helvetica,sans-serif' font-size='128' font-weight='700' text-anchor='middle' fill='url(#g)' letter-spacing='8'>EUREKA</text>
 </svg>
