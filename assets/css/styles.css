@@ -1,0 +1,314 @@
+/* ===========================
+   EUREKA CORE V2
+   styles.css
+=========================== */
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
+
+:root{
+  --bg:#02091f;
+  --bg2:#071734;
+  --cyan:#39e6ff;
+  --blue:#67a8ff;
+  --text:#ffffff;
+  --muted:#b8d3ff;
+}
+
+html{scroll-behavior:smooth;}
+
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  overflow-x:hidden;
+}
+
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  background:
+    radial-gradient(circle at top,#103884 0%,#04112f 45%,#01040f 100%);
+  z-index:-2;
+}
+
+body::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  background-image:radial-gradient(var(--cyan) 1px,transparent 1px);
+  background-size:48px 48px;
+  opacity:.08;
+  z-index:-1;
+}
+
+/* HEADER */
+.nav{
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:82px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 22px;
+  background:rgba(2,8,28,.82);
+  backdrop-filter:blur(16px);
+  border-bottom:1px solid rgba(255,255,255,.08);
+  z-index:1000;
+}
+
+.brand{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  text-decoration:none;
+}
+
+.brand-logo{
+  width:46px;
+  height:46px;
+  object-fit:contain;
+  filter:drop-shadow(0 0 18px rgba(57,230,255,.45));
+}
+
+.brand span{
+  color:#fff;
+  font-size:26px;
+  font-weight:800;
+  letter-spacing:4px;
+}
+
+.desktop{
+  display:flex;
+  gap:28px;
+}
+
+.desktop a{
+  color:#dcecff;
+  text-decoration:none;
+  transition:.3s;
+}
+
+.desktop a:hover{color:var(--cyan);}
+
+.nav-btn{
+  padding:12px 22px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.18);
+  color:#fff;
+  text-decoration:none;
+  background:rgba(255,255,255,.05);
+}
+
+.menu{
+  display:none;
+  background:none;
+  border:none;
+  color:#fff;
+  font-size:34px;
+}
+
+/* HERO */
+.hero{
+  position:relative;
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:120px 24px 60px;
+  overflow:hidden;
+}
+
+.hero::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:url("assets/eureka-hero.jpeg") center/cover no-repeat;
+  opacity:.28;
+}
+
+.overlay{
+  position:absolute;
+  inset:0;
+  background:linear-gradient(to bottom,rgba(3,8,28,.2),rgba(2,8,28,.75));
+}
+
+.content{
+  position:relative;
+  z-index:2;
+  max-width:760px;
+}
+
+.badge{
+  color:var(--cyan);
+  font-size:13px;
+  letter-spacing:3px;
+  font-weight:700;
+  margin-bottom:18px;
+}
+
+.hero h1{
+  font-size:64px;
+  line-height:.94;
+  font-weight:900;
+}
+
+.hero h1 span{color:var(--cyan);}
+
+.hero p{
+  margin-top:26px;
+  color:var(--muted);
+  font-size:20px;
+  line-height:1.7;
+}
+
+.buttons{
+  display:flex;
+  gap:18px;
+  justify-content:center;
+  margin-top:40px;
+}
+
+.btn{
+  padding:18px 34px;
+  border-radius:16px;
+  text-decoration:none;
+  font-weight:700;
+  transition:.3s;
+}
+
+.primary{
+  background:linear-gradient(90deg,var(--cyan),var(--blue));
+  color:#02162c;
+  box-shadow:0 0 30px rgba(57,230,255,.35);
+}
+
+.primary:hover{transform:translateY(-3px);}
+
+.secondary{
+  border:1px solid rgba(255,255,255,.15);
+  color:#fff;
+  background:rgba(255,255,255,.05);
+}
+
+.secondary:hover{background:rgba(255,255,255,.08);}
+
+/* STATS */
+.stats{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:20px;
+  margin-top:60px;
+}
+
+.stats div{text-align:center;}
+
+.stats h2{font-size:42px;}
+
+.stats small{
+  display:block;
+  margin-top:8px;
+  color:#8aa8d8;
+  letter-spacing:2px;
+  font-size:11px;
+}
+
+/* SECTION */
+.section{
+  padding:90px 24px;
+  max-width:1150px;
+  margin:auto;
+}
+
+.section h2{
+  font-size:42px;
+  margin-bottom:18px;
+}
+
+.section p{
+  color:#a9c4ef;
+  line-height:1.7;
+  font-size:18px;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+  gap:22px;
+}
+
+.card{
+  background:rgba(10,22,52,.55);
+  border:1px solid rgba(57,230,255,.14);
+  border-radius:22px;
+  padding:28px;
+  backdrop-filter:blur(12px);
+  transition:.35s;
+}
+
+.card:hover{
+  transform:translateY(-8px);
+  border-color:var(--cyan);
+  box-shadow:0 0 30px rgba(57,230,255,.18);
+}
+
+.card h3{margin-bottom:14px;}
+.card p{font-size:15px;}
+
+/* FOOTER */
+footer{
+  padding:50px 20px;
+  text-align:center;
+  border-top:1px solid rgba(255,255,255,.08);
+  color:#88a4d5;
+}
+
+footer .brand{
+  justify-content:center;
+  margin-bottom:14px;
+}
+
+footer .brand-logo{
+  width:52px;
+  height:52px;
+}
+
+/* MOBILE */
+@media(max-width:900px){
+  .desktop,.nav-btn{display:none;}
+  .menu{display:block;}
+
+  .brand-logo{
+    width:42px;
+    height:42px;
+  }
+
+  .brand span{
+    font-size:22px;
+    letter-spacing:3px;
+  }
+
+  .hero h1{font-size:52px;}
+  .hero p{font-size:18px;}
+
+  .buttons{
+    flex-direction:column;
+    width:100%;
+  }
+
+  .btn{width:100%;}
+
+  .stats{
+    grid-template-columns:1fr;
+    gap:28px;
+  }
+
+  .section h2{font-size:34px;}
+}
