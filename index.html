@@ -10,106 +10,227 @@
 <body>
 
 <header class="navbar">
-  <div class="container nav-content">
+  <div class="container">
 
-    <a class="logo" href="#">
-      <img src="assets/icons/eureka-logo.svg" alt="EUREKA" class="logo-img">
-      <span class="logo-text">EUREKA</span>
+    <a href="#" class="logo">
+      <img src="assets/icons/eureka-logo.svg" alt="EUREKA">
+      <span>EUREKA</span>
     </a>
 
-    <nav class="desktop-menu">
-      <a href="#">Home</a>
-      <a href="#">Ecosystem</a>
-      <a href="#">Marketplace</a>
-      <a href="#">Token</a>
-      <a href="#">Roadmap</a>
+    <nav class="menu">
+      <a href="#ecosystem">Ecosystem</a>
+      <a href="#market">Marketplace</a>
+      <a href="#token">ERK</a>
+      <a href="#roadmap">Roadmap</a>
     </nav>
 
-    <button class="wallet-btn">Connect Wallet</button>
+    <button class="wallet">Connect Wallet</button>
 
   </div>
 </header>
 
 <section class="hero">
 
+  <img class="bg" src="assets/eureka-hero.jpeg" alt="">
+
   <div class="overlay"></div>
 
   <div class="container hero-grid">
 
-    <div class="hero-left">
+    <div class="left">
 
-      <div class="tag">
-        ● THE NEXT WEB3 INTERFACE
-      </div>
+      <p class="tag">THE NEXT WEB3 INTERFACE</p>
 
       <h1>
-        The Final Block<br>
-        of the <span>Blockchain.</span>
+        The Final Block
+        <br>
+        of the
+        <span>Blockchain.</span>
       </h1>
 
-      <p>
-        One App. Every Chain. Eureka creates a seamless gateway
-        to the blockchain universe powered by EurekaCore AI.
+      <p class="desc">
+        One App. Every Chain. Eureka connects wallets,
+        tokenized assets, AI and decentralized identity
+        into one seamless ecosystem.
       </p>
 
       <div class="buttons">
-        <a class="btn primary" href="#">Explore Eureka</a>
-        <a class="btn secondary" href="#">Discover Vision</a>
+
+        <a href="#ecosystem" class="primary">
+          Explore Eureka
+        </a>
+
+        <a href="#roadmap" class="secondary">
+          Discover Vision
+        </a>
+
       </div>
 
       <div class="stats">
+
         <div>
           <h2>01</h2>
-          <small>Unified Interface</small>
+          <span>Unified Interface</span>
         </div>
 
         <div>
           <h2>∞</h2>
-          <small>Chains & Networks</small>
+          <span>Chains & Networks</span>
         </div>
 
         <div>
           <h2>24/7</h2>
-          <small>Global Access</small>
+          <span>Global Access</span>
         </div>
+
       </div>
 
     </div>
 
-    <div class="hero-right">
-
-      <img
-        src="assets/eureka-hero.jpeg"
-        class="hero-logo"
-        alt="EUREKA Hero">
-
-    </div>
-
   </div>
 
 </section>
 
-<section class="platform">
+<section id="ecosystem" class="cards">
 
   <div class="container">
 
-    <div class="section-title">
-      01 / THE PLATFORM
+    <h2>One App. Infinite Possibilities.</h2>
+
+    <div class="grid">
+
+      <div class="card">
+        <h3>Multi‑Chain Wallet</h3>
+        <p>Ethereum, BNB, Polygon, Solana.</p>
+      </div>
+
+      <div class="card">
+        <h3>Eureka Marketplace</h3>
+        <p>Sell tokenized artwork & crafts.</p>
+      </div>
+
+      <div class="card">
+        <h3>EurekaCore AI</h3>
+        <p>Your intelligent blockchain assistant.</p>
+      </div>
+
+      <div class="card">
+        <h3>ERK Token</h3>
+        <p>Utility, rewards & governance.</p>
+      </div>
+
     </div>
-
-    <h2>Every blockchain. One destination.</h2>
-
-    <p>
-      Eureka is designed as an all-in-one ecosystem connecting
-      wallets, tokenized assets, AI and decentralized identity.
-    </p>
 
   </div>
 
 </section>
+
+<section id="market" class="market">
+
+  <div class="container">
+
+    <h2>Real World Assets</h2>
+
+    <div class="grid">
+
+      <div class="item">
+        <img src="assets/eureka-hero.jpeg">
+        <h4>Digital Artwork</h4>
+        <p>1.5 ETH</p>
+      </div>
+
+      <div class="item">
+        <img src="assets/eureka-hero.jpeg">
+        <h4>Forged Sword</h4>
+        <p>800 USDC</p>
+      </div>
+
+      <div class="item">
+        <img src="assets/eureka-hero.jpeg">
+        <h4>Ancient Sculpture</h4>
+        <p>2200 USDC</p>
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+<section id="token" class="token">
+
+  <div class="container token-grid">
+
+    <div>
+
+      <h2>The Power of Unity</h2>
+
+      <p>
+        ERK powers the Eureka ecosystem, rewarding users,
+        creators and validators across every chain.
+      </p>
+
+      <button class="primary">
+        Buy ERK
+      </button>
+
+    </div>
+
+    <div class="token-logo">
+      <img src="assets/icons/eureka-logo.svg">
+    </div>
+
+  </div>
+
+</section>
+
+<section id="roadmap" class="roadmap">
+
+  <div class="container">
+
+    <h2>Roadmap</h2>
+
+    <div class="timeline">
+
+      <div>
+        <strong>Q4 2026</strong>
+        <p>Website</p>
+      </div>
+
+      <div>
+        <strong>Q1 2027</strong>
+        <p>EurekaCore AI</p>
+      </div>
+
+      <div>
+        <strong>Q2 2027</strong>
+        <p>Marketplace</p>
+      </div>
+
+      <div>
+        <strong>Q3 2027</strong>
+        <p>ERK Launch</p>
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+<footer>
+
+  <img src="assets/icons/eureka-logo.svg">
+
+  <h3>EUREKA</h3>
+
+  <p>The Final Block of the Blockchain</p>
+
+  <small>© 2026 Eureka Protocol</small>
+
+</footer>
 
 <script src="assets/js/main.js"></script>
 
 </body>
 </html>
-<img src="assets/icons/eureka-logo.svg" alt="EUREKA" class="logo-img">
