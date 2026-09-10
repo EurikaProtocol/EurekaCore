@@ -1,236 +1,165 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EUREKA | The Final Block</title>
-
-  <link rel="stylesheet" href="assets/css/style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#030615" />
+  <meta name="description" content="Eureka — The Final Block of the Blockchain. One app. Every chain." />
+  <title>EUREKA — The New Finance System</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-
-<header class="navbar">
-  <div class="container">
-
-    <a href="#" class="logo">
-      <img src="assets/icons/eureka-logo.svg" alt="EUREKA">
+  <div class="stars"></div>
+  <header class="nav">
+    <a class="brand" href="#top" aria-label="Eureka home">
+      <span class="brand-mark">E</span>
       <span>EUREKA</span>
     </a>
-
-    <nav class="menu">
-      <a href="#ecosystem">Ecosystem</a>
-      <a href="#market">Marketplace</a>
-      <a href="#token">ERK</a>
-      <a href="#roadmap">Roadmap</a>
+    <nav>
+      <a href="#platform">Platform</a>
+      <a href="#chains">Chains</a>
+      <a href="#vision">Vision</a>
+      <a href="#token">Token</a>
     </nav>
+    <a class="nav-cta" href="#launch">Enter Eureka <span>↗</span></a>
+    <button class="menu" aria-label="Open menu">☰</button>
+  </header>
 
-    <button class="wallet">Connect Wallet</button>
-
-  </div>
-</header>
-
-<section class="hero">
-
-  <img class="bg" src="assets/eureka-hero.jpeg" alt="">
-
-  <div class="overlay"></div>
-
-  <div class="container hero-grid">
-
-    <div class="left">
-
-      <p class="tag">THE NEXT WEB3 INTERFACE</p>
-
-      <h1>
-        The Final Block
-        <br>
-        of the
-        <span>Blockchain.</span>
-      </h1>
-
-      <p class="desc">
-        One App. Every Chain. Eureka connects wallets,
-        tokenized assets, AI and decentralized identity
-        into one seamless ecosystem.
-      </p>
-
-      <div class="buttons">
-
-        <a href="#ecosystem" class="primary">
-          Explore Eureka
-        </a>
-
-        <a href="#roadmap" class="secondary">
-          Discover Vision
-        </a>
-
-      </div>
-
-      <div class="stats">
-
-        <div>
-          <h2>01</h2>
-          <span>Unified Interface</span>
+  <main id="top">
+    <section class="hero">
+      <div class="hero-art"></div>
+      <div class="hero-glow"></div>
+      <div class="hero-content">
+        <div class="eyebrow"><span></span> THE NEXT WEB3 INTERFACE</div>
+        <h1>The Final Block<br><em>of the Blockchain.</em></h1>
+        <p class="hero-copy">
+          One app. Every chain. Eureka creates a seamless gateway to the entire
+          blockchain universe — without the fragmentation.
+        </p>
+        <div class="hero-actions">
+          <a class="btn primary" href="#launch">Explore Eureka <span>→</span></a>
+          <a class="btn ghost" href="#platform">Discover the vision</a>
         </div>
-
-        <div>
-          <h2>∞</h2>
-          <span>Chains & Networks</span>
+        <div class="hero-stats">
+          <div><strong>01</strong><span>Unified interface</span></div>
+          <div><strong>∞</strong><span>Chains & networks</span></div>
+          <div><strong>24/7</strong><span>Global access</span></div>
         </div>
+      </div>
+      <div class="scroll-hint">SCROLL <span>↓</span></div>
+    </section>
 
+    <section id="platform" class="section intro">
+      <div class="section-label">01 / THE PLATFORM</div>
+      <div class="split">
         <div>
-          <h2>24/7</h2>
-          <span>Global Access</span>
+          <h2>Every blockchain.<br><span>One destination.</span></h2>
         </div>
+        <div>
+          <p>
+            Eureka is designed as an all-in-one home for blockchain users.
+            Choose the network you need and move directly into its ecosystem
+            through a single, clean interface.
+          </p>
+          <p class="muted">
+            No more switching between disconnected tools. No more fragmented
+            workflows. One doorway into Web3.
+          </p>
+        </div>
+      </div>
+    </section>
 
+    <section id="chains" class="section chains">
+      <div class="section-heading">
+        <div>
+          <div class="section-label">02 / THE NETWORK</div>
+          <h2>Choose your <span>chain.</span></h2>
+        </div>
+        <p>Start with the ecosystems you already use. Expand into the rest of Web3.</p>
       </div>
 
-    </div>
-
-  </div>
-
-</section>
-
-<section id="ecosystem" class="cards">
-
-  <div class="container">
-
-    <h2>One App. Infinite Possibilities.</h2>
-
-    <div class="grid">
-
-      <div class="card">
-        <h3>Multi‑Chain Wallet</h3>
-        <p>Ethereum, BNB, Polygon, Solana.</p>
+      <div class="chain-grid">
+        <button class="chain-card" data-chain="Solana" data-url="https://solana.com/">
+          <div class="chain-icon sol">S</div><span>Solana</span><small>High speed</small><b>↗</b>
+        </button>
+        <button class="chain-card" data-chain="Ethereum" data-url="https://ethereum.org/">
+          <div class="chain-icon eth">◆</div><span>Ethereum</span><small>Smart contracts</small><b>↗</b>
+        </button>
+        <button class="chain-card" data-chain="Bitcoin" data-url="https://bitcoin.org/">
+          <div class="chain-icon btc">₿</div><span>Bitcoin</span><small>Digital money</small><b>↗</b>
+        </button>
+        <button class="chain-card" data-chain="Avalanche" data-url="https://www.avax.network/">
+          <div class="chain-icon avax">▲</div><span>Avalanche</span><small>Scalable network</small><b>↗</b>
+        </button>
+        <button class="chain-card" data-chain="Cardano" data-url="https://cardano.org/">
+          <div class="chain-icon ada">●</div><span>Cardano</span><small>Research driven</small><b>↗</b>
+        </button>
+        <button class="chain-card more" data-chain="More networks" data-url="#launch">
+          <div class="chain-icon more-icon">+</div><span>More networks</span><small>And the universe beyond</small><b>↗</b>
+        </button>
       </div>
+    </section>
 
-      <div class="card">
-        <h3>Eureka Marketplace</h3>
-        <p>Sell tokenized artwork & crafts.</p>
+    <section id="vision" class="section vision">
+      <div class="vision-orbit">
+        <div class="orbit-center"><span>EUREKA</span><small>ONE • WEB3</small></div>
+        <i class="node n1">₿</i><i class="node n2">◆</i><i class="node n3">S</i>
+        <i class="node n4">A</i><i class="node n5">₳</i><i class="node n6">∞</i>
       </div>
-
-      <div class="card">
-        <h3>EurekaCore AI</h3>
-        <p>Your intelligent blockchain assistant.</p>
+      <div class="vision-copy">
+        <div class="section-label">03 / THE VISION</div>
+        <h2>Where all chains<br><span>finally become one.</span></h2>
+        <p>
+          Blockchain should feel connected, not fragmented. Eureka is building
+          the interface layer for a multi-chain financial world.
+        </p>
+        <div class="feature-list">
+          <div><b>01</b><span>Multi-chain access from one interface</span></div>
+          <div><b>02</b><span>Simple discovery of blockchain ecosystems</span></div>
+          <div><b>03</b><span>A foundation for future Web3 services</span></div>
+        </div>
       </div>
+    </section>
 
-      <div class="card">
-        <h3>ERK Token</h3>
-        <p>Utility, rewards & governance.</p>
+    <section id="token" class="section token">
+      <div class="token-panel">
+        <div class="section-label">04 / EUREKA TOKEN</div>
+        <div class="token-title">
+          <div class="coin-logo">E</div>
+          <div><h2>$EUREKA</h2><p>The ecosystem token</p></div>
+        </div>
+        <p>
+          A future utility layer for the Eureka ecosystem. The token section
+          can later connect to your live contract, staking, governance,
+          rewards and other utilities as they are launched.
+        </p>
+        <div class="token-grid">
+          <div><span>NETWORK</span><strong>Your chain</strong></div>
+          <div><span>UTILITY</span><strong>Coming soon</strong></div>
+          <div><span>STATUS</span><strong class="live">● Building</strong></div>
+        </div>
       </div>
+    </section>
 
-    </div>
-
-  </div>
-
-</section>
-
-<section id="market" class="market">
-
-  <div class="container">
-
-    <h2>Real World Assets</h2>
-
-    <div class="grid">
-
-      <div class="item">
-        <img src="assets/eureka-hero.jpeg">
-        <h4>Digital Artwork</h4>
-        <p>1.5 ETH</p>
+    <section id="launch" class="section launch">
+      <div class="launch-glow"></div>
+      <div class="section-label">05 / ENTER THE NETWORK</div>
+      <h2>The blockchain universe<br><span>starts here.</span></h2>
+      <p>Join the next generation of multi-chain finance.</p>
+      <div class="hero-actions">
+        <a class="btn primary" href="#chains">Explore networks <span>→</span></a>
+        <a class="btn ghost" href="https://x.com/" target="_blank" rel="noopener">Follow on X</a>
       </div>
+    </section>
+  </main>
 
-      <div class="item">
-        <img src="assets/eureka-hero.jpeg">
-        <h4>Forged Sword</h4>
-        <p>800 USDC</p>
-      </div>
+  <footer>
+    <div class="brand"><span class="brand-mark">E</span><span>EUREKA</span></div>
+    <p>The Final Block of the Blockchain — The New Finance System</p>
+    <span>© <span id="year"></span> Eureka Protocol</span>
+  </footer>
 
-      <div class="item">
-        <img src="assets/eureka-hero.jpeg">
-        <h4>Ancient Sculpture</h4>
-        <p>2200 USDC</p>
-      </div>
-
-    </div>
-
-  </div>
-
-</section>
-
-<section id="token" class="token">
-
-  <div class="container token-grid">
-
-    <div>
-
-      <h2>The Power of Unity</h2>
-
-      <p>
-        ERK powers the Eureka ecosystem, rewarding users,
-        creators and validators across every chain.
-      </p>
-
-      <button class="primary">
-        Buy ERK
-      </button>
-
-    </div>
-
-    <div class="token-logo">
-      <img src="assets/icons/eureka-logo.svg">
-    </div>
-
-  </div>
-
-</section>
-
-<section id="roadmap" class="roadmap">
-
-  <div class="container">
-
-    <h2>Roadmap</h2>
-
-    <div class="timeline">
-
-      <div>
-        <strong>Q4 2026</strong>
-        <p>Website</p>
-      </div>
-
-      <div>
-        <strong>Q1 2027</strong>
-        <p>EurekaCore AI</p>
-      </div>
-
-      <div>
-        <strong>Q2 2027</strong>
-        <p>Marketplace</p>
-      </div>
-
-      <div>
-        <strong>Q3 2027</strong>
-        <p>ERK Launch</p>
-      </div>
-
-    </div>
-
-  </div>
-
-</section>
-
-<footer>
-
-  <img src="assets/icons/eureka-logo.svg">
-
-  <h3>EUREKA</h3>
-
-  <p>The Final Block of the Blockchain</p>
-
-  <small>© 2026 Eureka Protocol</small>
-
-</footer>
-
-<script src="assets/js/main.js"></script>
-
+  <div class="toast" id="toast"></div>
+  <script src="script.js"></script>
 </body>
 </html>
