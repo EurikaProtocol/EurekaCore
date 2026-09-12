@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>EUREKA</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="assets/css/styles.css">
 </head>
 <body>
 
@@ -25,6 +25,8 @@
 
   <button class="menu">☰</button>
 </header>
+
+<div id="toast" class="toast"></div>
 
 <section class="hero">
 
@@ -87,7 +89,7 @@
     <h2>Connect Wallet</h2>
 
     <button id="connectBtn" class="wallet-btn">
-      <img src="assets/icons/wallet.svg">
+      <img src="assets/icons/wallet.svg" alt="MetaMask">
       MetaMask
     </button>
 
@@ -98,6 +100,16 @@
     </div>
   </div>
 </div>
+
+<footer>
+  <a href="#" class="brand">
+    <img src="assets/icons/eureka-logo.svg" class="brand-logo" alt="Eureka">
+    <span>EUREKA</span>
+  </a>
+  <p>&copy; <span id="year"></span> EurikaProtocol. All rights reserved.</p>
+</footer>
+
+<script src="assets/js/main.js"></script>
 
 </body>
 </html>
