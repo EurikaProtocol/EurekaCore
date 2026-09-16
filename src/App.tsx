@@ -5,6 +5,7 @@ import { NavLink, Route, Routes } from "react-router-dom";
 import { EUREKA_TOKEN } from "./config/token";
 import { SUPPORTED_CHAIN_IDS, SUPPORTED_NETWORKS } from "./config/networks";
 import { ERC20_ABI } from "./lib/erc20";
+import Whitepaper from "./pages/Whitepaper";
 
 type ProviderType = "metamask" | "walletconnect";
 
@@ -241,10 +242,8 @@ export default function App() {
             ["/", "Home"],
             ["/dashboard", "Dashboard"],
             ["/wallet", "Wallet"],
-            ["/ai-chat", "AI Chat"],
-            ["/swap", "Swap"],
-            ["/staking", "Staking"],
-            ["/explorer", "Explorer"],
+            ["/marketplace", "Marketplace"],
+            ["/whitepaper", "Whitepaper"],
             ["/settings", "Settings"],
           ].map(([path, label]) => (
             <NavLink
@@ -430,6 +429,16 @@ export default function App() {
             }
           />
 
+          <Route
+            path="/marketplace"
+            element={
+              <Placeholder
+                title="Marketplace"
+                subtitle="Programmable asset listings, tokenized data, and creator commerce modules are staged for the EUREKA marketplace."
+              />
+            }
+          />
+          <Route path="/whitepaper" element={<Whitepaper />} />
           <Route
             path="/ai-chat"
             element={<Placeholder title="AI Chat" subtitle="TINAN AI conversational workflows and automations are ready to connect." />}
