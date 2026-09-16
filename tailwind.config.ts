@@ -6,7 +6,8 @@ export default {
     extend: {
       colors: {
         tinan: {
-          gold: "#D4AF37",
+          cyan: "#0DA4AC",
+          turquoise: "#15D0C9",
           black: "#0A0A0A",
         },
       },
