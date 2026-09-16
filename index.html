@@ -2,114 +2,427 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EUREKA</title>
-  <link rel="stylesheet" href="assets/css/styles.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#04110b">
+  <title>EurekaCore | TINAN AI</title>
+  <meta name="description" content="EurekaCore is the Web3 operating interface for wallets, token intelligence, project memory, and TINAN AI workflows.">
+  <link rel="preload" href="assets/eureka-hero.jpeg" as="image">
+  <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
+  <div class="app-shell">
+    <header class="topbar glass-panel">
+      <button class="icon-button mobile-only" id="menuToggle" aria-label="Open navigation">☰</button>
+      <a href="#" class="brand" data-nav="home">
+        <img src="assets/icons/eureka-logo.svg" class="brand-logo" alt="EurekaCore logo">
+        <span>
+          <strong>EurekaCore</strong>
+          <small>TINAN AI Operating Intelligence</small>
+        </span>
+      </a>
+      <nav class="primary-nav desktop-only" aria-label="Primary navigation">
+        <button class="nav-link is-active" data-nav="home">Home</button>
+        <button class="nav-link" data-nav="dashboard">Dashboard</button>
+        <button class="nav-link" data-nav="wallet">Wallet</button>
+        <button class="nav-link" data-nav="tinan">TINAN AI</button>
+        <button class="nav-link" data-nav="token">Token</button>
+        <button class="nav-link" data-nav="settings">Settings</button>
+      </nav>
+      <button class="button accent" id="connectWalletTrigger">Connect Wallet</button>
+    </header>
 
-<header class="nav">
-  <a href="#" class="brand">
-    <img src="assets/icons/eureka-logo.svg" class="brand-logo" alt="Eureka">
-    <span>EUREKA</span>
-  </a>
-
-  <nav class="desktop">
-    <a href="#platform">Platform</a>
-    <a href="#chains">Chains</a>
-    <a href="#vision">Vision</a>
-    <a href="#token">Token</a>
-  </nav>
-
-  <a class="nav-btn" href="#">Enter Eureka</a>
-
-  <button class="menu">☰</button>
-</header>
-
-<div id="toast" class="toast"></div>
-
-<section class="hero">
-
-  <div class="overlay"></div>
-
-  <div class="content">
-
-    <div class="badge">● THE NEXT WEB3 INTERFACE</div>
-
-    <h1>
-      The Final Block
-      <br>
-      of the
-      <span>Blockchain.</span>
-    </h1>
-
-    <p>
-      One app. Every chain. Eureka creates a seamless gateway to the
-      entire blockchain universe without fragmentation.
-    </p>
-
-    <div class="buttons">
-      <a class="btn primary">Explore Eureka →</a>
-      <a class="btn secondary">Discover the vision</a>
-    </div>
-
-    <div class="stats">
-      <div>
-        <h2>01</h2>
-        <small>UNIFIED INTERFACE</small>
+    <aside class="mobile-drawer" id="mobileDrawer" aria-hidden="true">
+      <div class="drawer-header">
+        <span>Navigate</span>
+        <button class="icon-button" id="closeDrawer" aria-label="Close navigation">✕</button>
       </div>
-
-      <div>
-        <h2>∞</h2>
-        <small>CHAINS & NETWORKS</small>
+      <div class="drawer-links">
+        <button class="nav-link is-active" data-nav="home">Home</button>
+        <button class="nav-link" data-nav="dashboard">Dashboard</button>
+        <button class="nav-link" data-nav="wallet">Wallet</button>
+        <button class="nav-link" data-nav="tinan">TINAN AI</button>
+        <button class="nav-link" data-nav="token">Token</button>
+        <button class="nav-link" data-nav="settings">Settings</button>
       </div>
+    </aside>
+    <div class="drawer-backdrop" id="drawerBackdrop"></div>
 
-      <div>
-        <h2>24/7</h2>
-        <small>GLOBAL ACCESS</small>
-      </div>
-    </div>
+    <main class="main-content">
+      <section class="view-section is-active" id="home">
+        <div class="hero-card glass-panel">
+          <div class="hero-copy">
+            <span class="eyebrow">ONE APP. EVERY CHAIN. INFINITE POSSIBILITIES.</span>
+            <h1>Web3 control, wallet intelligence, and TINAN AI in one EurekaCore interface.</h1>
+            <p>
+              EurekaCore unifies wallet access, token telemetry, AI-guided building, and encrypted project memory
+              without leaving a static Cloudflare Pages deployment.
+            </p>
+            <div class="hero-actions">
+              <button class="button accent" data-nav="dashboard">Open Dashboard</button>
+              <button class="button ghost" data-nav="tinan">Talk to TINAN AI</button>
+            </div>
+          </div>
+          <div class="hero-stack">
+            <article class="glass-card stat-spotlight">
+              <span>Operating Intelligence</span>
+              <strong id="heroAiStatus">4 agents online</strong>
+              <small>Wallet · Knowledge · Token · Developer</small>
+            </article>
+            <article class="glass-card stat-spotlight">
+              <span>Wallet Readiness</span>
+              <strong id="heroWalletStatus">No wallet connected</strong>
+              <small>MetaMask · WalletConnect v2 · Coinbase Wallet</small>
+            </article>
+            <article class="glass-card stat-spotlight">
+              <span>Knowledge Vault</span>
+              <strong id="heroVaultStatus">Encrypted local memory</strong>
+              <small>Notes · Whitepaper · Roadmap · Ideas</small>
+            </article>
+          </div>
+        </div>
 
+        <div class="feature-grid">
+          <article class="glass-card feature-card">
+            <h2>Dashboard intelligence</h2>
+            <p>Portfolio, wallet balance, token balance, network status, notifications, and activity timelines stay in sync.</p>
+          </article>
+          <article class="glass-card feature-card">
+            <h2>Production wallet flows</h2>
+            <p>Native MetaMask connectivity with prepared WalletConnect v2 and Coinbase Wallet handoff controls.</p>
+          </article>
+          <article class="glass-card feature-card">
+            <h2>Developer workspace</h2>
+            <p>Generate Solidity, HTML, CSS, JavaScript, React, and documentation files, preview them, then export.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="view-section" id="dashboard">
+        <div class="section-header">
+          <div>
+            <span class="eyebrow">Dashboard</span>
+            <h2>Live operating overview</h2>
+          </div>
+          <p>Track account readiness, token telemetry, network health, and recent EurekaCore activity.</p>
+        </div>
+
+        <div class="metrics-grid">
+          <article class="glass-card metric-card">
+            <span>Portfolio</span>
+            <strong id="portfolioValue">Wallet not connected</strong>
+            <small id="portfolioMeta">Connect a wallet to calculate balances.</small>
+          </article>
+          <article class="glass-card metric-card">
+            <span>Wallet Balance</span>
+            <strong id="walletBalanceValue">—</strong>
+            <small id="walletBalanceMeta">Native balance unavailable.</small>
+          </article>
+          <article class="glass-card metric-card">
+            <span>Token Balance</span>
+            <strong id="tokenBalanceValue">—</strong>
+            <small id="tokenBalanceMeta">EUREKA balance unavailable.</small>
+          </article>
+          <article class="glass-card metric-card">
+            <span>Network Status</span>
+            <strong id="networkStatusValue">Monitoring</strong>
+            <small id="networkStatusMeta">Awaiting provider context.</small>
+          </article>
+        </div>
+
+        <div class="panel-grid">
+          <article class="glass-card list-card">
+            <div class="card-heading">
+              <h3>Notifications</h3>
+              <span id="notificationCount">0</span>
+            </div>
+            <ul id="notificationsList" class="list-stack"></ul>
+          </article>
+          <article class="glass-card list-card">
+            <div class="card-heading">
+              <h3>Activity Timeline</h3>
+              <button class="button subtle" id="clearActivity">Clear</button>
+            </div>
+            <ul id="activityTimeline" class="timeline"></ul>
+          </article>
+        </div>
+      </section>
+
+      <section class="view-section" id="wallet">
+        <div class="section-header">
+          <div>
+            <span class="eyebrow">Wallet</span>
+            <h2>Connection and transfer center</h2>
+          </div>
+          <p>Use MetaMask today and keep WalletConnect v2 and Coinbase Wallet ready from config.js.</p>
+        </div>
+
+        <div class="wallet-layout">
+          <article class="glass-card wallet-summary">
+            <div class="card-heading">
+              <h3>Connected wallet</h3>
+              <span id="walletStatusBadge" class="status-badge neutral">Disconnected</span>
+            </div>
+            <dl class="detail-grid">
+              <div><dt>Address</dt><dd id="walletAddressValue">—</dd></div>
+              <div><dt>Network</dt><dd id="walletNetworkValue">—</dd></div>
+              <div><dt>Native balance</dt><dd id="walletNativeValue">—</dd></div>
+              <div><dt>EUREKA balance</dt><dd id="walletTokenValue">—</dd></div>
+            </dl>
+            <div class="action-row">
+              <button class="button accent" id="sendAction" disabled>Send</button>
+              <button class="button ghost" id="receiveAction" disabled>Receive</button>
+              <button class="button subtle" id="disconnectAction" disabled>Disconnect</button>
+            </div>
+          </article>
+
+          <article class="glass-card integration-card">
+            <h3>Wallet providers</h3>
+            <div class="provider-list">
+              <button class="provider-option" id="connectMetaMask">
+                <span>
+                  <strong>MetaMask</strong>
+                  <small>Browser extension and mobile dApp browser</small>
+                </span>
+                <em>Connect</em>
+              </button>
+              <button class="provider-option" id="connectWalletConnect">
+                <span>
+                  <strong>WalletConnect v2</strong>
+                  <small id="walletConnectStatus">Prepared from config.js</small>
+                </span>
+                <em>Prepare</em>
+              </button>
+              <button class="provider-option" id="connectCoinbase">
+                <span>
+                  <strong>Coinbase Wallet</strong>
+                  <small id="coinbaseStatus">Prepared from config.js</small>
+                </span>
+                <em>Prepare</em>
+              </button>
+            </div>
+            <form id="sendForm" class="stack-form hidden">
+              <label>
+                <span>Recipient address</span>
+                <input id="sendToInput" type="text" placeholder="0x..." autocomplete="off">
+              </label>
+              <label>
+                <span>Amount (native)</span>
+                <input id="sendAmountInput" type="number" min="0" step="0.0001" placeholder="0.01">
+              </label>
+              <div class="action-row">
+                <button class="button accent" type="submit">Submit transfer</button>
+                <button class="button subtle" type="button" id="cancelSendAction">Cancel</button>
+              </div>
+            </form>
+          </article>
+        </div>
+      </section>
+
+      <section class="view-section" id="tinan">
+        <div class="section-header">
+          <div>
+            <span class="eyebrow">TINAN AI</span>
+            <h2>Natural Intelligence operating layer</h2>
+          </div>
+          <p>Switch agents, preserve conversation history, apply smart prompts, and route generated output into the Code Workspace.</p>
+        </div>
+
+        <div class="panel-grid tinan-grid">
+          <article class="glass-card tinan-chat-card">
+            <div class="card-heading">
+              <div>
+                <h3>AI Chat</h3>
+                <small id="activeAgentLabel">Wallet Agent active</small>
+              </div>
+              <button class="button subtle" id="clearChat">Clear history</button>
+            </div>
+
+            <div class="agent-grid" id="agentGrid"></div>
+
+            <div class="chat-tabs">
+              <button class="tab-link is-active" data-tinan-tab="chat">Chat</button>
+              <button class="tab-link" data-tinan-tab="workspace">Workspace</button>
+              <button class="tab-link" data-tinan-tab="vault">Vault</button>
+            </div>
+
+            <div class="tinan-panel is-active" data-panel="chat">
+              <div class="quick-actions" id="quickActions"></div>
+              <label class="template-field">
+                <span>Smart prompt templates</span>
+                <select id="promptTemplateSelect"></select>
+              </label>
+              <div id="conversationHistory" class="chat-history"></div>
+              <form id="chatForm" class="chat-composer">
+                <input id="chatInput" type="text" placeholder="Ask TINAN AI about wallets, token data, code generation, or project memory." autocomplete="off">
+                <button class="button accent" type="submit">Send</button>
+              </form>
+            </div>
+
+            <div class="tinan-panel" data-panel="workspace">
+              <div class="workspace-toolbar">
+                <label>
+                  <span>File type</span>
+                  <select id="workspaceLanguageSelect">
+                    <option value="solidity">Solidity</option>
+                    <option value="html">HTML</option>
+                    <option value="css">CSS</option>
+                    <option value="javascript">JavaScript</option>
+                    <option value="react">React</option>
+                    <option value="documentation">Documentation</option>
+                  </select>
+                </label>
+                <button class="button ghost" id="generateWorkspaceFile">Generate file</button>
+              </div>
+              <div class="workspace-list" id="workspaceFileList"></div>
+              <label class="workspace-name-field">
+                <span>File name</span>
+                <input id="workspaceFileName" type="text" placeholder="component.js">
+              </label>
+              <textarea id="workspacePreview" class="workspace-preview" spellcheck="false"></textarea>
+              <div class="action-row">
+                <button class="button accent" id="exportWorkspaceFile">Export file</button>
+                <button class="button subtle" id="saveWorkspaceFile">Save draft</button>
+              </div>
+            </div>
+
+            <div class="tinan-panel" data-panel="vault">
+              <div class="vault-lock-row">
+                <label>
+                  <span>Vault passphrase</span>
+                  <input id="vaultPassphrase" type="password" placeholder="Create or enter a passphrase">
+                </label>
+                <div class="action-row tight">
+                  <button class="button accent" id="unlockVault">Unlock</button>
+                  <button class="button subtle" id="lockVault">Lock</button>
+                </div>
+              </div>
+              <div class="vault-grid">
+                <label><span>Notes</span><textarea id="vaultNotes" rows="5"></textarea></label>
+                <label><span>Whitepaper drafts</span><textarea id="vaultWhitepaper" rows="5"></textarea></label>
+                <label><span>Roadmap</span><textarea id="vaultRoadmap" rows="5"></textarea></label>
+                <label><span>Ideas</span><textarea id="vaultIdeas" rows="5"></textarea></label>
+              </div>
+              <div class="action-row">
+                <button class="button accent" id="saveVault">Encrypt &amp; Save</button>
+                <button class="button subtle" id="clearVault">Clear local vault</button>
+              </div>
+              <p class="vault-note">Vault data is encrypted with Web Crypto in localStorage and never leaves the browser.</p>
+            </div>
+          </article>
+
+          <aside class="side-stack">
+            <article class="glass-card side-card">
+              <div class="card-heading">
+                <h3>Project memory</h3>
+                <span id="memoryCount">0</span>
+              </div>
+              <ul id="projectMemoryList" class="list-stack"></ul>
+            </article>
+            <article class="glass-card side-card">
+              <div class="card-heading">
+                <h3>Conversation history</h3>
+                <span id="conversationCount">0</span>
+              </div>
+              <ul id="historyList" class="list-stack"></ul>
+            </article>
+          </aside>
+        </div>
+      </section>
+
+      <section class="view-section" id="token">
+        <div class="section-header">
+          <div>
+            <span class="eyebrow">Token</span>
+            <h2>EUREKA token reference</h2>
+          </div>
+          <p>Values are sourced from config.js and upgraded with live RPC reads when available.</p>
+        </div>
+
+        <div class="token-grid">
+          <article class="glass-card metric-card">
+            <span>Name</span>
+            <strong id="tokenNameValue">—</strong>
+          </article>
+          <article class="glass-card metric-card">
+            <span>Symbol</span>
+            <strong id="tokenSymbolValue">—</strong>
+          </article>
+          <article class="glass-card metric-card">
+            <span>Total Supply</span>
+            <strong id="tokenSupplyValue">—</strong>
+          </article>
+          <article class="glass-card metric-card">
+            <span>Contract Address</span>
+            <strong id="tokenContractValue" class="mono">—</strong>
+          </article>
+          <article class="glass-card metric-card">
+            <span>Holder Counter</span>
+            <strong id="tokenHolderValue">—</strong>
+          </article>
+          <article class="glass-card metric-card">
+            <span>Explorer</span>
+            <button class="button ghost full-width" id="tokenExplorerButton">Open explorer</button>
+          </article>
+        </div>
+      </section>
+
+      <section class="view-section" id="settings">
+        <div class="section-header">
+          <div>
+            <span class="eyebrow">Settings</span>
+            <h2>Static app preferences</h2>
+          </div>
+          <p>Control animations, route persistence, preferred network display, and wallet integration readiness.</p>
+        </div>
+
+        <div class="panel-grid">
+          <article class="glass-card settings-card">
+            <h3>Experience</h3>
+            <label class="toggle-row">
+              <span>Premium animations</span>
+              <input id="motionToggle" type="checkbox" checked>
+            </label>
+            <label class="toggle-row">
+              <span>Reopen last page on launch</span>
+              <input id="routeMemoryToggle" type="checkbox" checked>
+            </label>
+            <label class="template-field">
+              <span>Preferred network label</span>
+              <select id="preferredNetworkSelect"></select>
+            </label>
+          </article>
+          <article class="glass-card settings-card">
+            <h3>Integration readiness</h3>
+            <ul class="list-stack integration-status-list" id="integrationStatusList"></ul>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav glass-panel mobile-only" aria-label="Mobile navigation">
+      <button class="nav-link is-active" data-nav="home">Home</button>
+      <button class="nav-link" data-nav="dashboard">Dashboard</button>
+      <button class="nav-link" data-nav="wallet">Wallet</button>
+      <button class="nav-link" data-nav="tinan">TINAN AI</button>
+      <button class="nav-link" data-nav="token">Token</button>
+      <button class="nav-link" data-nav="settings">Settings</button>
+    </nav>
   </div>
 
-</section>
-
-<section id="platform" class="section">
-
-  <h2>Every blockchain. One destination.</h2>
-
-  <p>
-    Eureka is designed as an all-in-one home for blockchain users.
-  </p>
-
-</section>
-
-<div id="walletModal" class="wallet-modal">
-  <div class="wallet-card">
-    <h2>Connect Wallet</h2>
-
-    <button id="connectBtn" class="wallet-btn">
-      <img src="assets/icons/wallet.svg" alt="MetaMask">
-      MetaMask
-    </button>
-
-    <div id="walletInfo" style="display:none;">
-      <p>Connected</p>
-      <h3 id="walletAddress"></h3>
-      <button id="disconnectBtn">Disconnect</button>
+  <div class="modal-shell hidden" id="receiveModal">
+    <div class="modal-card glass-panel">
+      <div class="card-heading">
+        <h3>Receive EUREKA</h3>
+        <button class="icon-button" id="closeReceiveModal" aria-label="Close receive modal">✕</button>
+      </div>
+      <p>Share this wallet address to receive native assets or EUREKA tokens.</p>
+      <code id="receiveAddressValue" class="receive-address">—</code>
+      <button class="button accent full-width" id="copyReceiveAddress">Copy address</button>
     </div>
   </div>
-</div>
 
-<footer>
-  <a href="#" class="brand">
-    <img src="assets/icons/eureka-logo.svg" class="brand-logo" alt="Eureka">
-    <span>EUREKA</span>
-  </a>
-  <p>&copy; <span id="year"></span> EurikaProtocol. All rights reserved.</p>
-</footer>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-<script src="assets/js/main.js"></script>
-
+  <script type="module" src="./script.js"></script>
 </body>
 </html>
