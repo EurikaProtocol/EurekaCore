@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  @apply m-0 min-h-screen bg-tinan-black text-white;
+  background-image:
+    radial-gradient(circle at top, rgba(212, 175, 55, 0.2), transparent 36%),
+    radial-gradient(circle at bottom right, rgba(212, 175, 55, 0.1), transparent 30%),
+    linear-gradient(160deg, #0a0a0a 0%, #101010 45%, #050505 100%);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+.glass {
+  @apply rounded-2xl border border-white/10 bg-white/5 shadow-glass backdrop-blur-xl;
+}
+
+.gold-outline {
+  @apply border-tinan-gold/50;
+}
