@@ -588,7 +588,10 @@ async function submitTransfer(event) {
 
 function bindEvents() {
   elements.navLinks.forEach((button) => {
-    button.addEventListener("click", () => setRoute(button.dataset.nav));
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      setRoute(button.dataset.nav);
+    });
   });
   elements.tinanTabs.forEach((button) => {
     button.addEventListener("click", () => setTinanTab(button.dataset.tinanTab));
