@@ -1,0 +1,83 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
+
+/// @title EurikaTinanLink — Public Metadata & Links Registry
+/// @notice Stores and manages project links and metadata, updatable only by the contract creator.
+contract EurikaTinanLink {
+    // --- Static Identifiers ---
+    string public constant PROJECT_ALIAS = "Eurika_Tinan_IPFS";
+    string public constant STATUS = "Active / Decentralized Distribution";
+    string public constant OWNER = "Gvidas TinanGroup";
+
+    // --- Core Addresses ---
+    address public immutable contractCreator;    // Set at deployment
+    address public immutable eurikaProtocol;     // EURIKA ERC-20 contract address
+
+    // --- Configurable fields (private, updatable by creator only) ---
+    string private _unlockCode;
+    string private _backupKey;
+    string private _neoChainAddress;
+    string private _stellarRef;
+    string private _ipfsManifest;
+
+    // --- Events ---
+    event ManifestUpdated(string indexed oldCid, string indexed newCid, address indexed updater);
+    event LinksUpdated(
+        string oldNeo,
+        string newNeo,
+        string oldStellar,
+        string newStellar,
+        address indexed updater
+    );
+
+    // --- Modifiers ---
+    /// @dev Restricts functions to contract creator only
+    modifier onlyCreator() {
+        require(msg.sender == contractCreator, "EurikaTinanLink: caller is not creator");
+        _;
+    }
+
+    // --- Constructor ---
+    /// @notice Initializes contract with default metadata and immutable addresses
+    constructor() {
+        contractCreator  = msg.sender;
+        eurikaProtocol   = 0x4042973c0863CCA0D73F028cA98465F44F0e6F97; // EURIKA ERC-20 address
+        _unlockCode      = "/-95C_1008";
+        _backupKey       = "KNS766";
+        _neoChainAddress = "NLwZ4cP6ND5ZD9kZBy81bQSnKowKHcugCz";
+        _stellarRef      = "EURIKA*stellar.org";
+        _ipfsManifest    = "ipfs://PUT_YOUR_CID_HERE";
+    }
+
+    // --- Public Getters ---
+    function unlockCode()       external view returns (string memory) { return _unlockCode; }
+    function backupKey()        external view returns (string memory) { return _backupKey; }
+    function neoChainAddress()  external view returns (string memory) { return _neoChainAddress; }
+    function stellarRef()       external view returns (string memory) { return _stellarRef; }
+    function ipfsManifest()     external view returns (string memory) { return _ipfsManifest; }
+    function getProtocolAddress() external view returns (address) { return eurikaProtocol; }
+    function getOwnerInfo()     external pure returns (string memory) { return OWNER; }
+
+    // --- Management Functions (Creator Only) ---
+    /// @notice Update the IPFS manifest CID
+    /// @param newCid New IPFS CID (must not be empty)
+    function updateManifest(string calldata newCid) external onlyCreator {
+        require(bytes(newCid).length > 0, "EurikaTinanLink: empty CID");
+        string memory old = _ipfsManifest;
+        _ipfsManifest = newCid;
+        emit ManifestUpdated(old, newCid, msg.sender);
+    }
+
+    /// @notice Update Neo chain address and Stellar reference
+    /// @param newNeo New Neo chain address (must not be empty)
+    /// @param newStellar New Stellar reference (must not be empty)
+    function updateLinks(string calldata newNeo, string calldata newStellar) external onlyCreator {
+        require(bytes(newNeo).length > 0, "EurikaTinanLink: empty Neo address");
+        require(bytes(newStellar).length > 0, "EurikaTinanLink: empty Stellar ref");
+        string memory oldNeo = _neoChainAddress;
+        string memory oldStellar = _stellarRef;
+        _neoChainAddress = newNeo;
+        _stellarRef = newStellar;
+        emit LinksUpdated(oldNeo, newNeo, oldStellar, newStellar, msg.sender);
+    }
+}
