@@ -1,25 +1,17 @@
-export type MarketplaceListing = {
-  title: string;
-  summary: string;
-  status: string;
-  devOnly?: boolean;
-};
-
-const DEV_MARKETPLACE_LISTINGS: MarketplaceListing[] = [
+export const MARKETPLACE_MODULES = [
   {
-    title: "DEV ONLY · TinanAI prompt bundles",
-    summary: "Mock preview for testing route layout and filtering before live marketplace feeds are connected.",
-    status: "Development mock",
-    devOnly: true,
+    title: 'Datasets',
+    status: 'Ready for listings',
+    description: 'Catalog verified datasets, rights bundles, and premium access tiers without exposing mock prices.',
   },
   {
-    title: "DEV ONLY · Device proof packages",
-    summary: "Mock proof bundle examples for staging environment demos only.",
-    status: "Development mock",
-    devOnly: true,
+    title: 'Automation licenses',
+    status: 'Configuration gated',
+    description: 'Publish TinanAI automations only after official licensing, metadata, and settlement rules are finalized.',
   },
-];
-
-export function getMarketplaceListings(isDev: boolean) {
-  return isDev ? DEV_MARKETPLACE_LISTINGS : [];
-}
+  {
+    title: 'Device-backed assets',
+    status: 'Pending attestations',
+    description: 'Attach trusted device proofs before minting or trading machine-originated inventory.',
+  },
+] as const;

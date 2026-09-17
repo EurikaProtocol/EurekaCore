@@ -1,19 +1,14 @@
-export type ProofCard = {
-  title: string;
-  summary: string;
-};
-
-export const PROOF_CARDS: ProofCard[] = [
+export const PROOF_MODULES = [
   {
-    title: "Proof-of-Data",
-    summary: "Turn verified data assets into programmable value without breaking provenance.",
+    title: 'Proof-of-Data',
+    description: 'Structures datasets for verifiable provenance and programmable ownership.',
   },
   {
-    title: "Proof-of-Action",
-    summary: "Record human or AI-driven actions as auditable economic events.",
+    title: 'Proof-of-Action',
+    description: 'Maps measurable human or AI actions to auditable protocol events.',
   },
   {
-    title: "Proof-of-Device",
-    summary: "Bind machine attestations to tokenized workflows with clear permissions.",
+    title: 'Proof-of-Device',
+    description: 'Tethers trusted device telemetry to tokenized automation and compliance flows.',
   },
-];
+] as const;

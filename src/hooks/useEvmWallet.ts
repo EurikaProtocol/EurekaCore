@@ -1,16 +1,20 @@
-import EthereumProvider from "@walletconnect/ethereum-provider";
-import { BrowserProvider, Contract, ethers, formatUnits, parseUnits } from "ethers";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { SUPPORTED_CHAIN_IDS, SUPPORTED_NETWORKS } from "../config/networks";
-import { EKA_TOKEN } from "../config/token";
-import { truncateMiddle, validateEvmAddress } from "../core/verify";
-import { ERC20_ABI } from "../lib/erc20";
-import { getEkaContractExplorerUrl, getEkaTransactionExplorerUrl } from "../sdk/evm";
+import EthereumProvider from '@walletconnect/ethereum-provider';
+import { BrowserProvider } from 'ethers';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { DEFAULT_EVM_NETWORK, SUPPORTED_WALLETCONNECT_CHAIN_IDS } from '../config/networks';
+import { EKA_TOKEN } from '../config/token';
+import { requestEthereumMainnet, requestWatchEkaAsset, readEkaWalletSnapshot, sendEkaTransfer } from '../sdk/evm';
 
-type ProviderType = "metamask" | "walletconnect";
+type ProviderType = 'metamask' | 'walletconnect';
 
-type WalletSnapshot = {
+export type RecentTransaction = {
+  hash: string;
+  createdAt: number;
+};
+
+export type EvmWalletState = {
   address: string;
+  providerType: ProviderType | null;
   chainId: number | null;
   network: string;
   nativeSymbol: string;
@@ -18,257 +22,275 @@ type WalletSnapshot = {
   ekaBalance: string;
   totalSupply: string;
   burnedTokens: string;
-  explorerUrl: string | null;
+  explorerBaseUrl: string;
+  ekaReady: boolean;
+  networkWarning: string | null;
   connected: boolean;
-  providerType: ProviderType | null;
 };
 
-export type EvmWalletHook = {
-  snapshot: WalletSnapshot;
+export type EvmWalletController = {
+  state: EvmWalletState;
   status: string;
-  recentTransactions: { hash: string; createdAt: number }[];
-  connectMetaMask: () => Promise<void>;
+  busy: boolean;
+  recentTransactions: RecentTransaction[];
+  lastTxHash: string;
+  connectInjected: () => Promise<void>;
   connectWalletConnect: () => Promise<void>;
   disconnect: () => Promise<void>;
   refresh: () => Promise<void>;
-  addEkaToken: () => Promise<void>;
-  sendEka: (recipient: string, amount: string) => Promise<void>;
-  isEkaNetwork: boolean;
-  shortAddress: string;
-  lastTransactionUrl: string | null;
+  addToken: () => Promise<void>;
+  switchToEthereumMainnet: () => Promise<void>;
+  sendTransfer: (to: string, amount: string) => Promise<void>;
 };
 
-const INITIAL_SNAPSHOT: WalletSnapshot = {
-  address: "",
-  chainId: null,
-  network: "Disconnected",
-  nativeSymbol: "ETH",
-  nativeBalance: "0",
-  ekaBalance: "0",
-  totalSupply: "0",
-  burnedTokens: "0",
-  explorerUrl: getEkaContractExplorerUrl(),
-  connected: false,
+const INITIAL_STATE: EvmWalletState = {
+  address: '',
   providerType: null,
+  chainId: null,
+  network: 'Disconnected',
+  nativeSymbol: DEFAULT_EVM_NETWORK.nativeSymbol,
+  nativeBalance: '0',
+  ekaBalance: '0',
+  totalSupply: '0',
+  burnedTokens: '0',
+  explorerBaseUrl: EKA_TOKEN.explorerBaseUrl,
+  ekaReady: false,
+  networkWarning: null,
+  connected: false,
 };
 
-const BURN_ADDRESSES = [
-  "0x0000000000000000000000000000000000000000",
-  "0x000000000000000000000000000000000000dEaD",
-] as const;
+export function useEvmWallet(): EvmWalletController {
+  const [state, setState] = useState<EvmWalletState>(INITIAL_STATE);
+  const [provider, setProvider] = useState<BrowserProvider | null>(null);
+  const [walletConnectProvider, setWalletConnectProvider] = useState<EthereumProvider | null>(null);
+  const [status, setStatus] = useState('Wallet disconnected.');
+  const [busy, setBusy] = useState(false);
+  const [lastTxHash, setLastTxHash] = useState('');
+  const [recentTransactions, setRecentTransactions] = useState<RecentTransaction[]>([]);
 
-function resolveNetwork(chainId: number | null) {
-  if (!chainId || !(chainId in SUPPORTED_NETWORKS)) {
-    return { name: "Unsupported network", nativeSymbol: "ETH", explorer: EKA_TOKEN.explorerBaseUrl };
-  }
-  return SUPPORTED_NETWORKS[chainId as keyof typeof SUPPORTED_NETWORKS];
-}
-
-export function useEvmWallet(): EvmWalletHook {
-  const [snapshot, setSnapshot] = useState<WalletSnapshot>(INITIAL_SNAPSHOT);
-  const [browserProvider, setBrowserProvider] = useState<BrowserProvider | null>(null);
-  const [wcProvider, setWcProvider] = useState<EthereumProvider | null>(null);
-  const [status, setStatus] = useState("EKA wallet disconnected.");
-  const [recentTransactions, setRecentTransactions] = useState<{ hash: string; createdAt: number }[]>([]);
+  const syncWallet = useCallback(async (nextProvider: BrowserProvider, address: string, providerType: ProviderType | null) => {
+    const snapshot = await readEkaWalletSnapshot(nextProvider, address);
+    setState({
+      ...snapshot,
+      address,
+      providerType,
+      connected: true,
+    });
+  }, []);
 
   const refresh = useCallback(async () => {
-    if (!browserProvider || !snapshot.address) return;
-    const network = await browserProvider.getNetwork();
-    const chainId = Number(network.chainId);
-    const parsedNetwork = resolveNetwork(chainId);
-    const nativeRaw = await browserProvider.getBalance(snapshot.address);
-
-    if (chainId !== EKA_TOKEN.chainId) {
-      setSnapshot((prev) => ({
-        ...prev,
-        chainId,
-        network: parsedNetwork.name,
-        nativeSymbol: parsedNetwork.nativeSymbol,
-        nativeBalance: Number(formatUnits(nativeRaw, 18)).toLocaleString(undefined, { maximumFractionDigits: 6 }),
-        ekaBalance: "Requires Ethereum Mainnet",
-        totalSupply: "Requires Ethereum Mainnet",
-        burnedTokens: "Requires Ethereum Mainnet",
-        explorerUrl: getEkaContractExplorerUrl(),
-      }));
-      setStatus(`Connected on ${parsedNetwork.name}. Switch to ${EKA_TOKEN.networkLabel} for EKA actions.`);
-      return;
-    }
-
-    const signer = await browserProvider.getSigner();
-    const contract = new Contract(EKA_TOKEN.contractAddress, ERC20_ABI, signer);
-    const [tokenRaw, supplyRaw, burnedZero, burnedDead] = await Promise.all([
-      contract.balanceOf(snapshot.address),
-      contract.totalSupply(),
-      contract.balanceOf(BURN_ADDRESSES[0]),
-      contract.balanceOf(BURN_ADDRESSES[1]),
-    ]);
-
-    setSnapshot((prev) => ({
-      ...prev,
-      chainId,
-      network: parsedNetwork.name,
-      nativeSymbol: parsedNetwork.nativeSymbol,
-      nativeBalance: Number(formatUnits(nativeRaw, 18)).toLocaleString(undefined, { maximumFractionDigits: 6 }),
-      ekaBalance: Number(formatUnits(tokenRaw, EKA_TOKEN.decimals)).toLocaleString(undefined, { maximumFractionDigits: 6 }),
-      totalSupply: Number(formatUnits(supplyRaw, EKA_TOKEN.decimals)).toLocaleString(undefined, { maximumFractionDigits: 2 }),
-      burnedTokens: Number(formatUnits(burnedZero + burnedDead, EKA_TOKEN.decimals)).toLocaleString(undefined, { maximumFractionDigits: 2 }),
-      explorerUrl: getEkaContractExplorerUrl(),
-    }));
-    setStatus("EKA wallet ready.");
-  }, [browserProvider, snapshot.address]);
-
-  const connectMetaMask = useCallback(async () => {
-    if (!window.ethereum) {
-      setStatus("MetaMask is not available in this browser.");
-      return;
-    }
+    if (!provider || !state.address || !state.providerType) return;
     try {
-      await window.ethereum.request({ method: "eth_requestAccounts" });
-      const provider = new BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-      const address = await signer.getAddress();
-      setBrowserProvider(provider);
-      setSnapshot((prev) => ({ ...prev, address, connected: true, providerType: "metamask" }));
-      setStatus("MetaMask connected. Waiting for wallet-approved refresh.");
+      await syncWallet(provider, state.address, state.providerType);
+    } catch (error) {
+      setStatus(`Wallet refresh failed: ${(error as Error).message}`);
+    }
+  }, [provider, state.address, state.providerType, syncWallet]);
+
+  const connectInjected = useCallback(async () => {
+    if (!window.ethereum) {
+      setStatus('MetaMask is not available. Install it before using EKA wallet actions.');
+      return;
+    }
+
+    setBusy(true);
+    try {
+      const accounts = (await window.ethereum.request({ method: 'eth_requestAccounts' })) as string[];
+      const address = accounts[0];
+      if (!address) {
+        throw new Error('No wallet address returned by MetaMask.');
+      }
+
+      const nextProvider = new BrowserProvider(window.ethereum);
+      setProvider(nextProvider);
+      await syncWallet(nextProvider, address, 'metamask');
+      setStatus('MetaMask connected. Review network status before using EKA actions.');
     } catch (error) {
       setStatus(`MetaMask connection failed: ${(error as Error).message}`);
+    } finally {
+      setBusy(false);
     }
-  }, []);
+  }, [syncWallet]);
 
   const connectWalletConnect = useCallback(async () => {
-    const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID;
+    const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID?.trim();
     if (!projectId) {
-      setStatus("Set VITE_WALLETCONNECT_PROJECT_ID to enable WalletConnect.");
+      setStatus('Add VITE_WALLETCONNECT_PROJECT_ID to enable WalletConnect.');
       return;
     }
+
+    setBusy(true);
     try {
-      const provider = await EthereumProvider.init({
+      const nextWalletConnectProvider = await EthereumProvider.init({
         projectId,
-        chains: [SUPPORTED_CHAIN_IDS[0]],
-        optionalChains: SUPPORTED_CHAIN_IDS,
+        chains: [SUPPORTED_WALLETCONNECT_CHAIN_IDS[0]],
+        optionalChains: [...SUPPORTED_WALLETCONNECT_CHAIN_IDS],
         showQrModal: true,
       });
-      await provider.enable();
-      const walletProvider = new BrowserProvider(provider as never);
-      const signer = await walletProvider.getSigner();
+
+      await nextWalletConnectProvider.enable();
+      const nextProvider = new BrowserProvider(nextWalletConnectProvider as never);
+      const signer = await nextProvider.getSigner();
       const address = await signer.getAddress();
-      setWcProvider(provider);
-      setBrowserProvider(walletProvider);
-      setSnapshot((prev) => ({ ...prev, address, connected: true, providerType: "walletconnect" }));
-      setStatus("WalletConnect connected. Waiting for wallet-approved refresh.");
+
+      setWalletConnectProvider(nextWalletConnectProvider);
+      setProvider(nextProvider);
+      await syncWallet(nextProvider, address, 'walletconnect');
+      setStatus('WalletConnect connected. EKA token actions remain limited to Ethereum Mainnet.');
     } catch (error) {
       setStatus(`WalletConnect failed: ${(error as Error).message}`);
+    } finally {
+      setBusy(false);
+    }
+  }, [syncWallet]);
+
+  const disconnect = useCallback(async () => {
+    setBusy(true);
+    try {
+      if (walletConnectProvider) {
+        await walletConnectProvider.disconnect();
+        setWalletConnectProvider(null);
+      }
+    } finally {
+      setProvider(null);
+      setState(INITIAL_STATE);
+      setLastTxHash('');
+      setRecentTransactions([]);
+      setStatus('Wallet disconnected.');
+      setBusy(false);
+    }
+  }, [walletConnectProvider]);
+
+  const addToken = useCallback(async () => {
+    if (!window.ethereum) {
+      setStatus('MetaMask is required to add EKA to a wallet watchlist.');
+      return;
+    }
+
+    try {
+      const added = await requestWatchEkaAsset(window.ethereum);
+      setStatus(added ? 'EKA was offered to MetaMask.' : 'MetaMask token watch request was cancelled.');
+    } catch (error) {
+      setStatus(`Token watch request failed: ${(error as Error).message}`);
     }
   }, []);
 
-  const disconnect = useCallback(async () => {
-    if (wcProvider) {
-      await wcProvider.disconnect();
-      setWcProvider(null);
-    }
-    setBrowserProvider(null);
-    setSnapshot(INITIAL_SNAPSHOT);
-    setRecentTransactions([]);
-    setStatus("EKA wallet disconnected.");
-  }, [wcProvider]);
-
-  const addEkaToken = useCallback(async () => {
+  const switchToEthereumMainnet = useCallback(async () => {
     if (!window.ethereum) {
-      setStatus("MetaMask is required to watch the EKA contract.");
+      setStatus('MetaMask is required for an in-app network switch request.');
       return;
     }
-    if (snapshot.chainId !== EKA_TOKEN.chainId) {
-      setStatus(`Switch MetaMask to ${EKA_TOKEN.networkLabel} before adding EKA.`);
-      return;
-    }
-    const added = await window.ethereum.request({
-      method: "wallet_watchAsset",
-      params: {
-        type: "ERC20",
-        options: {
-          address: EKA_TOKEN.contractAddress,
-          symbol: EKA_TOKEN.symbol,
-          decimals: EKA_TOKEN.decimals,
-        },
-      },
-    });
-    setStatus(added ? "EKA added in MetaMask." : "MetaMask watch asset request was canceled.");
-  }, [snapshot.chainId]);
 
-  const sendEka = useCallback(async (recipient: string, amount: string) => {
-    if (!browserProvider || !snapshot.connected) {
-      setStatus("Connect an EVM wallet before sending EKA.");
-      return;
-    }
-    if (snapshot.chainId !== EKA_TOKEN.chainId) {
-      setStatus(`Switch to ${EKA_TOKEN.networkLabel} before sending EKA.`);
-      return;
-    }
-    if (!validateEvmAddress(recipient)) {
-      setStatus("Recipient address is invalid.");
-      return;
-    }
-    if (!amount || Number(amount) <= 0) {
-      setStatus("Amount must be greater than zero.");
-      return;
-    }
+    setBusy(true);
     try {
-      const signer = await browserProvider.getSigner();
-      const contract = new Contract(EKA_TOKEN.contractAddress, ERC20_ABI, signer);
-      setStatus("Awaiting explicit wallet approval for the EKA transfer.");
-      const tx = await contract.transfer(recipient, parseUnits(amount, EKA_TOKEN.decimals));
-      setStatus("Transfer submitted. Waiting for confirmation.");
-      await tx.wait();
-      setRecentTransactions((prev) => [{ hash: tx.hash, createdAt: Date.now() }, ...prev].slice(0, 5));
-      await refresh();
-      setStatus("EKA transfer confirmed.");
+      await requestEthereumMainnet(window.ethereum);
+      setStatus('Ethereum Mainnet switch requested. Confirm the wallet prompt if it appears.');
+      if (provider && state.address && state.providerType) {
+        await syncWallet(provider, state.address, state.providerType);
+      }
     } catch (error) {
-      setStatus(`Transfer failed: ${(error as Error).message}`);
+      setStatus(`Network switch failed: ${(error as Error).message}`);
+    } finally {
+      setBusy(false);
     }
-  }, [browserProvider, refresh, snapshot.chainId, snapshot.connected]);
+  }, [provider, state.address, state.providerType, syncWallet]);
+
+  const sendTransfer = useCallback(
+    async (to: string, amount: string) => {
+      if (!provider || !state.address || !state.connected) {
+        setStatus('Connect an EVM wallet before sending EKA.');
+        return;
+      }
+
+      if (!state.ekaReady) {
+        setStatus(state.networkWarning ?? `Switch to ${EKA_TOKEN.chainName} before sending EKA.`);
+        return;
+      }
+
+      setBusy(true);
+      try {
+        const tx = await sendEkaTransfer(provider, to, amount);
+        setStatus('Transaction submitted. Confirming on-chain...');
+        await tx.wait();
+        setLastTxHash(tx.hash);
+        setRecentTransactions((current) => [{ hash: tx.hash, createdAt: Date.now() }, ...current].slice(0, 5));
+        await syncWallet(provider, state.address, state.providerType);
+        setStatus('EKA transfer confirmed.');
+      } catch (error) {
+        setStatus(`Transfer failed: ${(error as Error).message}`);
+      } finally {
+        setBusy(false);
+      }
+    },
+    [provider, state.address, state.connected, state.ekaReady, state.networkWarning, state.providerType, syncWallet]
+  );
 
   useEffect(() => {
-    if (!snapshot.connected || !snapshot.address || !browserProvider) return;
-    refresh().catch((error) => setStatus(`Wallet refresh failed: ${(error as Error).message}`));
-  }, [browserProvider, refresh, snapshot.address, snapshot.connected]);
+    if (!provider || !state.address || !state.providerType) return;
+    const interval = window.setInterval(() => {
+      syncWallet(provider, state.address, state.providerType).catch(() => undefined);
+    }, 20000);
+    return () => window.clearInterval(interval);
+  }, [provider, state.address, state.providerType, syncWallet]);
 
   useEffect(() => {
     if (!window.ethereum?.on || !window.ethereum?.removeListener) return;
+
+    const handleChainChanged = () => {
+      if (provider && state.address && state.providerType) {
+        syncWallet(provider, state.address, state.providerType).catch(() => undefined);
+      }
+    };
+
     const handleAccountsChanged = (accounts: string[]) => {
-      const [nextAddress] = accounts;
-      if (!nextAddress) {
+      const address = accounts[0];
+      if (!address) {
         disconnect().catch(() => undefined);
         return;
       }
-      setSnapshot((prev) => ({ ...prev, address: nextAddress, connected: true }));
+
+      if (provider && state.providerType) {
+        syncWallet(provider, address, state.providerType).catch(() => undefined);
+      }
     };
-    const handleChainChanged = () => {
-      refresh().catch(() => undefined);
-    };
-    window.ethereum.on("accountsChanged", handleAccountsChanged);
-    window.ethereum.on("chainChanged", handleChainChanged);
+
+    window.ethereum.on('chainChanged', handleChainChanged);
+    window.ethereum.on('accountsChanged', handleAccountsChanged);
+
     return () => {
-      window.ethereum?.removeListener?.("accountsChanged", handleAccountsChanged);
-      window.ethereum?.removeListener?.("chainChanged", handleChainChanged);
+      window.ethereum?.removeListener?.('chainChanged', handleChainChanged);
+      window.ethereum?.removeListener?.('accountsChanged', handleAccountsChanged);
     };
-  }, [disconnect, refresh]);
+  }, [disconnect, provider, state.address, state.providerType, syncWallet]);
 
-  const isEkaNetwork = snapshot.chainId === EKA_TOKEN.chainId;
-  const shortAddress = useMemo(() => truncateMiddle(snapshot.address, 6, 4), [snapshot.address]);
-  const lastTransactionUrl = recentTransactions[0] ? getEkaTransactionExplorerUrl(recentTransactions[0].hash) : null;
-
-  return {
-    snapshot,
-    status,
-    recentTransactions,
-    connectMetaMask,
-    connectWalletConnect,
-    disconnect,
-    refresh,
-    addEkaToken,
-    sendEka,
-    isEkaNetwork,
-    shortAddress,
-    lastTransactionUrl,
-  };
+  return useMemo(
+    () => ({
+      state,
+      status,
+      busy,
+      recentTransactions,
+      lastTxHash,
+      connectInjected,
+      connectWalletConnect,
+      disconnect,
+      refresh,
+      addToken,
+      switchToEthereumMainnet,
+      sendTransfer,
+    }),
+    [
+      addToken,
+      busy,
+      connectInjected,
+      connectWalletConnect,
+      disconnect,
+      lastTxHash,
+      recentTransactions,
+      refresh,
+      sendTransfer,
+      state,
+      status,
+      switchToEthereumMainnet,
+    ]
+  );
 }

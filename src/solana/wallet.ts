@@ -1,11 +1,5 @@
-import { safeUrl } from "../core/verify";
+import { toTrustedUrl } from '../core/verify';
 
-export const TRUSTED_WALLET_LINKS = {
-  metamask: safeUrl("https://metamask.io/download/", ["metamask.io"]),
-  walletConnect: safeUrl("https://walletconnect.com/", ["walletconnect.com"]),
-  phantom: safeUrl("https://phantom.app/", ["phantom.app"]),
-};
-
-export function getWalletApprovalCopy(action: string) {
-  return `${action} will only continue after the connected wallet asks for explicit approval.`;
-}
+export const PHANTOM_DOWNLOAD_URL = toTrustedUrl('https://phantom.app/download');
+export const WALLETCONNECT_URL = toTrustedUrl('https://walletconnect.com/');
+export const METAMASK_DOWNLOAD_URL = toTrustedUrl('https://metamask.io/download/');

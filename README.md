@@ -1,42 +1,18 @@
 # TinanEureka (EurekaCore)
 
-TinanEureka is a React 19 + Vite + TypeScript Web3 interface for the EUREKA Protocol.
+Production-oriented EUREKA Protocol frontend built with React 19, TypeScript, Vite, Tailwind, React Router, ethers v6, Solana Web3.js, Solana Wallet Adapter, WalletConnect, MetaMask, Phantom, and Framer Motion.
 
-## Stack
+## Runtime goals
 
-- React 19
-- TypeScript
-- Vite
-- Tailwind CSS
-- React Router
-- ethers v6
-- Solana Web3.js
-- Solana Wallet Adapter + Phantom
-- WalletConnect
-- Framer Motion
-
-## Routes
-
-- /
-- /dashboard
-- /wallet
-- /tinan-ai
-- /marketplace
-- /whitepaper
-- /staking
-- /swap
-- /explorer
-- /settings
-- /tinan-ai-token
-- /pumpfun
-
-## Token separation
-
-- `EKA` is the native EVM token and is configured in `/home/runner/work/EurekaCore/EurekaCore/src/config/token.ts`.
-- `TinanAI` is the Solana token path and is configured in `/home/runner/work/EurekaCore/EurekaCore/src/config/tinanai-solana.ts`.
-- Do not hardcode fake Solana mint addresses.
+- Keep **EKA** on EVM and **TinanAI Token** on Solana strictly separate.
+- Never hardcode unofficial Solana mint values.
+- Require explicit wallet approval for every network switch and transaction.
+- Render only trusted external links for explorers, wallets, and Pump.fun.
+- Avoid fake market data in production.
 
 ## Required environment variables
+
+Copy `.env.example` and configure:
 
 - `VITE_WALLETCONNECT_PROJECT_ID`
 - `VITE_SOLANA_NETWORK`
@@ -45,13 +21,39 @@ TinanEureka is a React 19 + Vite + TypeScript Web3 interface for the EUREKA Prot
 - `VITE_PUMPFUN_TOKEN_URL`
 - `VITE_TINANAI_METADATA_URI`
 
+Current official Solana mint value:
+
+- `VITE_TINANAI_SOLANA_MINT=6FQCFFmcCE4WY2X2hxquMnKgnzwSy1sJLX5VuRMe9Ddp`
+
+## Local development
+
+```bash
+npm install --legacy-peer-deps
+npm run build
+```
+
 ## Cloudflare Pages
 
-- Framework preset: Vite
+- Framework preset: `Vite`
 - Root directory: `/`
 - Build command: `npm run build`
 - Output directory: `dist`
 - Node version: `22`
-- Environment variable: `NPM_FLAGS=--legacy-peer-deps`
+- Env: `NODE_VERSION=22`, `NPM_FLAGS=--legacy-peer-deps`
 
-SPA routing is handled by `public/_redirects`.
+SPA routing fallback is handled by `public/_redirects`.
+
+## Routes
+
+- `/`
+- `/dashboard`
+- `/wallet`
+- `/tinan-ai`
+- `/marketplace`
+- `/whitepaper`
+- `/staking`
+- `/swap`
+- `/explorer`
+- `/settings`
+- `/tinan-ai-token`
+- `/pumpfun`

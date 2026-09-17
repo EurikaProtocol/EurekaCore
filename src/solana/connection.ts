@@ -1,11 +1,21 @@
-import { Connection } from "@solana/web3.js";
-import { TINANAI_SOLANA_CONFIG } from "../config/tinanai-solana";
-import { safeUrl } from "../core/verify";
+import { Connection } from '@solana/web3.js';
+import { TINANAI_SOLANA } from '../config/tinanai-solana';
+import { getSolanaClusterQuery } from './constants';
 
-export function createSolanaEndpoint() {
-  return safeUrl(TINANAI_SOLANA_CONFIG.rpcUrl, ["api.mainnet-beta.solana.com", "api.devnet.solana.com", "api.testnet.solana.com"]) ?? TINANAI_SOLANA_CONFIG.rpcUrl;
+let cachedConnection: Connection | null = null;
+
+export function getSolanaConnection() {
+  if (!cachedConnection) {
+    cachedConnection = new Connection(TINANAI_SOLANA.rpcUrl, 'confirmed');
+  }
+
+  return cachedConnection;
 }
 
-export function createSolanaConnection() {
-  return new Connection(createSolanaEndpoint(), "confirmed");
+export function getSolscanAddressUrl(address: string) {
+  return `${TINANAI_SOLANA.explorerBaseUrl}/account/${address}${getSolanaClusterQuery(TINANAI_SOLANA.network)}`;
+}
+
+export function getSolscanTokenUrl(mintAddress: string) {
+  return `${TINANAI_SOLANA.explorerBaseUrl}/token/${mintAddress}${getSolanaClusterQuery(TINANAI_SOLANA.network)}`;
 }

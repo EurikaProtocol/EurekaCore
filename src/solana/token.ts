@@ -1,13 +1,37 @@
-import { PublicKey, type Connection } from "@solana/web3.js";
-import { validateSolanaAddress } from "../core/verify";
+import { Connection, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 
-export async function getSolanaTokenBalance(connection: Connection, ownerAddress: string, mintAddress: string | null) {
-  if (!validateSolanaAddress(ownerAddress) || !validateSolanaAddress(mintAddress)) return null;
-  const owner = new PublicKey(ownerAddress);
-  const mint = new PublicKey(mintAddress);
-  const accounts = await connection.getParsedTokenAccountsByOwner(owner, { mint });
-  return accounts.value.reduce((total, accountInfo) => {
-    const amount = accountInfo.account.data.parsed.info.tokenAmount.uiAmount;
-    return total + (typeof amount === "number" ? amount : 0);
-  }, 0);
+export type SolanaTokenBalance = {
+  amount: number;
+  formattedAmount: string;
+  decimals: number;
+};
+
+export async function getSolBalance(connection: Connection, ownerAddress: string) {
+  const lamports = await connection.getBalance(new PublicKey(ownerAddress));
+  return Number((lamports / LAMPORTS_PER_SOL).toFixed(6));
+}
+
+export async function getSplTokenBalance(
+  connection: Connection,
+  ownerAddress: string,
+  mintAddress: string
+): Promise<SolanaTokenBalance> {
+  const accounts = await connection.getParsedTokenAccountsByOwner(new PublicKey(ownerAddress), {
+    mint: new PublicKey(mintAddress),
+  });
+
+  let amount = 0;
+  let decimals = 0;
+
+  for (const account of accounts.value) {
+    const parsed = account.account.data.parsed.info.tokenAmount;
+    amount += Number(parsed.uiAmountString || 0);
+    decimals = parsed.decimals;
+  }
+
+  return {
+    amount,
+    formattedAmount: amount.toLocaleString(undefined, { maximumFractionDigits: 6 }),
+    decimals,
+  };
 }

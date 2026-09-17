@@ -1,6 +1,5 @@
-import { TINANAI_SOLANA_CONFIG } from "../config/tinanai-solana";
-import { safeUrl } from "../core/verify";
+import { toTrustedUrl } from '../core/verify';
 
-export function getPumpfunUrl() {
-  return safeUrl(TINANAI_SOLANA_CONFIG.pumpfunTokenUrl, ["pump.fun"]);
+export function resolvePumpfunUrl(value: string | undefined) {
+  return toTrustedUrl(value?.trim() || null, ['pump.fun', 'www.pump.fun']);
 }

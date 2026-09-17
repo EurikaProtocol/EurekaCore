@@ -1,15 +1,14 @@
-export type DeviceSignal = {
-  title: string;
-  detail: string;
-};
-
-export const DEVICE_SIGNALS: DeviceSignal[] = [
+export const DEVICE_SURFACES = [
   {
-    title: "Telemetry integrity",
-    detail: "Device-originated payloads should be attested before entering marketplace or AI workflows.",
+    title: 'Telemetry binding',
+    description: 'Use attested device identifiers before granting marketplace or automation permissions.',
   },
   {
-    title: "Permissioned access",
-    detail: "Every downstream consumer should inherit the original device access policy and proof context.",
+    title: 'Execution provenance',
+    description: 'Record where a proof or AI action originated before monetization or settlement.',
   },
-];
+  {
+    title: 'Operational controls',
+    description: 'Gate higher-risk actions behind user-owned wallets and verified hardware context.',
+  },
+] as const;

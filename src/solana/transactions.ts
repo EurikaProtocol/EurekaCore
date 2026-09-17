@@ -1,7 +1,11 @@
-import { TINANAI_SOLANA_CONFIG } from "../config/tinanai-solana";
-import { safeUrl } from "../core/verify";
+import { PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
 
-export function buildSolanaExplorerUrl(path: "address" | "tx" | "token", value: string) {
-  const cluster = TINANAI_SOLANA_CONFIG.network === "mainnet-beta" ? "" : `?cluster=${TINANAI_SOLANA_CONFIG.network}`;
-  return safeUrl(`https://solscan.io/${path}/${value}${cluster}`, ["solscan.io"]);
+export function buildSolTransferTransaction(fromAddress: string, toAddress: string, lamports: number) {
+  return new Transaction().add(
+    SystemProgram.transfer({
+      fromPubkey: new PublicKey(fromAddress),
+      toPubkey: new PublicKey(toAddress),
+      lamports,
+    })
+  );
 }
