@@ -330,7 +330,9 @@ function renderWallet() {
     await copyText(state.wallet.address);
     showToast('Wallet address copied.');
   });
-  document.getElementById('refreshWalletAction')?.addEventListener('click', refreshWalletState);
+  document.getElementById('refreshWalletAction')?.addEventListener('click', async () => {
+    await refreshWalletState('Wallet state refreshed.', { recordActivity: true });
+  });
   document.getElementById('sendForm')?.addEventListener('submit', handleSend);
 }
 
@@ -412,10 +414,6 @@ async function hydrateTokenDetails() {
   try {
     state.tokenDetails = await loadTokenDetails(APP_CONFIG);
     addNotification('Token telemetry loaded', `Live ${state.tokenDetails.symbol} metadata is now available from Base.`, 'success');
-    if (state.walletSession) {
-      await refreshWalletState();
-      return;
-    }
     render();
   } catch (error) {
     state.tokenDetails.totalSupply = 'Unavailable';
@@ -429,7 +427,7 @@ async function handleMetaMaskConnect() {
     state.wallet.status = 'Connecting MetaMask…';
     render();
     state.walletSession = await connectInjectedWallet('metamask', APP_CONFIG);
-    await refreshWalletState('MetaMask connected.');
+    await refreshWalletState('MetaMask connected.', { recordActivity: true });
   } catch (error) {
     state.wallet.status = error.message;
     addNotification('MetaMask connection failed', error.message, 'warning');
@@ -442,7 +440,7 @@ async function handleWalletConnect() {
     state.wallet.status = 'Initializing WalletConnect…';
     render();
     state.walletSession = await connectWalletConnect(APP_CONFIG);
-    await refreshWalletState('WalletConnect connected.');
+    await refreshWalletState('WalletConnect connected.', { recordActivity: true });
   } catch (error) {
     state.wallet.status = error.message;
     addNotification('WalletConnect unavailable', error.message, 'warning');
@@ -463,7 +461,7 @@ async function handleCoinbaseConnect() {
     }
 
     state.walletSession = session;
-    await refreshWalletState('Coinbase Wallet connected.');
+    await refreshWalletState('Coinbase Wallet connected.', { recordActivity: true });
   } catch (error) {
     state.wallet.status = error.message;
     addNotification('Coinbase Wallet unavailable', error.message, 'warning');
@@ -483,7 +481,7 @@ async function handleDisconnect() {
   render();
 }
 
-async function refreshWalletState(statusMessage = 'Wallet state refreshed.') {
+async function refreshWalletState(statusMessage = 'Wallet state refreshed.', options = {}) {
   if (!state.walletSession) {
     state.wallet.status = 'Connect a wallet first.';
     render();
@@ -498,7 +496,9 @@ async function refreshWalletState(statusMessage = 'Wallet state refreshed.') {
         ? `${statusMessage} ${snapshot.tokenBalance} ${state.tokenDetails.symbol} available on ${APP_CONFIG.network.name}.`
         : `Connected on ${snapshot.network}. Switch to ${APP_CONFIG.network.name} for ${state.tokenDetails.symbol} actions.`,
     };
-    recordActivity('Wallet refreshed', `${snapshot.address} synced on ${snapshot.network}.`);
+    if (options.recordActivity) {
+      recordActivity('Wallet refreshed', `${snapshot.address} synced on ${snapshot.network}.`);
+    }
     render();
   } catch (error) {
     state.wallet.status = `Wallet refresh failed: ${error.message}`;
@@ -522,7 +522,7 @@ async function handleSend(event) {
     await tx.wait();
     addNotification('Transfer confirmed', `${amount} ${state.tokenDetails.symbol} confirmed on Base.`, 'success');
     event.currentTarget.reset();
-    await refreshWalletState('Transfer confirmed.');
+    await refreshWalletState('Transfer confirmed.', { recordActivity: true });
   } catch (error) {
     state.wallet.status = `Transfer failed: ${error.message}`;
     addNotification('Transfer failed', error.message, 'warning');

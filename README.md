@@ -53,7 +53,6 @@ The repository includes:
 
 - `wrangler.toml` for the Worker + static assets deployment
 - `cloudflare/worker.js` to serve the Vite `dist` output
-- `public/_redirects` for SPA fallback behavior
 
 ## Project structure
 
