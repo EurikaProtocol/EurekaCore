@@ -77,8 +77,6 @@ const persistedState = loadPersistedState();
 const state = {
   ...initialState,
   ...persistedState,
-  wallet: { ...initialState.wallet },
-  tokenDetails: { ...initialState.tokenDetails },
 };
 let toastTimer = 0;
 
@@ -427,7 +425,8 @@ async function handleMetaMaskConnect() {
     state.wallet.status = 'Connecting MetaMask…';
     render();
     state.walletSession = await connectInjectedWallet('metamask', APP_CONFIG);
-    await refreshWalletState('MetaMask connected.', { recordActivity: true });
+    recordActivity('MetaMask connected', 'MetaMask approved and switching to Base.');
+    await refreshWalletState('MetaMask connected.');
   } catch (error) {
     state.wallet.status = error.message;
     addNotification('MetaMask connection failed', error.message, 'warning');
@@ -440,7 +439,8 @@ async function handleWalletConnect() {
     state.wallet.status = 'Initializing WalletConnect…';
     render();
     state.walletSession = await connectWalletConnect(APP_CONFIG);
-    await refreshWalletState('WalletConnect connected.', { recordActivity: true });
+    recordActivity('WalletConnect connected', 'WalletConnect v2 pairing completed for Base.');
+    await refreshWalletState('WalletConnect connected.');
   } catch (error) {
     state.wallet.status = error.message;
     addNotification('WalletConnect unavailable', error.message, 'warning');
@@ -461,7 +461,8 @@ async function handleCoinbaseConnect() {
     }
 
     state.walletSession = session;
-    await refreshWalletState('Coinbase Wallet connected.', { recordActivity: true });
+    recordActivity('Coinbase Wallet connected', 'Coinbase Wallet approved and switching to Base.');
+    await refreshWalletState('Coinbase Wallet connected.');
   } catch (error) {
     state.wallet.status = error.message;
     addNotification('Coinbase Wallet unavailable', error.message, 'warning');
@@ -522,7 +523,7 @@ async function handleSend(event) {
     await tx.wait();
     addNotification('Transfer confirmed', `${amount} ${state.tokenDetails.symbol} confirmed on Base.`, 'success');
     event.currentTarget.reset();
-    await refreshWalletState('Transfer confirmed.', { recordActivity: true });
+    await refreshWalletState('Transfer confirmed.');
   } catch (error) {
     state.wallet.status = `Transfer failed: ${error.message}`;
     addNotification('Transfer failed', error.message, 'warning');

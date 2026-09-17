@@ -28,7 +28,7 @@ function buildKnowledgeReply(config) {
 }
 
 function buildDeveloperReply(config) {
-  return `Run npm install && npm run build to produce dist, then deploy with npx wrangler deploy. The worker serves the Vite output on ${config.brand.domain} with SPA routing enabled.`;
+  return `Set VITE_WALLETCONNECT_PROJECT_ID if you want WalletConnect v2 pairing, then run npm install && npm run build to produce dist. Deploy with npx wrangler deploy and the worker will serve the Vite output on ${config.brand.domain} with SPA routing enabled.`;
 }
 
 export function getAgents() {
