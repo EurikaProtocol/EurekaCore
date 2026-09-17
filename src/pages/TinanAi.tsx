@@ -66,11 +66,7 @@ export function TinanAiPage() {
         <PageSection>
           <p className='text-xs uppercase tracking-[0.24em] text-tinan-cyan'>System prompt source</p>
           <h2 className='mt-2 text-2xl font-semibold text-white'>Canonical prompt text</h2>
-          <pre
-            aria-label='TINAN AI system prompt text'
-            className='mt-4 overflow-x-auto rounded-3xl border border-white/10 bg-black/30 p-4 text-xs leading-6 text-white/75 whitespace-pre-wrap'
-            tabIndex={0}
-          >
+          <pre className='mt-4 rounded-3xl border border-white/10 bg-black/30 p-4 text-xs leading-6 text-white/75 whitespace-pre-wrap'>
             {TINAN_SYSTEM_PROMPT_TEXT}
           </pre>
         </PageSection>
@@ -109,6 +105,14 @@ export function TinanAiPage() {
                 <h3 className='font-semibold text-white'>Runtime assertions</h3>
                 <ul className='mt-2 list-disc space-y-2 pl-5'>
                   {TINAN_SYSTEM_PROMPT.runtimeAssertions.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h3 className='font-semibold text-white'>Security</h3>
+                <ul className='mt-2 list-disc space-y-2 pl-5'>
+                  {TINAN_SYSTEM_PROMPT.security.map((item) => (
                     <li key={item}>{item}</li>
                   ))}
                 </ul>
