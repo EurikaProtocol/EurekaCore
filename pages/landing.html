@@ -1,0 +1,51 @@
+<section class="page-shell">
+  <div class="hero-grid">
+    <article class="hero-card glass-outline">
+      <p class="eyebrow">Base-native control plane</p>
+      <h1 class="page-title">Operate EurekaCore through TINAN AI.</h1>
+      <p class="page-copy">Launch the EUREKA ecosystem from <strong>www.tinaneureka.com</strong> with a wallet-aware landing page, live token telemetry, and Cloudflare-ready delivery.</p>
+      <div class="hero-actions">
+        <button class="button primary" id="heroConnectButton" type="button">Connect Wallet</button>
+        <a class="button ghost" href="/dashboard" data-route="/dashboard">Open Dashboard</a>
+      </div>
+      <div class="inline-actions">
+        <span class="status-chip success">Primary domain live</span>
+        <span class="status-chip" id="heroWalletStatus">Wallet disconnected</span>
+      </div>
+    </article>
+    <article class="stat-card glass-outline">
+      <p class="eyebrow">Network</p>
+      <h2 class="section-title">Base deployment</h2>
+      <div class="detail-grid">
+        <div class="detail-item">
+          <div class="detail-label">App</div>
+          <div class="detail-value">{{APP_NAME}}</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">AI</div>
+          <div class="detail-value">{{AI_NAME}}</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Token</div>
+          <div class="detail-value">{{TOKEN_SYMBOL}}</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Contract</div>
+          <div class="detail-value code">{{CONTRACT_ADDRESS}}</div>
+        </div>
+      </div>
+    </article>
+  </div>
+
+  <article class="page-panel glass-outline">
+    <p class="eyebrow">Ecosystem</p>
+    <h2 class="section-title">Everything the deployment needs in one place</h2>
+    <div class="ecosystem-grid" id="ecosystemGrid"></div>
+  </article>
+
+  <article class="page-panel glass-outline">
+    <p class="eyebrow">Roadmap</p>
+    <h2 class="section-title">The next four operator milestones</h2>
+    <div class="roadmap-grid" id="roadmapGrid"></div>
+  </article>
+</section>

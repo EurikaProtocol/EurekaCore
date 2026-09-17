@@ -1,0 +1,32 @@
+<section class="page-shell">
+  <article class="page-panel glass-outline">
+    <div class="status-row">
+      <div>
+        <p class="eyebrow">TINAN AI</p>
+        <h1 class="section-title">Prompt-aware operators for wallet, knowledge, token, and developer workflows</h1>
+      </div>
+      <span class="status-chip success" id="activeAgentBadge">Wallet Agent active</span>
+    </div>
+    <p class="section-copy">Prompt history stays in local storage so operators can revisit wallet checks, deployment instructions, and token-specific responses.</p>
+    <div class="agent-switches" id="agentSwitches"></div>
+  </article>
+
+  <div class="two-column">
+    <article class="page-panel glass-outline">
+      <p class="eyebrow">Chat</p>
+      <ol class="chat-feed" id="chatFeed" role="log" aria-live="polite" aria-relevant="additions text" tabindex="-1"></ol>
+      <form class="stack" id="chatForm">
+        <textarea id="chatInput" placeholder="Ask TINAN AI about wallets, token state, Base deployment, or the roadmap..."></textarea>
+        <div class="inline-actions">
+          <button class="button primary" type="submit">Send prompt</button>
+          <button class="button subtle" id="clearChat" type="button">Clear chat</button>
+        </div>
+      </form>
+    </article>
+    <article class="page-panel glass-outline">
+      <p class="eyebrow">Prompt History</p>
+      <div class="prompt-grid" id="quickPromptGrid"></div>
+      <ul class="list-stack prompt-history" id="promptHistory"></ul>
+    </article>
+  </div>
+</section>
