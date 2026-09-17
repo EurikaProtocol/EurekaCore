@@ -123,7 +123,8 @@ export function useEvmWallet(): EvmWalletController {
     try {
       const nextWalletConnectProvider = await EthereumProvider.init({
         projectId,
-        chains: [...SUPPORTED_WALLETCONNECT_CHAIN_IDS],
+        chains: [SUPPORTED_WALLETCONNECT_CHAIN_IDS[0]],
+        optionalChains: [...SUPPORTED_WALLETCONNECT_CHAIN_IDS],
         showQrModal: true,
       });
 
