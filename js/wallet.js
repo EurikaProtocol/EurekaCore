@@ -3,7 +3,6 @@ import {
   BrowserProvider,
   Contract,
   JsonRpcProvider,
-  formatEther,
   formatUnits,
   isAddress,
   parseUnits,
@@ -48,7 +47,7 @@ function getInjectedProvider(kind) {
   return (
     providers.find((provider) => provider?.isMetaMask && !provider?.isCoinbaseWallet) ??
     providers.find((provider) => provider?.isMetaMask) ??
-    providers[0]
+    null
   );
 }
 
@@ -215,7 +214,7 @@ export async function readWalletSnapshot(session, config, tokenDetails = FALLBAC
   const tokenContract = new Contract(config.token.contractAddress, ERC20_ABI, browserProvider);
   const tokenBalanceRaw = chainMatched ? await tokenContract.balanceOf(address) : 0n;
   const tokenBalance = chainMatched ? formatValue(tokenBalanceRaw, tokenDetails.decimals ?? config.token.decimals) : 'Unavailable';
-  const native = Number(formatEther(nativeBalance)).toLocaleString(undefined, { maximumFractionDigits: 4 });
+  const native = formatValue(nativeBalance, 18);
 
   return {
     connected: true,

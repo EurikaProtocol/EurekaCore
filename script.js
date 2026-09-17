@@ -80,6 +80,8 @@ const state = {
   ...persistedState,
 };
 let toastTimer = 0;
+let shouldFocusReceiveModal = false;
+let walletSessionListeners = null;
 
 boot();
 
@@ -104,7 +106,7 @@ function loadPersistedState() {
     if (!raw) return {};
     const parsed = JSON.parse(raw);
     return {
-      route: normalizeRoute(parsed.route ?? window.location.pathname),
+      route: normalizeRoute(window.location.pathname),
       receiveOpen: false,
       activeAgent: parsed.activeAgent ?? initialState.activeAgent,
       lastProviderType: parsed.lastProviderType ?? initialState.lastProviderType,
@@ -149,7 +151,7 @@ function pageMarkup() {
   return hydrateTemplate(routes[state.route], {
     APP_NAME: APP_CONFIG.app.name,
     AI_NAME: APP_CONFIG.app.aiName,
-    TOKEN_SYMBOL: state.tokenDetails.symbol,
+    TOKEN_SYMBOL: escapeHtml(state.tokenDetails.symbol),
     CONTRACT_ADDRESS: state.tokenDetails.contractAddress,
   });
 }
@@ -170,7 +172,7 @@ function render() {
       ${hydrateTemplate(footerTemplate, {
         APP_NAME: APP_CONFIG.app.name,
         AI_NAME: APP_CONFIG.app.aiName,
-        TOKEN_SYMBOL: state.tokenDetails.symbol,
+        TOKEN_SYMBOL: escapeHtml(state.tokenDetails.symbol),
         NETWORK_NAME: APP_CONFIG.network.name,
         DOMAIN: APP_CONFIG.brand.domain,
         CONTRACT_ADDRESS: state.tokenDetails.contractAddress,
@@ -181,7 +183,7 @@ function render() {
       RECEIVE_HIDDEN: String(!state.receiveOpen),
       RECEIVE_ADDRESS: state.wallet.address || 'Connect a wallet first',
       RECEIVE_EXPLORER_URL: state.wallet.explorerAddressUrl || state.tokenDetails.explorerUrl,
-      TOKEN_SYMBOL: state.tokenDetails.symbol,
+      TOKEN_SYMBOL: escapeHtml(state.tokenDetails.symbol),
     })}
     ${toastTemplate}
   `;
@@ -213,8 +215,7 @@ function attachGlobalHandlers() {
   });
 
   document.getElementById('closeReceiveModal')?.addEventListener('click', () => {
-    state.receiveOpen = false;
-    render();
+    closeReceiveModal();
   });
 
   document.getElementById('copyReceiveAddress')?.addEventListener('click', async () => {
@@ -230,6 +231,8 @@ function attachGlobalHandlers() {
     state.route = normalizeRoute(window.location.pathname);
     render();
   };
+
+  syncReceiveModal();
 }
 
 function renderPageState() {
@@ -324,8 +327,7 @@ function renderWallet() {
       showToast('Connect a wallet before opening receive mode.');
       return;
     }
-    state.receiveOpen = true;
-    render();
+    openReceiveModal();
   });
   document.getElementById('copyAddressAction')?.addEventListener('click', async () => {
     if (!state.wallet.address) {
@@ -339,6 +341,133 @@ function renderWallet() {
     await refreshWalletState('Wallet state refreshed.', { recordActivity: true });
   });
   document.getElementById('sendForm')?.addEventListener('submit', handleSend);
+}
+
+function openReceiveModal() {
+  state.receiveOpen = true;
+  shouldFocusReceiveModal = true;
+  render();
+}
+
+function closeReceiveModal({ returnFocus = true } = {}) {
+  if (!state.receiveOpen) return;
+  state.receiveOpen = false;
+  shouldFocusReceiveModal = false;
+  render();
+  if (returnFocus) {
+    window.requestAnimationFrame(() => {
+      document.getElementById('receiveAction')?.focus();
+    });
+  }
+}
+
+function syncReceiveModal() {
+  document.body.style.overflow = state.receiveOpen ? 'hidden' : '';
+  const modal = document.getElementById('receiveModal');
+  const dialog = document.getElementById('receiveDialog');
+  if (!modal || !dialog || !state.receiveOpen) return;
+
+  modal.addEventListener('click', (event) => {
+    if (event.target === modal) {
+      closeReceiveModal();
+    }
+  });
+
+  modal.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeReceiveModal();
+      return;
+    }
+
+    if (event.key !== 'Tab') return;
+
+    const focusableElements = getFocusableElements(dialog);
+    if (!focusableElements.length) {
+      event.preventDefault();
+      dialog.focus();
+      return;
+    }
+
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+
+    if (event.shiftKey && document.activeElement === firstElement) {
+      event.preventDefault();
+      lastElement.focus();
+      return;
+    }
+
+    if (!event.shiftKey && document.activeElement === lastElement) {
+      event.preventDefault();
+      firstElement.focus();
+    }
+  });
+
+  if (shouldFocusReceiveModal) {
+    shouldFocusReceiveModal = false;
+    window.requestAnimationFrame(() => {
+      const [firstElement] = getFocusableElements(dialog);
+      (firstElement ?? dialog).focus();
+    });
+  }
+}
+
+function getFocusableElements(container) {
+  return Array.from(
+    container.querySelectorAll(
+      'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )
+  ).filter((element) => !element.hasAttribute('hidden') && !element.getAttribute('aria-hidden'));
+}
+
+function clearWalletSessionListeners() {
+  walletSessionListeners?.();
+  walletSessionListeners = null;
+}
+
+function bindWalletSessionListeners(session) {
+  clearWalletSessionListeners();
+  const provider = session?.rawProvider;
+  if (!provider?.on) return;
+
+  const removeListener = provider.off?.bind(provider) ?? provider.removeListener?.bind(provider);
+  if (!removeListener) return;
+
+  const handleAccountsChanged = async (accounts = []) => {
+    if (state.walletSession !== session) return;
+    const [address] = accounts;
+    if (!address) {
+      clearWalletSession();
+      return;
+    }
+    state.walletSession.address = address;
+    await refreshWalletState('Wallet account updated.');
+  };
+
+  const handleChainChanged = async () => {
+    if (state.walletSession !== session) return;
+    await refreshWalletState('Wallet network updated.');
+  };
+
+  provider.on('accountsChanged', handleAccountsChanged);
+  provider.on('chainChanged', handleChainChanged);
+
+  walletSessionListeners = () => {
+    removeListener('accountsChanged', handleAccountsChanged);
+    removeListener('chainChanged', handleChainChanged);
+  };
+}
+
+function clearWalletSession(status = 'Wallet disconnected.') {
+  clearWalletSessionListeners();
+  state.walletSession = null;
+  state.lastProviderType = '';
+  state.wallet = {
+    ...initialState.wallet,
+    status,
+  };
+  render();
 }
 
 function renderTinanAi() {
@@ -433,6 +562,7 @@ async function handleMetaMaskConnect() {
     state.wallet.status = 'Connecting MetaMask…';
     render();
     state.walletSession = await connectInjectedWallet('metamask', APP_CONFIG);
+    bindWalletSessionListeners(state.walletSession);
     state.lastProviderType = 'metamask';
     recordActivity('MetaMask connected', 'MetaMask approved and switching to Base.');
     await refreshWalletState('MetaMask connected.');
@@ -448,6 +578,7 @@ async function handleWalletConnect() {
     state.wallet.status = 'Initializing WalletConnect…';
     render();
     state.walletSession = await connectWalletConnect(APP_CONFIG);
+    bindWalletSessionListeners(state.walletSession);
     state.lastProviderType = '';
     recordActivity('WalletConnect connected', 'WalletConnect v2 pairing completed for Base.');
     await refreshWalletState('WalletConnect connected.');
@@ -472,6 +603,7 @@ async function handleCoinbaseConnect() {
     }
 
     state.walletSession = session;
+    bindWalletSessionListeners(state.walletSession);
     state.lastProviderType = 'coinbase';
     recordActivity('Coinbase Wallet connected', 'Coinbase Wallet approved and switching to Base.');
     await refreshWalletState('Coinbase Wallet connected.');
@@ -483,7 +615,9 @@ async function handleCoinbaseConnect() {
 }
 
 async function handleDisconnect() {
-  await disconnectWallet(state.walletSession).catch(() => undefined);
+  const activeSession = state.walletSession;
+  clearWalletSessionListeners();
+  await disconnectWallet(activeSession).catch(() => undefined);
   state.walletSession = null;
   state.lastProviderType = '';
   state.wallet = {
@@ -590,15 +724,10 @@ async function restoreWalletSession() {
     const session = await restoreInjectedWallet(state.lastProviderType, APP_CONFIG);
     if (!session) return;
     state.walletSession = session;
+    bindWalletSessionListeners(state.walletSession);
     await refreshWalletState('Wallet restored.');
   } catch {
-    state.walletSession = null;
-    state.lastProviderType = '';
-    state.wallet = {
-      ...initialState.wallet,
-      status: 'Reconnect your wallet to refresh Base balances.',
-    };
-    render();
+    clearWalletSession('Reconnect your wallet to refresh Base balances.');
   }
 }
 
