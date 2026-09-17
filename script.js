@@ -16,9 +16,9 @@ import {
   connectWalletConnect,
   copyText,
   disconnectWallet,
-  getBaseScanUrl,
   loadTokenDetails,
   readWalletSnapshot,
+  restoreInjectedWallet,
   sendToken,
   shortenAddress,
 } from './js/wallet.js';
@@ -37,6 +37,7 @@ const initialState = {
   route: normalizeRoute(window.location.pathname),
   receiveOpen: false,
   activeAgent: 'wallet-agent',
+  lastProviderType: '',
   toastMessage: '',
   walletSession: null,
   wallet: {
@@ -82,11 +83,15 @@ let toastTimer = 0;
 
 boot();
 
-function boot() {
+async function boot() {
   if (!app) return;
   recordActivity('Application ready', `${APP_CONFIG.app.name} initialized for ${APP_CONFIG.brand.domain}.`);
   render();
-  hydrateTokenDetails();
+  try {
+    await hydrateTokenDetails();
+  } finally {
+    await restoreWalletSession().catch(() => undefined);
+  }
 }
 
 function normalizeRoute(value) {
@@ -102,6 +107,7 @@ function loadPersistedState() {
       route: normalizeRoute(parsed.route ?? window.location.pathname),
       receiveOpen: false,
       activeAgent: parsed.activeAgent ?? initialState.activeAgent,
+      lastProviderType: parsed.lastProviderType ?? initialState.lastProviderType,
       activity: Array.isArray(parsed.activity) ? parsed.activity.slice(0, 8) : initialState.activity,
       notifications: Array.isArray(parsed.notifications) ? parsed.notifications.slice(0, 8) : initialState.notifications,
       promptHistory: Array.isArray(parsed.promptHistory) ? parsed.promptHistory.slice(0, 12) : initialState.promptHistory,
@@ -116,6 +122,7 @@ function persistState() {
   const snapshot = {
     route: state.route,
     activeAgent: state.activeAgent,
+    lastProviderType: state.lastProviderType,
     activity: state.activity.slice(0, 8),
     notifications: state.notifications.slice(0, 8),
     promptHistory: state.promptHistory.slice(0, 12),
@@ -352,7 +359,8 @@ function renderTinanAi() {
 
   const chatFeed = document.getElementById('chatFeed');
   if (chatFeed) {
-    chatFeed.innerHTML = state.chat.map((entry) => `<article class="chat-bubble ${entry.role}"><span class="chat-meta">${entry.role === 'assistant' ? agents.find((agent) => agent.id === entry.agentId)?.name ?? APP_CONFIG.app.aiName : 'You'} • ${entry.createdAt}</span><p>${escapeHtml(entry.content)}</p></article>`).join('');
+    chatFeed.innerHTML = state.chat.map((entry) => `<li class="chat-bubble ${entry.role}"><span class="chat-meta">${entry.role === 'assistant' ? agents.find((agent) => agent.id === entry.agentId)?.name ?? APP_CONFIG.app.aiName : 'You'} • ${entry.createdAt}</span><p>${escapeHtml(entry.content)}</p></li>`).join('');
+    chatFeed.lastElementChild?.scrollIntoView({ block: 'nearest' });
   }
 
   const quickPromptGrid = document.getElementById('quickPromptGrid');
@@ -369,7 +377,7 @@ function renderTinanAi() {
   const promptHistory = document.getElementById('promptHistory');
   if (promptHistory) {
     promptHistory.innerHTML = state.promptHistory.length
-      ? state.promptHistory.map((entry) => `<li class="activity-item"><div class="list-row"><strong>${escapeHtml(entry.prompt)}</strong><span class="notification-time">${entry.createdAt}</span></div><p class="activity-copy">${entry.agent}</p></li>`).join('')
+      ? state.promptHistory.map((entry) => `<li class="activity-item"><div class="list-row"><strong>${escapeHtml(entry.prompt)}</strong><span class="notification-time">${escapeHtml(entry.createdAt)}</span></div><p class="activity-copy">${escapeHtml(entry.agent)}</p></li>`).join('')
       : '<li class="empty-card">No prompts yet.</li>';
   }
 
@@ -425,6 +433,7 @@ async function handleMetaMaskConnect() {
     state.wallet.status = 'Connecting MetaMask…';
     render();
     state.walletSession = await connectInjectedWallet('metamask', APP_CONFIG);
+    state.lastProviderType = 'metamask';
     recordActivity('MetaMask connected', 'MetaMask approved and switching to Base.');
     await refreshWalletState('MetaMask connected.');
   } catch (error) {
@@ -439,6 +448,7 @@ async function handleWalletConnect() {
     state.wallet.status = 'Initializing WalletConnect…';
     render();
     state.walletSession = await connectWalletConnect(APP_CONFIG);
+    state.lastProviderType = '';
     recordActivity('WalletConnect connected', 'WalletConnect v2 pairing completed for Base.');
     await refreshWalletState('WalletConnect connected.');
   } catch (error) {
@@ -455,12 +465,14 @@ async function handleCoinbaseConnect() {
     const session = await connectCoinbaseWallet(APP_CONFIG);
     if (session?.deepLinked) {
       state.wallet.status = session.message;
+      state.lastProviderType = '';
       addNotification('Coinbase Wallet handoff started', session.message, 'success');
       render();
       return;
     }
 
     state.walletSession = session;
+    state.lastProviderType = 'coinbase';
     recordActivity('Coinbase Wallet connected', 'Coinbase Wallet approved and switching to Base.');
     await refreshWalletState('Coinbase Wallet connected.');
   } catch (error) {
@@ -473,6 +485,7 @@ async function handleCoinbaseConnect() {
 async function handleDisconnect() {
   await disconnectWallet(state.walletSession).catch(() => undefined);
   state.walletSession = null;
+  state.lastProviderType = '';
   state.wallet = {
     ...initialState.wallet,
     status: 'Wallet disconnected.',
@@ -542,7 +555,13 @@ function handlePrompt(event) {
 
   const agents = getAgents();
   const agent = agents.find((entry) => entry.id === state.activeAgent) ?? agents[0];
-  state.chat.unshift({
+  state.chat.push({
+    role: 'user',
+    agentId: state.activeAgent,
+    createdAt: nowLabel(),
+    content: prompt,
+  });
+  state.chat.push({
     role: 'assistant',
     agentId: state.activeAgent,
     createdAt: nowLabel(),
@@ -554,18 +573,33 @@ function handlePrompt(event) {
       config: APP_CONFIG,
     }),
   });
-  state.chat.unshift({
-    role: 'user',
-    agentId: state.activeAgent,
-    createdAt: nowLabel(),
-    content: prompt,
-  });
-  state.chat = state.chat.slice(0, 16);
+  state.chat = state.chat.slice(-16);
   state.promptHistory.unshift({ prompt, agent: agent.name, createdAt: nowLabel() });
   state.promptHistory = state.promptHistory.slice(0, 12);
   recordActivity('TINAN AI prompt', `${agent.name}: ${prompt}`);
   input.value = '';
   render();
+}
+
+async function restoreWalletSession() {
+  if (!state.lastProviderType || !['metamask', 'coinbase'].includes(state.lastProviderType)) {
+    return;
+  }
+
+  try {
+    const session = await restoreInjectedWallet(state.lastProviderType, APP_CONFIG);
+    if (!session) return;
+    state.walletSession = session;
+    await refreshWalletState('Wallet restored.');
+  } catch {
+    state.walletSession = null;
+    state.lastProviderType = '';
+    state.wallet = {
+      ...initialState.wallet,
+      status: 'Reconnect your wallet to refresh Base balances.',
+    };
+    render();
+  }
 }
 
 function addNotification(title, copy, tone) {

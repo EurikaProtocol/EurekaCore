@@ -74,14 +74,17 @@ async function requestConfiguredNetwork(rawProvider, config) {
   }
 }
 
-async function buildWalletSession(rawProvider, providerType, config) {
-  const accounts = await rawProvider.request({ method: 'eth_requestAccounts' });
+async function buildWalletSession(rawProvider, providerType, config, options = {}) {
+  const accounts = await rawProvider.request({ method: options.requestAccounts === false ? 'eth_accounts' : 'eth_requestAccounts' });
   const address = accounts?.[0];
   if (!address || !isAddress(address)) {
+    if (options.optional) return null;
     throw new Error('A valid wallet address was not returned.');
   }
 
-  await requestConfiguredNetwork(rawProvider, config);
+  if (options.switchNetwork !== false) {
+    await requestConfiguredNetwork(rawProvider, config);
+  }
 
   const browserProvider = new BrowserProvider(rawProvider);
   return {
@@ -99,6 +102,16 @@ export async function connectInjectedWallet(providerType, config) {
   }
 
   return buildWalletSession(provider, providerType, config);
+}
+
+export async function restoreInjectedWallet(providerType, config) {
+  const provider = getInjectedProvider(providerType);
+  if (!provider) return null;
+  return buildWalletSession(provider, providerType, config, {
+    requestAccounts: false,
+    switchNetwork: false,
+    optional: true,
+  });
 }
 
 export async function connectCoinbaseWallet(config) {
