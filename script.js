@@ -81,12 +81,14 @@ const state = {
 };
 let toastTimer = 0;
 let shouldFocusReceiveModal = false;
+let receiveModalListeners = null;
 let walletSessionListeners = null;
 
 boot();
 
 async function boot() {
   if (!app) return;
+  window.addEventListener('popstate', handlePopState);
   recordActivity('Application ready', `${APP_CONFIG.app.name} initialized for ${APP_CONFIG.brand.domain}.`);
   render();
   try {
@@ -98,6 +100,11 @@ async function boot() {
 
 function normalizeRoute(value) {
   return routes[value] ? value : '/';
+}
+
+function handlePopState() {
+  state.route = normalizeRoute(window.location.pathname);
+  render();
 }
 
 function loadPersistedState() {
@@ -226,11 +233,6 @@ function attachGlobalHandlers() {
     await copyText(state.wallet.address);
     showToast('Receive address copied.');
   });
-
-  window.onpopstate = () => {
-    state.route = normalizeRoute(window.location.pathname);
-    render();
-  };
 
   syncReceiveModal();
 }
@@ -362,18 +364,19 @@ function closeReceiveModal({ returnFocus = true } = {}) {
 }
 
 function syncReceiveModal() {
+  clearReceiveModalListeners();
   document.body.style.overflow = state.receiveOpen ? 'hidden' : '';
   const modal = document.getElementById('receiveModal');
   const dialog = document.getElementById('receiveDialog');
   if (!modal || !dialog || !state.receiveOpen) return;
 
-  modal.addEventListener('click', (event) => {
+  const handleBackdropClick = (event) => {
     if (event.target === modal) {
       closeReceiveModal();
     }
-  });
+  };
 
-  modal.addEventListener('keydown', (event) => {
+  const handleKeydown = (event) => {
     if (event.key === 'Escape') {
       event.preventDefault();
       closeReceiveModal();
@@ -391,6 +394,11 @@ function syncReceiveModal() {
 
     const firstElement = focusableElements[0];
     const lastElement = focusableElements[focusableElements.length - 1];
+    if (!dialog.contains(document.activeElement)) {
+      event.preventDefault();
+      (event.shiftKey ? lastElement : firstElement).focus();
+      return;
+    }
 
     if (event.shiftKey && document.activeElement === firstElement) {
       event.preventDefault();
@@ -402,9 +410,17 @@ function syncReceiveModal() {
       event.preventDefault();
       firstElement.focus();
     }
-  });
+  };
 
-  if (shouldFocusReceiveModal) {
+  modal.addEventListener('click', handleBackdropClick);
+  document.addEventListener('keydown', handleKeydown);
+
+  receiveModalListeners = () => {
+    modal.removeEventListener('click', handleBackdropClick);
+    document.removeEventListener('keydown', handleKeydown);
+  };
+
+  if (shouldFocusReceiveModal || !dialog.contains(document.activeElement)) {
     shouldFocusReceiveModal = false;
     window.requestAnimationFrame(() => {
       const [firstElement] = getFocusableElements(dialog);
@@ -419,6 +435,11 @@ function getFocusableElements(container) {
       'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
     )
   ).filter((element) => !element.hasAttribute('hidden') && !element.getAttribute('aria-hidden'));
+}
+
+function clearReceiveModalListeners() {
+  receiveModalListeners?.();
+  receiveModalListeners = null;
 }
 
 function clearWalletSessionListeners() {

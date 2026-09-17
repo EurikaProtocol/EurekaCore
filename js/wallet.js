@@ -28,6 +28,10 @@ function formatValue(value, decimals, maximumFractionDigits = 4) {
   return `${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}${visibleFraction ? `.${visibleFraction}` : ''}`;
 }
 
+function isPositiveDecimalString(value) {
+  return /^\d*\.?\d+$/.test(value) && !/^0*\.0*$/.test(value);
+}
+
 function getCandidateProviders() {
   if (!window.ethereum) return [];
   if (Array.isArray(window.ethereum.providers) && window.ethereum.providers.length) {
@@ -146,18 +150,7 @@ export async function connectWalletConnect(config) {
     },
   });
 
-  await rawProvider.enable();
-  await requestConfiguredNetwork(rawProvider, config);
-  const browserProvider = new BrowserProvider(rawProvider);
-  const signer = await browserProvider.getSigner();
-  const address = await signer.getAddress();
-
-  return {
-    providerType: 'walletconnect',
-    rawProvider,
-    browserProvider,
-    address,
-  };
+  return buildWalletSession(rawProvider, 'walletconnect', config);
 }
 
 export async function disconnectWallet(session) {
@@ -239,7 +232,7 @@ export async function sendToken(session, recipient, amount, config, decimals = c
     throw new Error('Recipient address is invalid.');
   }
 
-  if (!amount || Number(amount) <= 0) {
+  if (!amount || !isPositiveDecimalString(amount)) {
     throw new Error('Amount must be greater than zero.');
   }
 
