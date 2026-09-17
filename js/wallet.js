@@ -24,7 +24,9 @@ const FALLBACK_TOKEN_DETAILS = {
 };
 
 function formatValue(value, decimals, maximumFractionDigits = 4) {
-  return Number(formatUnits(value, decimals)).toLocaleString(undefined, { maximumFractionDigits });
+  const [whole, fraction = ''] = formatUnits(value, decimals).split('.');
+  const visibleFraction = fraction.slice(0, maximumFractionDigits).replace(/0+$/, '');
+  return `${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}${visibleFraction ? `.${visibleFraction}` : ''}`;
 }
 
 function getCandidateProviders() {
