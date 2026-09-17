@@ -111,4 +111,8 @@ ${TINAN_SYSTEM_PROMPT.codingStyle.map((item) => `* ${item}`).join('\n')}
 Response Format
 
 ${TINAN_SYSTEM_PROMPT.responseFormat.map((item, index) => `${index + 1}. ${item}`).join('\n')}
+
+Runtime Assertions
+
+${TINAN_SYSTEM_PROMPT.runtimeAssertions.map((item) => `* ${item}`).join('\n')}
 `;

@@ -66,7 +66,11 @@ export function TinanAiPage() {
         <PageSection>
           <p className='text-xs uppercase tracking-[0.24em] text-tinan-cyan'>System prompt source</p>
           <h2 className='mt-2 text-2xl font-semibold text-white'>Canonical prompt text</h2>
-          <pre className='mt-4 overflow-x-auto rounded-3xl border border-white/10 bg-black/30 p-4 text-xs leading-6 text-white/75 whitespace-pre-wrap'>
+          <pre
+            aria-label='TINAN AI system prompt text'
+            className='mt-4 overflow-x-auto rounded-3xl border border-white/10 bg-black/30 p-4 text-xs leading-6 text-white/75 whitespace-pre-wrap'
+            tabIndex={0}
+          >
             {TINAN_SYSTEM_PROMPT_TEXT}
           </pre>
         </PageSection>
