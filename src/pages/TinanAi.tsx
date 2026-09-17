@@ -107,7 +107,7 @@ export function TinanAiPage() {
               </div>
               <div>
                 <h3 className='font-semibold text-white'>Runtime assertions</h3>
-                <ul className='mt-2 space-y-2'>
+                <ul className='mt-2 list-disc space-y-2 pl-5'>
                   {TINAN_SYSTEM_PROMPT.runtimeAssertions.map((item) => (
                     <li key={item}>{item}</li>
                   ))}

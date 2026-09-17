@@ -39,7 +39,7 @@ export const TINAN_SYSTEM_PROMPT = {
   contractStandards: {
     tokenName: 'EurekaCore',
     tokenSymbol: 'EURK',
-    decimals: '18',
+    decimals: 18,
     networks: ['Ethereum', 'Base', 'Arbitrum', 'BNB Chain'],
   },
   cloudflare: ['Workers', 'Pages', 'R2', 'D1', 'KV', 'Durable Objects', 'Queues'],
