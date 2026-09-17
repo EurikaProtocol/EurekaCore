@@ -1,0 +1,53 @@
+<section class="page-shell">
+  <article class="page-panel glass-outline">
+    <p class="eyebrow">Dashboard</p>
+    <h1 class="section-title">Portfolio, balances, activity, and notifications</h1>
+    <p class="section-copy">Track the connected Base wallet, current EUREKA position, and the latest operator events from a single overview.</p>
+  </article>
+
+  <div class="metrics-grid">
+    <article class="metric-card glass-outline">
+      <p class="metric-label">Portfolio</p>
+      <p class="metric-value" id="portfolioValue">Connect wallet</p>
+      <p class="metric-meta" id="portfolioMeta">Base-native summary</p>
+    </article>
+    <article class="metric-card glass-outline">
+      <p class="metric-label">Wallet Balance</p>
+      <p class="metric-value" id="walletBalanceValue">0 ETH</p>
+      <p class="metric-meta" id="walletBalanceMeta">Native Base balance</p>
+    </article>
+    <article class="metric-card glass-outline">
+      <p class="metric-label">EUREKA Balance</p>
+      <p class="metric-value" id="tokenBalanceValue">0 EUREKA</p>
+      <p class="metric-meta" id="tokenBalanceMeta">Token balance on Base</p>
+    </article>
+    <article class="metric-card glass-outline">
+      <p class="metric-label">Notifications</p>
+      <p class="metric-value" id="notificationCount">0</p>
+      <p class="metric-meta" id="networkStatusMeta">Status feed</p>
+    </article>
+  </div>
+
+  <div class="dashboard-grid">
+    <article class="page-panel glass-outline">
+      <div class="status-row">
+        <div>
+          <p class="eyebrow">Activity</p>
+          <h2 class="section-title">Operator timeline</h2>
+        </div>
+        <a class="button ghost" href="/wallet" data-route="/wallet">Manage wallet</a>
+      </div>
+      <ul class="list-stack" id="activityList"></ul>
+    </article>
+    <article class="page-panel glass-outline">
+      <div class="status-row">
+        <div>
+          <p class="eyebrow">Notifications</p>
+          <h2 class="section-title">Runtime updates</h2>
+        </div>
+        <span class="status-chip success" id="networkStatusValue">Base ready</span>
+      </div>
+      <ul class="list-stack" id="notificationsList"></ul>
+    </article>
+  </div>
+</section>

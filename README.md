@@ -1,59 +1,70 @@
-# TinanEureka (EurekaCore)
+# EurekaCore
 
-Production-oriented EUREKA Protocol frontend built with React 19, TypeScript, Vite, Tailwind, React Router, ethers v6, Solana Web3.js, Solana Wallet Adapter, WalletConnect, MetaMask, Phantom, and Framer Motion.
+EurekaCore is a Cloudflare-ready frontend for **TINAN AI** and the **EUREKA** token on **Base**.
 
-## Runtime goals
+## Production profile
 
-- Keep **EKA** on EVM and **TinanAI Token** on Solana strictly separate.
-- Never hardcode unofficial Solana mint values.
-- Require explicit wallet approval for every network switch and transaction.
-- Render only trusted external links for explorers, wallets, and Pump.fun.
-- Avoid fake market data in production.
+- Primary domain: `www.tinaneureka.com`
+- App: `EurekaCore`
+- AI: `TINAN AI`
+- Token: `EUREKA`
+- Network: `Base`
+- Contract: `0x4042973c0863cca0d73f028ca98465f44f0e6f97`
 
-## Required environment variables
+## Features
 
-Copy `.env.example` and configure:
+- Emerald animated landing page with hero, ecosystem, and roadmap sections
+- Dashboard with portfolio, wallet balance, EUREKA balance, activity, and notifications
+- Wallet flows for MetaMask, WalletConnect v2, Coinbase Wallet, send, and receive
+- TINAN AI chat with prompt history plus wallet, knowledge, token, and developer agents
+- Token page with live name, symbol, total supply, decimals, contract address, and BaseScan access
+- Shared runtime config in `/js/config.js`
 
-- `VITE_WALLETCONNECT_PROJECT_ID`
-- `VITE_SOLANA_NETWORK`
-- `VITE_SOLANA_RPC_URL`
-- `VITE_TINANAI_SOLANA_MINT`
-- `VITE_PUMPFUN_TOKEN_URL`
-- `VITE_TINANAI_METADATA_URI`
-
-Current official Solana mint value:
-
-- `VITE_TINANAI_SOLANA_MINT=6FQCFFmcCE4WY2X2hxquMnKgnzwSy1sJLX5VuRMe9Ddp`
-
-## Local development
+## Local setup
 
 ```bash
-npm install --legacy-peer-deps
+npm install
 npm run build
 ```
 
-## Cloudflare Pages
+Optional environment variables:
 
-- Framework preset: `Vite`
-- Root directory: `/`
-- Build command: `npm run build`
-- Output directory: `dist`
-- Node version: `22`
-- Env: `NODE_VERSION=22`, `NPM_FLAGS=--legacy-peer-deps`
+```bash
+cp .env.example .env
+```
 
-SPA routing fallback is handled by `public/_redirects`.
+- `VITE_WALLETCONNECT_PROJECT_ID` enables WalletConnect v2 pairing.
 
-## Routes
+## Cloudflare deploy
 
-- `/`
-- `/dashboard`
-- `/wallet`
-- `/tinan-ai`
-- `/marketplace`
-- `/whitepaper`
-- `/staking`
-- `/swap`
-- `/explorer`
-- `/settings`
-- `/tinan-ai-token`
-- `/pumpfun`
+Build:
+
+```bash
+npm install && npm run build
+```
+
+Deploy:
+
+```bash
+npx wrangler deploy
+```
+
+The repository includes:
+
+- `wrangler.toml` for the Worker + static assets deployment
+- `cloudflare/worker.js` to serve the Vite `dist` output
+- `public/_redirects` for SPA fallback behavior
+
+## Project structure
+
+- `index.html`
+- `styles.css`
+- `script.js`
+- `config.js`
+- `assets/`
+- `components/`
+- `pages/`
+- `css/glass.css`
+- `js/config.js`
+- `js/wallet.js`
+- `js/tinan-agent.js`

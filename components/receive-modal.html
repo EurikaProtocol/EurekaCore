@@ -1,0 +1,20 @@
+<div class="modal-backdrop {{RECEIVE_OPEN_CLASS}}" id="receiveModal" aria-hidden="{{RECEIVE_HIDDEN}}">
+  <div class="modal glass-panel glass-outline">
+    <div class="status-row">
+      <div>
+        <p class="eyebrow">Receive</p>
+        <h3>Share your Base wallet</h3>
+      </div>
+      <button class="button subtle" id="closeReceiveModal" type="button">Close</button>
+    </div>
+    <p class="helper-copy">Use this address to receive ETH or {{TOKEN_SYMBOL}} on Base.</p>
+    <div class="detail-item">
+      <div class="detail-label">Wallet address</div>
+      <div class="detail-value code" id="receiveAddressValue">{{RECEIVE_ADDRESS}}</div>
+    </div>
+    <div class="inline-actions">
+      <button class="button primary" id="copyReceiveAddress" type="button">Copy address</button>
+      <a class="button ghost" id="receiveExplorerLink" href="{{RECEIVE_EXPLORER_URL}}" target="_blank" rel="noreferrer">Open BaseScan</a>
+    </div>
+  </div>
+</div>
