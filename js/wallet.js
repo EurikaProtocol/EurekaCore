@@ -205,9 +205,14 @@ export async function readWalletSnapshot(session, config, tokenDetails = FALLBAC
   const nativeBalance = await browserProvider.getBalance(address);
   const chainMatched = chainId === config.network.chainId;
   const tokenContract = new Contract(config.token.contractAddress, ERC20_ABI, browserProvider);
-  const tokenBalanceRaw = chainMatched ? await tokenContract.balanceOf(address) : 0n;
-  const tokenBalance = chainMatched ? formatValue(tokenBalanceRaw, tokenDetails.decimals ?? config.token.decimals) : 'Unavailable';
+  const tokenBalanceRaw = chainMatched ? await tokenContract.balanceOf(address).catch(() => null) : 0n;
+  const tokenBalance = chainMatched
+    ? tokenBalanceRaw === null
+      ? 'Unavailable'
+      : formatValue(tokenBalanceRaw, tokenDetails.decimals ?? config.token.decimals)
+    : 'Unavailable';
   const native = formatValue(nativeBalance, 18);
+  const tokenSymbol = tokenDetails.symbol ?? config.token.symbol;
 
   return {
     connected: true,
@@ -218,7 +223,7 @@ export async function readWalletSnapshot(session, config, tokenDetails = FALLBAC
     nativeSymbol: config.network.nativeSymbol,
     nativeBalance: native,
     tokenBalance,
-    portfolio: chainMatched ? `${native} ${config.network.nativeSymbol} • ${tokenBalance} ${tokenDetails.symbol ?? config.token.symbol}` : 'Switch to Base',
+    portfolio: chainMatched ? `${native} ${config.network.nativeSymbol} • ${tokenBalance} ${tokenSymbol}` : 'Switch to Base',
     explorerAddressUrl: `${config.network.explorerBaseUrl}/address/${address}`,
   };
 }

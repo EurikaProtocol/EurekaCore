@@ -616,8 +616,7 @@ async function handleCoinbaseConnect() {
     render();
     const session = await connectCoinbaseWallet(APP_CONFIG);
     if (session?.deepLinked) {
-      state.wallet.status = session.message;
-      state.lastProviderType = '';
+      clearWalletSession(session.message);
       addNotification('Coinbase Wallet handoff started', session.message, 'success');
       render();
       return;
