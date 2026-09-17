@@ -176,14 +176,15 @@ export function useEvmWallet(): EvmWalletController {
   }, []);
 
   const switchToEthereumMainnet = useCallback(async () => {
-    if (!window.ethereum) {
-      setStatus('MetaMask is required for an in-app network switch request.');
+    const activeProvider = state.providerType === 'walletconnect' ? walletConnectProvider : window.ethereum;
+    if (!activeProvider) {
+      setStatus(state.providerType === 'walletconnect' ? 'Reconnect WalletConnect before requesting an in-app network switch.' : 'MetaMask is required for an in-app network switch request.');
       return;
     }
 
     setBusy(true);
     try {
-      await requestEthereumMainnet(window.ethereum);
+      await requestEthereumMainnet(activeProvider);
       setStatus('Ethereum Mainnet switch requested. Confirm the wallet prompt if it appears.');
       if (provider && state.address && state.providerType) {
         await syncWallet(provider, state.address, state.providerType);
@@ -193,7 +194,7 @@ export function useEvmWallet(): EvmWalletController {
     } finally {
       setBusy(false);
     }
-  }, [provider, state.address, state.providerType, syncWallet]);
+  }, [provider, state.address, state.providerType, syncWallet, walletConnectProvider]);
 
   const sendTransfer = useCallback(
     async (to: string, amount: string) => {

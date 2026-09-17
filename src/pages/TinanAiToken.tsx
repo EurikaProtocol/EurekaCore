@@ -15,6 +15,8 @@ export function TinanAiTokenPage() {
 
   useEffect(() => {
     if (!connected || !publicKeyBase58) {
+      setSolBalance('0');
+      setTokenBalance(TINANAI_SOLANA.mintAddress ? '0' : 'Mint not configured');
       setStatus('Connect Phantom to read wallet-linked Solana balances.');
       return;
     }

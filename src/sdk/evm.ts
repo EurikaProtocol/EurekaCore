@@ -5,6 +5,10 @@ import { getEvmNetworkConfig } from '../config/networks';
 import { isValidEvmAddress } from '../core/verify';
 import { ERC20_ABI } from '../lib/erc20';
 
+type RequestableEthereumProvider = {
+  request: (args: { method: string; params?: unknown[] | object }) => Promise<unknown>;
+};
+
 const BURN_ADDRESSES = [
   '0x0000000000000000000000000000000000000000',
   '0x000000000000000000000000000000000000dEaD',
@@ -89,7 +93,7 @@ export async function sendEkaTransfer(provider: BrowserProvider, to: string, amo
   return tx;
 }
 
-export async function requestWatchEkaAsset(ethereum: Window['ethereum']) {
+export async function requestWatchEkaAsset(ethereum: RequestableEthereumProvider) {
   return ethereum?.request({
     method: 'wallet_watchAsset',
     params: {
@@ -103,7 +107,7 @@ export async function requestWatchEkaAsset(ethereum: Window['ethereum']) {
   });
 }
 
-export async function requestEthereumMainnet(ethereum: Window['ethereum']) {
+export async function requestEthereumMainnet(ethereum: RequestableEthereumProvider) {
   await ethereum?.request({
     method: 'wallet_switchEthereumChain',
     params: [{ chainId: '0x1' }],
