@@ -1,115 +1,21 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EUREKA</title>
-  <link rel="stylesheet" href="assets/css/styles.css">
-</head>
-<body>
-
-<header class="nav">
-  <a href="#" class="brand">
-    <img src="assets/icons/eureka-logo.svg" class="brand-logo" alt="Eureka">
-    <span>EUREKA</span>
-  </a>
-
-  <nav class="desktop">
-    <a href="#platform">Platform</a>
-    <a href="#chains">Chains</a>
-    <a href="#vision">Vision</a>
-    <a href="#token">Token</a>
-  </nav>
-
-  <a class="nav-btn" href="#">Enter Eureka</a>
-
-  <button class="menu">☰</button>
-</header>
-
-<div id="toast" class="toast"></div>
-
-<section class="hero">
-
-  <div class="overlay"></div>
-
-  <div class="content">
-
-    <div class="badge">● THE NEXT WEB3 INTERFACE</div>
-
-    <h1>
-      The Final Block
-      <br>
-      of the
-      <span>Blockchain.</span>
-    </h1>
-
-    <p>
-      One app. Every chain. Eureka creates a seamless gateway to the
-      entire blockchain universe without fragmentation.
-    </p>
-
-    <div class="buttons">
-      <a class="btn primary">Explore Eureka →</a>
-      <a class="btn secondary">Discover the vision</a>
-    </div>
-
-    <div class="stats">
-      <div>
-        <h2>01</h2>
-        <small>UNIFIED INTERFACE</small>
-      </div>
-
-      <div>
-        <h2>∞</h2>
-        <small>CHAINS & NETWORKS</small>
-      </div>
-
-      <div>
-        <h2>24/7</h2>
-        <small>GLOBAL ACCESS</small>
-      </div>
-    </div>
-
-  </div>
-
-</section>
-
-<section id="platform" class="section">
-
-  <h2>Every blockchain. One destination.</h2>
-
-  <p>
-    Eureka is designed as an all-in-one home for blockchain users.
-  </p>
-
-</section>
-
-<div id="walletModal" class="wallet-modal">
-  <div class="wallet-card">
-    <h2>Connect Wallet</h2>
-
-    <button id="connectBtn" class="wallet-btn">
-      <img src="assets/icons/wallet.svg" alt="MetaMask">
-      MetaMask
-    </button>
-
-    <div id="walletInfo" style="display:none;">
-      <p>Connected</p>
-      <h3 id="walletAddress"></h3>
-      <button id="disconnectBtn">Disconnect</button>
-    </div>
-  </div>
-</div>
-
-<footer>
-  <a href="#" class="brand">
-    <img src="assets/icons/eureka-logo.svg" class="brand-logo" alt="Eureka">
-    <span>EUREKA</span>
-  </a>
-  <p>&copy; <span id="year"></span> EurikaProtocol. All rights reserved.</p>
-</footer>
-
-<script src="assets/js/main.js"></script>
-
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TinanEureka | EurekaCore</title>
+    <meta
+      name="description"
+      content="TinanEureka is a futuristic premium Web3 control plane for wallet, AI chat, swap, staking, explorer, and Eureka token operations."
+    />
+    <meta name="theme-color" content="#0A0A0A" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+  </head>
+  <body class="bg-tinan-black">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>
