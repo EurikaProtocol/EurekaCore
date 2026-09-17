@@ -143,8 +143,16 @@ export function TinanAiPage() {
 
       <div className='grid gap-4 md:grid-cols-2'>
         <PageSection>
-          <p className='text-xs uppercase tracking-[0.24em] text-tinan-cyan'>Smart contract standard</p>
-          <h2 className='mt-2 text-2xl font-semibold text-white'>{TINAN_SYSTEM_PROMPT.contractStandards.tokenName}</h2>
+          <div className='flex items-center justify-between gap-3'>
+            <div>
+              <p className='text-xs uppercase tracking-[0.24em] text-tinan-cyan'>Prompt contract defaults</p>
+              <h2 className='mt-2 text-2xl font-semibold text-white'>{TINAN_SYSTEM_PROMPT.contractStandards.tokenName}</h2>
+            </div>
+            <StatusPill>Prompt-only</StatusPill>
+          </div>
+          <p className='mt-3 text-sm leading-7 text-white/70'>
+            These values describe the default contract scaffold requested by the system prompt and do not replace the live Solana token configuration shown above.
+          </p>
           <ul className='mt-4 space-y-3 text-sm text-white/75'>
             <li>Symbol: {TINAN_SYSTEM_PROMPT.contractStandards.tokenSymbol}</li>
             <li>Decimals: {TINAN_SYSTEM_PROMPT.contractStandards.decimals}</li>
