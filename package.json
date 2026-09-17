@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "tsc --noEmit && vite build"
   },
   "devDependencies": {
     "@types/react": "^19.3.0",
@@ -23,6 +24,14 @@
     "ethers": "^6.17.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
-    "react-router-dom": "^7.18.4"
+    "react-router-dom": "^7.18.4",
+    "@solana/web3.js": "^1.99.0",
+    "@solana/wallet-adapter-phantom": "^0.9.30",
+    "@solana/wallet-adapter-react": "^0.15.40",
+    "@solana/wallet-adapter-react-ui": "^0.9.40",
+    "framer-motion": "^13.4.0"
+  },
+  "engines": {
+    "node": "22.x"
   }
 }
