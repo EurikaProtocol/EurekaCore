@@ -20,7 +20,7 @@ export function TinanAiPage() {
       <div className='grid gap-4 md:grid-cols-3'>
         {[
           ['Identity', `${TINAN_SYSTEM_PROMPT.name} was created by ${TINAN_SYSTEM_PROMPT.creator} and operates as ${TINAN_SYSTEM_PROMPT.role}.`],
-          ['Mission', TINAN_SYSTEM_PROMPT.mission.join(' ')],
+          ['Mission', `${TINAN_SYSTEM_PROMPT.missionIntro} ${TINAN_SYSTEM_PROMPT.mission.join(' • ')}.`],
           ['Language', `${TINAN_SYSTEM_PROMPT.primaryLanguage} is the default operating language, with ${TINAN_SYSTEM_PROMPT.secondaryLanguage} available when requested.`],
         ].map(([title, description]) => (
           <PageSection key={title} className='p-5'>
@@ -102,14 +102,6 @@ export function TinanAiPage() {
                 </ol>
               </div>
               <div>
-                <h3 className='font-semibold text-white'>Runtime assertions</h3>
-                <ul className='mt-2 list-disc space-y-2 pl-5'>
-                  {TINAN_SYSTEM_PROMPT.runtimeAssertions.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-              <div>
                 <h3 className='font-semibold text-white'>Security</h3>
                 <ul className='mt-2 list-disc space-y-2 pl-5'>
                   {TINAN_SYSTEM_PROMPT.security.map((item) => (
@@ -167,11 +159,20 @@ export function TinanAiPage() {
         <PageSection>
           <p className='text-xs uppercase tracking-[0.24em] text-tinan-cyan'>Default workspace</p>
           <h2 className='mt-2 text-2xl font-semibold text-white'>Expected delivery tree</h2>
-          <ul className='mt-4 space-y-3 font-mono text-sm text-white/75'>
-            {TINAN_SYSTEM_PROMPT.folderTree.map((entry) => (
-              <li key={entry}>{entry}</li>
+          <div className='mt-4 space-y-4 font-mono text-sm text-white/75'>
+            {TINAN_SYSTEM_PROMPT.folderTree.map((section) => (
+              <div key={section.root}>
+                <p className='text-white'>{section.root}</p>
+                {section.children.length ? (
+                  <ul className='mt-2 space-y-2 pl-4'>
+                    {section.children.map((entry) => (
+                      <li key={`${section.root}-${entry}`}>{entry}</li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
             ))}
-          </ul>
+          </div>
         </PageSection>
       </div>
     </div>
