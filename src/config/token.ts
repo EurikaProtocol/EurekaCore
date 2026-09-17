@@ -12,7 +12,7 @@ export const EKA_TOKEN: EvmTokenConfig = {
   name: 'EUREKA Protocol',
   symbol: 'EKA',
   decimals: 18,
-  contractAddress: '0x4042973c0863cca0d73f028ca98465f44f0e6f97',
+  contractAddress: '0x5D0435779b10234fD4941cc15fae8C7C86117E91',
   chainId: 1,
   chainName: 'Ethereum Mainnet',
   explorerBaseUrl: 'https://etherscan.io',

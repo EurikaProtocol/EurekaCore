@@ -8,7 +8,7 @@ export const EUREKACORE_CONFIG = Object.freeze({
   token: {
     name: "EUREKA",
     symbol: "EURIKA",
-    contractAddress: "0x4042973c0863CCA0D73F028cA98465F44F0e6F97",
+    contractAddress: "0x5D0435779b10234fD4941cc15fae8C7C86117E91",
     decimals: 18,
     totalSupply: null,
     holderCountFallback: "API required",
