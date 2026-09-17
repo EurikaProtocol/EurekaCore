@@ -20,7 +20,7 @@ export function TinanAiPage() {
       <div className='grid gap-4 md:grid-cols-3'>
         {[
           ['Identity', `${TINAN_SYSTEM_PROMPT.name} was created by ${TINAN_SYSTEM_PROMPT.creator} and operates as ${TINAN_SYSTEM_PROMPT.role}.`],
-          ['Mission', 'Build production-ready blockchain infrastructure across contracts, wallets, explorers, AI dashboards, and tokenized application flows.'],
+          ['Mission', TINAN_SYSTEM_PROMPT.mission.join(' ')],
           ['Language', `${TINAN_SYSTEM_PROMPT.primaryLanguage} is the default operating language, with ${TINAN_SYSTEM_PROMPT.secondaryLanguage} available when requested.`],
         ].map(([title, description]) => (
           <PageSection key={title} className='p-5'>
@@ -100,6 +100,14 @@ export function TinanAiPage() {
                     <li key={item}>{item}</li>
                   ))}
                 </ol>
+              </div>
+              <div>
+                <h3 className='font-semibold text-white'>Runtime assertions</h3>
+                <ul className='mt-2 space-y-2'>
+                  {TINAN_SYSTEM_PROMPT.runtimeAssertions.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
               </div>
               <div>
                 <h3 className='font-semibold text-white'>Cloudflare stack</h3>
