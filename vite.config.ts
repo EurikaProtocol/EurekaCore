@@ -7,15 +7,12 @@ export default defineConfig({
     outDir: "dist",
     rollupOptions: {
       output: {
-        manualChunks: {
-          react: ["react", "react-dom", "react-router-dom"],
-          evm: ["ethers", "@walletconnect/ethereum-provider"],
-          solana: [
-            "@solana/web3.js",
-            "@solana/wallet-adapter-react",
-            "@solana/wallet-adapter-react-ui",
-            "@solana/wallet-adapter-phantom",
-          ],
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return undefined;
+          if (id.includes("@solana/")) return "solana";
+          if (id.includes("ethers") || id.includes("@walletconnect/")) return "evm";
+          if (id.includes("react") || id.includes("scheduler")) return "react";
+          return "vendor";
         },
       },
     },

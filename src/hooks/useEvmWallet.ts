@@ -144,7 +144,8 @@ export function useEvmWallet(): EvmWalletHook {
     try {
       const provider = await EthereumProvider.init({
         projectId,
-        chains: SUPPORTED_CHAIN_IDS,
+        chains: [SUPPORTED_CHAIN_IDS[0]],
+        optionalChains: SUPPORTED_CHAIN_IDS,
         showQrModal: true,
       });
       await provider.enable();
