@@ -56,9 +56,9 @@ body::after {
 
 body::before {
   background:
-    radial-gradient(circle at 18% 20%, rgba(66, 245, 160, 0.22), transparent 0 18%),
-    radial-gradient(circle at 84% 18%, rgba(66, 245, 160, 0.2), transparent 0 14%),
-    radial-gradient(circle at 45% 78%, rgba(29, 189, 117, 0.16), transparent 0 16%);
+    radial-gradient(circle at 18% 20%, rgba(66, 245, 160, 0.22) 0%, transparent 18%),
+    radial-gradient(circle at 84% 18%, rgba(66, 245, 160, 0.2) 0%, transparent 14%),
+    radial-gradient(circle at 45% 78%, rgba(29, 189, 117, 0.16) 0%, transparent 16%);
   animation: drift 18s linear infinite alternate;
   z-index: -2;
 }
