@@ -284,12 +284,12 @@ function renderLanding() {
 function renderDashboard() {
   setText('portfolioValue', state.wallet.connected ? state.wallet.portfolio : 'Connect wallet');
   setText('portfolioMeta', state.wallet.connected ? `Connected via ${state.wallet.providerType}` : 'Base-native summary');
-  setText('walletBalanceValue', `${state.wallet.nativeBalance} ${state.wallet.nativeSymbol}`);
+  setText('walletBalanceValue', state.wallet.connected ? `${state.wallet.nativeBalance} ${state.wallet.nativeSymbol}` : 'Connect wallet');
   setText('walletBalanceMeta', state.wallet.connected ? state.wallet.network : 'Native Base balance');
-  setText('tokenBalanceValue', `${state.wallet.tokenBalance} ${state.tokenDetails.symbol}`);
+  setText('tokenBalanceValue', state.wallet.connected ? `${state.wallet.tokenBalance} ${state.tokenDetails.symbol}` : 'Connect wallet');
   setText('tokenBalanceMeta', state.wallet.connected ? `Contract ${shortenAddress(state.tokenDetails.contractAddress)}` : 'Token balance on Base');
-  setText('notificationCount', String(state.notifications.length));
-  setText('networkStatusValue', state.wallet.chainMatched || !state.wallet.connected ? 'Base ready' : 'Switch network');
+  setText('notificationsBadge', `${state.notifications.length} update${state.notifications.length === 1 ? '' : 's'}`);
+  setText('networkStatusValue', state.wallet.connected ? (state.wallet.chainMatched ? 'Base ready' : 'Switch network') : 'Connect wallet');
   setText('networkStatusMeta', state.wallet.connected ? state.wallet.status : 'Status feed');
 
   const activityList = document.getElementById('activityList');

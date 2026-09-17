@@ -218,7 +218,7 @@ export async function readWalletSnapshot(session, config, tokenDetails = FALLBAC
     nativeSymbol: config.network.nativeSymbol,
     nativeBalance: native,
     tokenBalance,
-    portfolio: chainMatched ? `${tokenBalance} ${tokenDetails.symbol ?? config.token.symbol}` : 'Switch to Base',
+    portfolio: chainMatched ? `${native} ${config.network.nativeSymbol} • ${tokenBalance} ${tokenDetails.symbol ?? config.token.symbol}` : 'Switch to Base',
     explorerAddressUrl: `${config.network.explorerBaseUrl}/address/${address}`,
   };
 }
