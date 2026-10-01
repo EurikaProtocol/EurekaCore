@@ -95,3 +95,25 @@ export async function saveAsset(asset: DataAsset): Promise<void> {
     database.close();
   }
 }
+
+export async function deleteAssetAndProofs(assetId: string): Promise<void> {
+  const database = await openDatabase();
+  try {
+    const transaction = database.transaction([ASSETS_STORE, PROOFS_STORE], 'readwrite');
+    transaction.objectStore(ASSETS_STORE).delete(assetId);
+    const cursorRequest = transaction.objectStore(PROOFS_STORE).openCursor();
+    cursorRequest.onsuccess = () => {
+      const cursor = cursorRequest.result;
+      if (!cursor) return;
+      if ((cursor.value as DataProof).assetId === assetId) cursor.delete();
+      cursor.continue();
+    };
+    await new Promise<void>((resolve, reject) => {
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error ?? new Error('Could not delete the local asset.'));
+      transaction.onabort = () => reject(transaction.error ?? new Error('Local asset deletion was cancelled.'));
+    });
+  } finally {
+    database.close();
+  }
+}

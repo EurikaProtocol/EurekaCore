@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { RouteButton, PageHero, PageSection, StatusPill } from '../components/ui';
-import { loadAssetWorkspace, saveAsset, saveAssetAndProof, saveProof } from '../core/data-asset-store';
+import { deleteAssetAndProofs, loadAssetWorkspace, saveAsset, saveAssetAndProof, saveProof } from '../core/data-asset-store';
 import {
   createId,
-  createTokenMetadata,
   MAX_ASSET_DESCRIPTION_LENGTH,
   MAX_ASSET_NAME_LENGTH,
+  MAX_DATA_ASSET_BYTES,
   MAX_PROOF_DESCRIPTION_LENGTH,
+  getDataAssetKind,
+  prepareTokenization,
   sha256,
   sha256Text,
   validateDataAsset,
@@ -37,13 +39,13 @@ const PROOF_LABELS: Record<ProofType, string> = {
 };
 
 function downloadMetadata(asset: DataAsset, proofs: DataProof[]) {
-  const contents = JSON.stringify(createTokenMetadata(asset, proofs), null, 2);
+  const contents = JSON.stringify(prepareTokenization(asset, proofs).metadata, null, 2);
   const url = URL.createObjectURL(new Blob([contents], { type: 'application/json' }));
   const link = document.createElement('a');
   link.href = url;
   link.download = `${asset.id}-metadata.json`;
   link.click();
-  URL.revokeObjectURL(url);
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 function formatBytes(bytes: number) {
@@ -187,6 +189,9 @@ export function DataAssetsPage({
     setError('');
     setNotice('');
     try {
+      if (file.size <= 0 || file.size > MAX_DATA_ASSET_BYTES || getDataAssetKind(file) !== asset.type) {
+        throw new Error('Select a supported source file of the same type and no larger than 25 MB.');
+      }
       const actualHash = await sha256(await file.arrayBuffer());
       if (actualHash !== asset.hash) {
         setNotice(`Hash mismatch for “${asset.name}”. The selected file does not match its saved data record.`);
@@ -202,6 +207,26 @@ export function DataAssetsPage({
       setNotice(`Hash match confirmed for “${asset.name}”. This verifies file integrity against the local record only.`);
     } catch (verificationError) {
       setError((verificationError as Error).message);
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const handleDeleteAsset = async (asset: DataAsset) => {
+    if (!window.confirm(`Delete “${asset.name}” and its local proofs from this browser? Exported copies cannot be removed.`)) return;
+    setIsBusy(true);
+    setError('');
+    setNotice('');
+    try {
+      await deleteAssetAndProofs(asset.id);
+      await reload();
+      setVerificationFiles((current) => {
+        const { [asset.id]: _removed, ...remaining } = current;
+        return remaining;
+      });
+      setNotice(`“${asset.name}” and its linked local proofs were deleted from this browser.`);
+    } catch (deleteError) {
+      setError((deleteError as Error).message);
     } finally {
       setIsBusy(false);
     }
@@ -274,8 +299,8 @@ export function DataAssetsPage({
       setError(`Knowledge summary must be ${MAX_ASSET_DESCRIPTION_LENGTH} characters or fewer.`);
       return;
     }
-    if (!knowledgeSummary.trim() || !knowledgeCategory.trim()) {
-      setError('Add a category and summary to structure the knowledge record.');
+    if (!knowledgeSummary.trim() || !knowledgeCategory.trim() || knowledgeCategory.trim().length > 80) {
+      setError('Add a category of 1–80 characters and a summary to structure the knowledge record.');
       return;
     }
 
@@ -441,6 +466,9 @@ export function DataAssetsPage({
                       </button>
                       <button className='h-fit rounded-xl border border-tinan-cyan/30 bg-tinan-cyan/10 px-3 py-2 text-sm text-cyan-100' onClick={() => downloadMetadata(asset, workspace.proofs)} type='button'>
                         Export token metadata
+                      </button>
+                      <button className='h-fit rounded-xl border border-rose-300/25 bg-rose-950/30 px-3 py-2 text-sm text-rose-100' disabled={isBusy} onClick={() => void handleDeleteAsset(asset)} type='button'>
+                        Delete local record
                       </button>
                     </div>
                   </article>

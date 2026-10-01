@@ -40,6 +40,20 @@ export type AssetWorkspace = {
   proofs: DataProof[];
 };
 
+export type TokenizationRequest = {
+  assetId: string;
+  targetNetwork: string | null;
+  requestedAt: string;
+};
+
+export type TokenizationResult = {
+  request: TokenizationRequest;
+  status: 'metadata-prepared';
+  metadata: ReturnType<typeof createTokenMetadata>;
+  tokenId: null;
+  transactionHash: null;
+};
+
 export const MAX_DATA_ASSET_BYTES = 25 * 1024 * 1024;
 export const MAX_ASSET_NAME_LENGTH = 120;
 export const MAX_ASSET_DESCRIPTION_LENGTH = 1000;
@@ -81,9 +95,10 @@ const MIME_KIND_ENTRIES = Object.entries(MIME_TYPES) as [DataAssetKind, readonly
 export function getDataAssetKind(file: File): DataAssetKind | null {
   const mimeType = file.type.toLowerCase();
   const extension = `.${file.name.split('.').pop()?.toLowerCase() ?? ''}`;
-  return MIME_KIND_ENTRIES.find(
-    ([kind, mimeTypes]) => mimeTypes.includes(mimeType) || FILE_EXTENSIONS[kind].includes(extension)
-  )?.[0] ?? null;
+  const extensionMatch = MIME_KIND_ENTRIES.find(([kind]) => FILE_EXTENSIONS[kind].includes(extension));
+  if (extensionMatch) return extensionMatch[0];
+  if (file.name.includes('.')) return null;
+  return MIME_KIND_ENTRIES.find(([, mimeTypes]) => mimeTypes.includes(mimeType))?.[0] ?? null;
 }
 
 export function validateDataAsset(file: File, name: string, description: string): DataAssetKind {
@@ -125,6 +140,24 @@ export function createTokenMetadata(asset: DataAsset, proofs: DataProof[]) {
     owner: asset.owner,
     proofIds: proofs.filter((proof) => proof.assetId === asset.id).map((proof) => proof.id),
     storageReference: asset.storageReference,
+  };
+}
+
+export function prepareTokenization(
+  asset: DataAsset,
+  proofs: DataProof[],
+  targetNetwork: string | null = null,
+): TokenizationResult {
+  return {
+    request: {
+      assetId: asset.id,
+      targetNetwork,
+      requestedAt: new Date().toISOString(),
+    },
+    status: 'metadata-prepared',
+    metadata: createTokenMetadata(asset, proofs),
+    tokenId: null,
+    transactionHash: null,
   };
 }
 
