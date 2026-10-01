@@ -80,3 +80,18 @@ export async function saveProof(proof: DataProof): Promise<void> {
     database.close();
   }
 }
+
+export async function saveAsset(asset: DataAsset): Promise<void> {
+  const database = await openDatabase();
+  try {
+    const transaction = database.transaction(ASSETS_STORE, 'readwrite');
+    transaction.objectStore(ASSETS_STORE).put(asset);
+    await new Promise<void>((resolve, reject) => {
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error ?? new Error('Could not update the local asset.'));
+      transaction.onabort = () => reject(transaction.error ?? new Error('Local asset update was cancelled.'));
+    });
+  } finally {
+    database.close();
+  }
+}

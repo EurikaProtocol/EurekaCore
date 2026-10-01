@@ -2,6 +2,8 @@ import { Route, Routes } from 'react-router-dom';
 import { AppShell } from './components/AppShell';
 import { useEvmWallet } from './hooks/useEvmWallet';
 import { DashboardPage } from './pages/Dashboard';
+import { DataAssetsPage } from './pages/DataAssets';
+import { EcosystemPage } from './pages/Ecosystem';
 import { ExplorerPage } from './pages/Explorer';
 import { HomePage } from './pages/Home';
 import { MarketplacePage } from './pages/Marketplace';
@@ -22,6 +24,10 @@ export default function App() {
     <AppShell address={evm.state.address} network={evm.state.network} status={evm.status}>
       <Routes>
         <Route element={<HomePage />} path='/' />
+        <Route element={<DataAssetsPage evm={evm} />} path='/assets' />
+        <Route element={<DataAssetsPage evm={evm} view='proofs' />} path='/proofs' />
+        <Route element={<DataAssetsPage evm={evm} view='tokenize' />} path='/tokenize' />
+        <Route element={<EcosystemPage />} path='/ecosystem' />
         <Route element={<DashboardPage evm={evm} />} path='/dashboard' />
         <Route element={<WalletPage evm={evm} />} path='/wallet' />
         <Route element={<TinanAiPage />} path='/tinan-ai' />

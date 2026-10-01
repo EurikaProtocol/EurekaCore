@@ -8,16 +8,40 @@ export function HomePage() {
   return (
     <div className='grid gap-4'>
       <PageHero
-        eyebrow='Production control plane'
-        title='Build the EUREKA ecosystem without blurring EKA and TinanAI.'
-        description='This interface keeps EKA on Ethereum Mainnet, keeps the TinanAI Token on Solana, validates official links before rendering them, and preserves the premium TinanEureka identity across wallet, explorer, marketplace, and whitepaper flows.'
+        eyebrow='DATA HAS VALUE'
+        title='Turn digital activity into verifiable digital assets.'
+        description='Photos. Screenshots. Documents. Audio. Video. Analytics. Knowledge. Digital activity. Eureka is building infrastructure designed to organize valuable information into verifiable digital assets: DATA → PROOF → TOKENIZATION → UTILITY.'
         actions={
           <>
-            <RouteButton label='Open wallet hub' to='/wallet' />
-            <RouteButton label='Review TinanAI token' to='/tinan-ai-token' />
+            <RouteButton label='Explore your data' to='/assets' />
+            <RouteButton label='Introducing TINAN AI' to='/tinan-ai' />
           </>
         }
       />
+
+      <PageSection className='cyan-outline'>
+        <p className='text-xs uppercase tracking-[0.24em] text-tinan-cyan'>Introducing TINAN AI</p>
+        <h2 className='mt-2 text-2xl font-semibold text-white'>Not Artificial Intelligence. Natural Intelligence.</h2>
+        <p className='mt-3 max-w-3xl text-sm leading-7 text-white/75'>A new layer of the Eureka ecosystem, designed to help people organize, structure, and prepare valuable data for tokenization. Your knowledge has value. Your ideas have value. Your data should too. This is only the beginning.</p>
+      </PageSection>
+
+      <PageSection>
+        <div className='flex flex-wrap items-end justify-between gap-3'>
+          <div>
+            <p className='text-xs uppercase tracking-[0.24em] text-tinan-cyan'>Data economy foundation</p>
+            <h2 className='mt-2 text-2xl font-semibold text-white'>Build with the systems already available.</h2>
+          </div>
+          <RouteButton label='Open data workspace' to='/assets' />
+        </div>
+        <div className='mt-4 grid gap-3 md:grid-cols-3'>
+          {PROOF_MODULES.map((module) => (
+            <article key={module.title} className='rounded-2xl border border-white/10 bg-black/20 p-4'>
+              <h3 className='text-lg font-semibold text-white'>{module.title}</h3>
+              <p className='mt-2 text-sm leading-6 text-white/70'>{module.description}</p>
+            </article>
+          ))}
+        </div>
+      </PageSection>
 
       <div className='grid gap-4 lg:grid-cols-2'>
         <PageSection>
@@ -51,16 +75,6 @@ export function HomePage() {
             ))}
           </div>
         </PageSection>
-      </div>
-
-      <div className='grid gap-4 xl:grid-cols-3'>
-        {PROOF_MODULES.map((module) => (
-          <PageSection key={module.title} className='p-5'>
-            <p className='text-xs uppercase tracking-[0.24em] text-tinan-cyan'>Proof module</p>
-            <h3 className='mt-2 text-xl font-semibold text-white'>{module.title}</h3>
-            <p className='mt-3 text-sm leading-7 text-white/75'>{module.description}</p>
-          </PageSection>
-        ))}
       </div>
 
       <PageSection>

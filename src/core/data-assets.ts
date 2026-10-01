@@ -16,7 +16,7 @@ export type DataAsset = {
   tokenId: null;
   network: null;
   transactionHash: null;
-  verificationStatus: 'hash-recorded';
+  verificationStatus: 'hash-recorded' | 'integrity-verified';
   createdAt: string;
 };
 
