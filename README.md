@@ -69,6 +69,24 @@ The repository includes:
 - `cloudflare/worker.js` to serve the Vite `dist` output
 - `public/whitepaper/EUREKA_CHAIN_Whitepaper_v2.pdf` for the embedded whitepaper route
 
+## Vercel preview deploy
+
+This repository is **not** a Next.js app. The active frontend is the root Vite SPA:
+
+- frontend root: repository root
+- app entry: `index.html` → `script.js`
+- framework: Vite
+- build command: `npm run build`
+- output directory: `dist`
+
+For Vercel previews:
+
+- keep the **Root Directory** set to the repository root (`.`)
+- use the committed `vercel.json`
+- do **not** switch the project to a Next.js framework preset
+
+Cloudflare Workers remains the production deployment path for `tinaneureka.com`. Vercel should only mirror the existing static frontend for preview builds unless the deployment architecture is intentionally changed later.
+
 ## Project structure
 
 - `index.html`
