@@ -1,11 +1,11 @@
 {
-  "name": "TinanEureka",
+  "name": "EUREKA Data Tokenization",
   "short_name": "EUREKA",
-  "description": "TinanEureka Web3 interface for Eureka token, wallet, AI chat, swap, staking, and explorer.",
+  "description": "Proof-backed data tokenization, TINAN AI workflows, and Base-native EUREKA infrastructure on tinaneureka.com.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0A0A0A",
-  "theme_color": "#0A0A0A",
+  "background_color": "#05120c",
+  "theme_color": "#05120c",
   "icons": [
     {
       "src": "/favicon-192.png",
