@@ -1,10 +1,11 @@
 import { AGENT_DEFS } from './config.js';
 
 const KNOWLEDGE_BASE = [
-  'EurekaCore is deployed on Base and serves the live EUREKA contract through a Cloudflare-ready frontend.',
-  'TINAN AI exposes wallet, knowledge, token, and developer agents with prompt history stored locally in the browser.',
-  'Wallet actions require explicit user approval and the app reads token metadata from the shared config layer.',
-  'Cloudflare deployment uses a Vite build followed by wrangler deploy for www.tinaneureka.com.',
+  'Eureka integrates data, proof, tokenization, and utility into one ecosystem message.',
+  'The Data Tokenizer keeps large files off-chain and stores only hashes, timestamps, ownership references, and lightweight metadata in proof records.',
+  'TINAN AI acts as the natural intelligence layer that helps users classify information, structure datasets, and prepare proof-backed asset metadata.',
+  'Economic value is not automatic. Tokenization provides a verification layer, while value depends on utility, demand, data quality, and ecosystem adoption.',
+  'Base is the active network in the current root application, and additional chains remain roadmap items until production integrations are enabled.',
 ];
 
 function buildWalletReply(walletState, config) {
@@ -20,15 +21,21 @@ function buildWalletReply(walletState, config) {
 }
 
 function buildTokenReply(tokenDetails, config) {
-  return `${tokenDetails.name} (${tokenDetails.symbol}) is configured at ${tokenDetails.contractAddress} on ${config.network.name}. Decimals: ${tokenDetails.decimals}. Total supply: ${tokenDetails.totalSupply}.`;
+  return `${tokenDetails.name} (${tokenDetails.symbol}) is configured at ${tokenDetails.contractAddress} on ${config.network.name}. Decimals: ${tokenDetails.decimals}. Total supply: ${tokenDetails.totalSupply}. Tokenization does not automatically assign market value to any asset.`;
 }
 
-function buildKnowledgeReply(config) {
-  return KNOWLEDGE_BASE.join(' ');
+function buildDataReply(assetSummary, config) {
+  const count = assetSummary?.assets ?? 0;
+  const proofCount = assetSummary?.proofs ?? 0;
+  return `The Data Tokenizer currently tracks ${count} asset${count === 1 ? '' : 's'} and ${proofCount} proof record${proofCount === 1 ? '' : 's'} locally. Uploaded files stay private by default and the proof layer stores hashes, timestamps, metadata, and ownership references.`;
+}
+
+function buildProofReply() {
+  return 'Proof of Data verifies file-level metadata, hashes, timestamps, and storage references. Proof of Action links a user-triggered event to the created artifact. Proof of Knowledge structures human-created information into auditable knowledge assets without claiming unverifiable truth.';
 }
 
 function buildDeveloperReply(config) {
-  return `Set VITE_WALLETCONNECT_PROJECT_ID if you want WalletConnect v2 pairing, then run npm install && npm run build to produce dist. Deploy with npx wrangler deploy and the worker will serve the Vite output on ${config.brand.domain} with SPA routing enabled.`;
+  return `Run npm install && npm run build to produce dist, then deploy with npx wrangler deploy. The root site uses modular config, local proof storage, and Base wallet flows, so future storage or token registry integrations can be added without rewriting the front-end.`;
 }
 
 export function getAgents() {
@@ -37,14 +44,16 @@ export function getAgents() {
 
 export function getQuickPrompts() {
   return [
+    'Explain Proof of Data in simple terms.',
+    'How does the Data Tokenizer keep files off-chain?',
     'Summarize the current wallet status.',
-    'What does the EUREKA token config look like?',
-    'How do I deploy this app to Cloudflare?',
-    'Explain the roadmap in operator terms.',
+    'How can TINAN AI help prepare a knowledge asset?',
+    'What does the EUREKA token configuration look like?',
+    'How do I deploy this site to Cloudflare?',
   ];
 }
 
-export function createAssistantReply({ agentId, prompt, walletState, tokenDetails, config }) {
+export function createAssistantReply({ agentId, prompt, walletState, tokenDetails, config, assetSummary }) {
   const lowered = prompt.toLowerCase();
 
   if (agentId === 'wallet-agent' || lowered.includes('wallet') || lowered.includes('connect') || lowered.includes('balance')) {
@@ -55,13 +64,21 @@ export function createAssistantReply({ agentId, prompt, walletState, tokenDetail
     return buildTokenReply(tokenDetails, config);
   }
 
+  if (agentId === 'data-agent' || lowered.includes('data') || lowered.includes('asset') || lowered.includes('tokenize') || lowered.includes('upload')) {
+    return buildDataReply(assetSummary, config);
+  }
+
+  if (agentId === 'proof-agent' || lowered.includes('proof') || lowered.includes('knowledge') || lowered.includes('action')) {
+    return buildProofReply();
+  }
+
   if (agentId === 'developer-agent' || lowered.includes('deploy') || lowered.includes('cloudflare') || lowered.includes('wrangler') || lowered.includes('build')) {
     return buildDeveloperReply(config);
   }
 
   if (lowered.includes('roadmap')) {
-    return 'The roadmap moves from public Base launch, to richer wallet operations, to larger TINAN AI workflows, and finally to ecosystem automation hardening.';
+    return 'The roadmap starts with proof architecture, moves into data engines and storage integrations, then expands TINAN AI intelligence and the wider Eureka data economy.';
   }
 
-  return buildKnowledgeReply(config);
+  return KNOWLEDGE_BASE.join(' ');
 }

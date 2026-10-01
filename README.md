@@ -1,24 +1,38 @@
 # EurekaCore
 
-EurekaCore is a Cloudflare-ready frontend for **TINAN AI** and the **EUREKA** token on **Base**.
+EurekaCore is the existing **tinaneureka.com** frontend for **EUREKA**, **TINAN AI**, and the new **Eureka Data Tokenization** workflow.
 
 ## Production profile
 
-- Primary domain: `www.tinaneureka.com`
+- Primary domain: `tinaneureka.com`
+- Canonical host: `www.tinaneureka.com`
 - App: `EurekaCore`
 - AI: `TINAN AI`
-- Token: `EUREKA`
-- Network: `Base`
-- Contract: `0x4042973c0863cca0d73f028ca98465f44f0e6f97`
+- Core message: `DATA → PROOF → TOKENIZATION → UTILITY`
+- Active network: `Base`
+- Token contract: `0x4042973c0863cca0d73f028ca98465f44f0e6f97`
 
-## Features
+## Integrated surfaces
 
-- Emerald animated landing page with hero, ecosystem, and roadmap sections
-- Dashboard with portfolio, wallet balance, EUREKA balance, activity, and notifications
+- Homepage with data-tokenization vision, TINAN AI messaging, ecosystem overview, and roadmap
+- Dashboard for wallet telemetry, activity, and runtime notifications
 - Wallet flows for MetaMask, WalletConnect v2, Coinbase Wallet, send, and receive
-- TINAN AI chat with prompt history plus wallet, knowledge, token, and developer agents
-- Token page with live name, symbol, total supply, decimals, contract address, and BaseScan access
+- EUREKA token page with live on-chain metadata and BaseScan access
+- Data Tokenizer for upload, device-side analysis, hashing, proof generation, and local tokenized asset records
+- My Assets portfolio with proof filters and dedicated asset detail pages
+- Proofs page for Proof of Data, Proof of Action, and Proof of Knowledge
+- Whitepaper page with embedded PDF and download access
 - Shared runtime config in `/js/config.js`
+
+## Data tokenization architecture
+
+The current implementation is privacy-first and production-safe:
+
+- Uploaded files are stored privately in the browser with IndexedDB
+- Proof records store hashes, timestamps, ownership references, metadata, and lightweight storage references
+- Large files are **not** stored on-chain
+- Tokenization creates a digital representation and verification layer; it does **not** promise automatic market value
+- Additional storage providers such as IPFS or Arweave can be added later without redesigning the asset model
 
 ## Local setup
 
@@ -53,6 +67,7 @@ The repository includes:
 
 - `wrangler.toml` for the Worker + static assets deployment
 - `cloudflare/worker.js` to serve the Vite `dist` output
+- `public/whitepaper/EUREKA_CHAIN_Whitepaper_v2.pdf` for the embedded whitepaper route
 
 ## Project structure
 
@@ -60,10 +75,11 @@ The repository includes:
 - `styles.css`
 - `script.js`
 - `config.js`
-- `assets/`
 - `components/`
 - `pages/`
-- `css/glass.css`
 - `js/config.js`
-- `js/wallet.js`
+- `js/data-tokenization.js`
 - `js/tinan-agent.js`
+- `js/wallet.js`
+- `public/`
+- `cloudflare/`

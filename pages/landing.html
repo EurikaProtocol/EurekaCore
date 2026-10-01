@@ -1,51 +1,105 @@
 <section class="page-shell">
-  <div class="hero-grid">
+  <div class="hero-grid hero-grid-extended">
     <article class="hero-card glass-outline">
-      <p class="eyebrow">Base-native control plane</p>
-      <h1 class="page-title">Operate EurekaCore through TINAN AI.</h1>
-      <p class="page-copy">Launch the EUREKA ecosystem from <strong>www.tinaneureka.com</strong> with a wallet-aware landing page, live token telemetry, and Cloudflare-ready delivery.</p>
+      <p class="eyebrow">Eureka Data Tokenization</p>
+      <h1 class="page-title">DATA → PROOF → TOKENIZATION → UTILITY</h1>
+      <p class="page-copy">
+        Turn digital activity into verifiable digital assets with <strong>TINAN AI</strong>, wallet-aware proofs,
+        and a privacy-first tokenization workflow built directly into <strong>tinaneureka.com</strong>.
+      </p>
       <div class="hero-actions">
-        <button class="button primary" id="heroConnectButton" type="button">Connect Wallet</button>
-        <a class="button ghost" href="/dashboard" data-route="/dashboard">Open Dashboard</a>
+        <a class="button primary" href="/tokenize" data-route="/tokenize">Start Tokenizing</a>
+        <a class="button ghost" href="/my-assets" data-route="/my-assets">Open My Assets</a>
+        <button class="button subtle" id="heroConnectButton" type="button">Connect Wallet</button>
       </div>
       <div class="inline-actions">
-        <span class="status-chip success">Primary domain live</span>
+        <span class="status-chip success">Proof of Data live</span>
         <span class="status-chip" id="heroWalletStatus">Wallet disconnected</span>
+        <span class="status-chip">Base integration active</span>
       </div>
     </article>
-    <article class="stat-card glass-outline">
-      <p class="eyebrow">Network</p>
-      <h2 class="section-title">Base deployment</h2>
-      <div class="detail-grid">
+    <article class="stat-card glass-outline stack">
+      <div>
+        <p class="eyebrow">Eureka Vision</p>
+        <h2 class="section-title">Every file can become a proof-backed asset.</h2>
+      </div>
+      <div class="detail-grid compact-grid">
         <div class="detail-item">
-          <div class="detail-label">App</div>
-          <div class="detail-value">{{APP_NAME}}</div>
+          <div class="detail-label">Proof Layers</div>
+          <div class="detail-value">Data • Action • Knowledge</div>
         </div>
         <div class="detail-item">
-          <div class="detail-label">AI</div>
-          <div class="detail-value">{{AI_NAME}}</div>
+          <div class="detail-label">Primary Network</div>
+          <div class="detail-value">{{NETWORK_NAME}}</div>
         </div>
         <div class="detail-item">
           <div class="detail-label">Token</div>
           <div class="detail-value">{{TOKEN_SYMBOL}}</div>
         </div>
         <div class="detail-item">
-          <div class="detail-label">Contract</div>
-          <div class="detail-value code">{{CONTRACT_ADDRESS}}</div>
+          <div class="detail-label">Storage Mode</div>
+          <div class="detail-value">Hash + reference, not raw files on-chain</div>
         </div>
       </div>
     </article>
   </div>
 
-  <article class="page-panel glass-outline">
-    <p class="eyebrow">Ecosystem</p>
-    <h2 class="section-title">Everything the deployment needs in one place</h2>
+  <article class="page-panel glass-outline stack">
+    <div>
+      <p class="eyebrow">Data has value</p>
+      <h2 class="section-title">Turn Digital Activity Into Verifiable Digital Assets</h2>
+      <p class="section-copy">
+        Every day, people create enormous amounts of valuable information. Photos. Screenshots. Documents. Audio.
+        Video. Analytics. Knowledge. Digital activity. Eureka turns that information into structured proof records,
+        tokenization metadata, and future utility infrastructure.
+      </p>
+    </div>
+    <div class="data-type-grid" id="dataTypeGrid"></div>
+  </article>
+
+  <div class="two-column two-column-balanced">
+    <article class="page-panel glass-outline stack">
+      <div>
+        <p class="eyebrow">Introducing TINAN AI</p>
+        <h2 class="section-title">Not Artificial Intelligence. Natural Intelligence.</h2>
+        <p class="section-copy">
+          TINAN AI is the intelligent layer of Eureka that helps users understand data, organize files, classify
+          content, generate descriptions, structure datasets, and prepare verifiable metadata for tokenization.
+        </p>
+      </div>
+      <div class="capability-grid" id="tinanCapabilitiesGrid"></div>
+    </article>
+
+    <article class="page-panel glass-outline stack">
+      <div>
+        <p class="eyebrow">Protocol statements</p>
+        <h2 class="section-title">EUREKA connects data, proof, and ownership.</h2>
+      </div>
+      <div class="quote-stack">
+        <blockquote class="signal-quote">Every action creates data.</blockquote>
+        <blockquote class="signal-quote">Every data point can create proof.</blockquote>
+        <blockquote class="signal-quote">Every verified contribution can become part of the digital economy.</blockquote>
+        <p class="helper-copy">Tokenization creates a digital representation and verification layer. Economic value depends on utility, demand, verification quality, and ecosystem adoption.</p>
+      </div>
+    </article>
+  </div>
+
+  <article class="page-panel glass-outline stack">
+    <div class="status-row">
+      <div>
+        <p class="eyebrow">Ecosystem</p>
+        <h2 class="section-title">Integrated into the existing Eureka stack</h2>
+      </div>
+      <a class="button ghost" href="/ecosystem" data-route="/ecosystem">View ecosystem map</a>
+    </div>
     <div class="ecosystem-grid" id="ecosystemGrid"></div>
   </article>
 
-  <article class="page-panel glass-outline">
-    <p class="eyebrow">Roadmap</p>
-    <h2 class="section-title">The next four operator milestones</h2>
+  <article class="page-panel glass-outline stack">
+    <div>
+      <p class="eyebrow">Roadmap</p>
+      <h2 class="section-title">From proofs to a data economy</h2>
+    </div>
     <div class="roadmap-grid" id="roadmapGrid"></div>
   </article>
 </section>
