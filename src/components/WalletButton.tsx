@@ -1,34 +1,49 @@
-import type { WalletName } from '@solana/wallet-adapter-base';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import type { WalletName } from '@solana/wallet-adapter-base';
+import { useEffect, useRef, useState } from 'react';
 import { shortenAddress } from '../core/verify';
 import type { EvmWalletController } from '../hooks/useEvmWallet';
 
 export function WalletButton({ evm }: { evm: EvmWalletController }) {
+  const { connected: solConnected, disconnect: solDisconnect, publicKey, select, wallets } = useWallet();
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState('');
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const { connected: solConnected, disconnect: solDisconnect, publicKey, select, wallets } = useWallet();
-  const phantom = useMemo(() => wallets.find((wallet) => wallet.adapter.name === 'Phantom'), [wallets]);
-  const evmConnected = Boolean(evm.state.address);
   const solAddress = publicKey?.toBase58() ?? '';
-  const anyConnected = evmConnected || solConnected;
+  const anyConnected = evm.state.connected || solConnected;
 
   useEffect(() => {
     if (!open) return undefined;
-    const onPointer = (event: PointerEvent) => {
+    function onPointer(event: MouseEvent | TouchEvent) {
       if (rootRef.current && !rootRef.current.contains(event.target as Node)) setOpen(false);
-    };
-    const onKey = (event: KeyboardEvent) => {
+    }
+    function onKey(event: KeyboardEvent) {
       if (event.key === 'Escape') setOpen(false);
-    };
-    document.addEventListener('pointerdown', onPointer);
+    }
+    document.addEventListener('mousedown', onPointer);
+    document.addEventListener('touchstart', onPointer);
     document.addEventListener('keydown', onKey);
     return () => {
-      document.removeEventListener('pointerdown', onPointer);
+      document.removeEventListener('mousedown', onPointer);
+      document.removeEventListener('touchstart', onPointer);
       document.removeEventListener('keydown', onKey);
     };
   }, [open]);
+
+  async function connectPhantom() {
+    const phantom = wallets.find((wallet) => wallet.adapter.name === 'Phantom');
+    if (!phantom) {
+      setMessage('Phantom adapter is unavailable.');
+      return;
+    }
+    try {
+      select(phantom.adapter.name as WalletName<string>);
+      await phantom.adapter.connect();
+      setOpen(false);
+    } catch (error) {
+      setMessage(`Phantom connection failed: ${(error as Error).message}`);
+    }
+  }
 
   async function run(action: () => Promise<void>) {
     setMessage('');
@@ -36,48 +51,53 @@ export function WalletButton({ evm }: { evm: EvmWalletController }) {
       await action();
       setOpen(false);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Wallet action failed.');
+      setMessage((error as Error).message);
     }
   }
 
-  async function connectPhantom() {
-    if (!phantom) throw new Error('Phantom adapter is unavailable. Install Phantom to continue.');
-    select(phantom.adapter.name as WalletName<string>);
-    await phantom.adapter.connect();
-  }
-
-  const label = evmConnected
-    ? shortenAddress(evm.state.address, 'Connected')
+  const label = evm.state.connected
+    ? shortenAddress(evm.state.address)
     : solConnected
-      ? shortenAddress(solAddress, 'Connected')
-      : 'Connect Wallet';
-  const itemClass = 'flex min-h-11 w-full items-center rounded-lg px-3 text-left text-sm text-white/90 hover:bg-white/10 disabled:opacity-50';
+      ? shortenAddress(solAddress)
+      : evm.busy ? 'Connecting…' : 'Connect Wallet';
 
   return (
     <div className='relative' ref={rootRef}>
       <button
-        aria-controls='wallet-menu'
         aria-expanded={open}
         aria-haspopup='true'
-        className='eu-btn-primary whitespace-nowrap px-3 sm:px-5'
+        className='btn btn-primary !px-4'
         onClick={() => setOpen((value) => !value)}
         type='button'
       >
-        {label}
+        {anyConnected ? <span aria-hidden='true' className='h-2 w-2 rounded-full bg-emerald-700' /> : null}
+        <span className='max-w-[9rem] truncate'>{label === 'Connect Wallet' ? <><span className='sm:hidden'>Connect</span><span className='hidden sm:inline'>Connect Wallet</span></> : label}</span>
       </button>
       {open ? (
-        <div className='absolute right-0 z-50 mt-2 w-64 max-w-[calc(100vw-2rem)] rounded-2xl border border-white/10 bg-[#0b1012]/95 p-2 shadow-glass backdrop-blur-xl' id='wallet-menu'>
-          <p className='px-3 py-2 text-xs text-white/55'>{evmConnected ? `EVM · ${evm.state.network}` : 'Choose a wallet. Nothing is signed or sent.'}</p>
-          <button className={itemClass} disabled={evm.busy} onClick={() => void run(evm.connectInjected)} type='button'>MetaMask / injected EVM</button>
-          <button className={itemClass} disabled={evm.busy} onClick={() => void run(evm.connectWalletConnect)} type='button'>WalletConnect (EVM)</button>
-          <button className={itemClass} onClick={() => void run(connectPhantom)} type='button'>Phantom (Solana){solConnected ? ` · ${shortenAddress(solAddress, '')}` : ''}</button>
-          {anyConnected ? (
-            <div className='mt-1 border-t border-white/10 pt-1'>
-              {evmConnected ? <button className={itemClass} onClick={() => void run(evm.disconnect)} type='button'>Disconnect EVM</button> : null}
-              {solConnected ? <button className={itemClass} onClick={() => void run(solDisconnect)} type='button'>Disconnect Solana</button> : null}
-            </div>
-          ) : null}
-          {message ? <p className='px-3 py-2 text-xs text-rose-200' role='alert'>{message}</p> : <p className='px-3 py-2 text-xs text-white/50' role='status'>{evm.status}</p>}
+        <div className='glass absolute right-0 z-50 mt-2 grid w-72 max-w-[calc(100vw-2rem)] gap-2 bg-[#0b0f10]/95 p-3 text-sm' role='menu'>
+          <p className='px-1 text-xs uppercase tracking-[0.2em] text-white/50'>EVM · {evm.state.network}</p>
+          {evm.state.connected ? (
+            <>
+              <p className='break-all px-1 text-white/80'>{evm.state.address}</p>
+              <button className='btn btn-ghost' onClick={() => void run(evm.disconnect)} role='menuitem' type='button'>Disconnect EVM wallet</button>
+            </>
+          ) : (
+            <>
+              <button className='btn btn-ghost' disabled={evm.busy} onClick={() => void run(evm.connectInjected)} role='menuitem' type='button'>MetaMask / browser wallet</button>
+              <button className='btn btn-ghost' disabled={evm.busy} onClick={() => void run(evm.connectWalletConnect)} role='menuitem' type='button'>WalletConnect</button>
+            </>
+          )}
+          <p className='mt-1 px-1 text-xs uppercase tracking-[0.2em] text-white/50'>Solana</p>
+          {solConnected ? (
+            <>
+              <p className='break-all px-1 text-white/80'>{solAddress}</p>
+              <button className='btn btn-ghost' onClick={() => void run(solDisconnect)} role='menuitem' type='button'>Disconnect Phantom</button>
+            </>
+          ) : (
+            <button className='btn btn-ghost' onClick={() => void connectPhantom()} role='menuitem' type='button'>Phantom</button>
+          )}
+          {message ? <p className='px-1 text-xs text-rose-200' role='alert'>{message}</p> : null}
+          <p className='px-1 text-xs text-white/45'>{evm.status}</p>
         </div>
       ) : null}
     </div>

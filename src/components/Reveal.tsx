@@ -2,17 +2,23 @@ import type { ElementType, ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { classNames } from './ui';
 
-export function Reveal({ children, className, as: Tag = 'div', delay = 0, id }: { id?: string; children: ReactNode; className?: string; as?: ElementType; delay?: number }) {
+export function Reveal({
+  as: Tag = 'div',
+  children,
+  className,
+  delay = 0,
+}: {
+  as?: ElementType;
+  children: ReactNode;
+  className?: string;
+  delay?: number;
+}) {
   const ref = useRef<HTMLElement | null>(null);
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(() => typeof IntersectionObserver === 'undefined');
 
   useEffect(() => {
     const node = ref.current;
-    if (!node) return undefined;
-    if (typeof IntersectionObserver === 'undefined') {
-      setVisible(true);
-      return undefined;
-    }
+    if (!node || visible) return undefined;
     const observer = new IntersectionObserver((entries) => {
       if (entries.some((entry) => entry.isIntersecting)) {
         setVisible(true);
@@ -21,10 +27,10 @@ export function Reveal({ children, className, as: Tag = 'div', delay = 0, id }: 
     }, { threshold: 0.12 });
     observer.observe(node);
     return () => observer.disconnect();
-  }, []);
+  }, [visible]);
 
   return (
-    <Tag id={id} className={classNames('eu-reveal', visible && 'is-visible', className)} ref={ref} style={{ scrollMarginTop: '5rem', ...(delay ? { transitionDelay: `${delay}ms` } : {}) }}>
+    <Tag className={classNames('reveal', visible && 'is-visible', className)} ref={ref} style={delay ? { transitionDelay: `${delay}ms` } : undefined}>
       {children}
     </Tag>
   );

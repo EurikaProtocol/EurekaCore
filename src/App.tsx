@@ -33,7 +33,7 @@ export default function App() {
   return (
     <AppShell evm={evm}>
       <Routes>
-        <Route element={<HomePage evm={evm} />} path='/' />
+        <Route element={<HomePage walletAddress={evm.state.address} />} path='/' />
         <Route element={<DashboardPage evm={evm} />} path='/eureka-dashboard' />
         <Route element={<TINANDashboardPage address={evm.state.address} ekaBalance={evm.state.ekaBalance} nativeBalance={evm.state.nativeBalance} network={evm.state.network} recentTransactions={evm.recentTransactions} />} path='/dashboard' />
         <Route element={<WalletPage evm={evm} />} path='/wallet' />
