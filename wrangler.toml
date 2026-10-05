@@ -1,0 +1,13 @@
+name = "eurekacore-v3"
+main = "./cloudflare/worker.js"
+compatibility_date = "2026-09-17"
+workers_dev = false
+
+routes = [
+  { pattern = "www.tinaneureka.com", custom_domain = true }
+]
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"

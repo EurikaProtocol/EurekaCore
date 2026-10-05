@@ -1,74 +1,126 @@
-# TinanEureka (EurekaCore)
+# EurekaCore
 
-Production-oriented EUREKA Protocol frontend built with React 19, TypeScript, Vite, Tailwind, React Router, ethers v6, Solana Web3.js, Solana Wallet Adapter, WalletConnect, MetaMask, Phantom, and Framer Motion.
+EurekaCore is the existing **tinaneureka.com** frontend for **EUREKA**, **TINAN AI**, and the new **Eureka Data Tokenization** workflow.
 
-## Runtime goals
+## Production profile
 
-- Keep **EKA** on EVM and **TinanAI Token** on Solana strictly separate.
-- Never hardcode unofficial Solana mint values.
-- Require explicit wallet approval for every network switch and transaction.
-- Render only trusted external links for explorers, wallets, and Pump.fun.
-- Avoid fake market data in production.
+- Primary domain: `tinaneureka.com`
+- Canonical host: `www.tinaneureka.com`
+- App: `EurekaCore`
+- AI: `TINAN AI`
+- Core message: `DATA → PROOF → TOKENIZATION → UTILITY`
+- Active network: `Base`
+- Token contract: `0x4042973c0863cca0d73f028ca98465f44f0e6f97`
 
-## Required environment variables
+## Integrated surfaces
 
-Copy `.env.example` and configure:
+- Homepage with data-tokenization vision, TINAN AI messaging, ecosystem overview, and roadmap
+- Dashboard for wallet telemetry, activity, and runtime notifications
+- Wallet flows for MetaMask, WalletConnect v2, Coinbase Wallet, send, and receive
+- EUREKA token page with live on-chain metadata and BaseScan access
+- Data Tokenizer for upload, device-side analysis, hashing, proof generation, and local tokenized asset records
+- My Assets portfolio with proof filters and dedicated asset detail pages
+- Proofs page for Proof of Data, Proof of Action, and Proof of Knowledge
+- Whitepaper page with embedded PDF and download access
+- Shared runtime config in `/js/config.js`
 
-- `VITE_WALLETCONNECT_PROJECT_ID`
-- `VITE_SOLANA_NETWORK`
-- `VITE_SOLANA_RPC_URL`
-- `VITE_TINANAI_SOLANA_MINT`
-- `VITE_PUMPFUN_TOKEN_URL`
-- `VITE_TINANAI_METADATA_URI`
+## Data tokenization architecture
 
-Current official Solana mint value:
+The current implementation is privacy-first and production-safe:
 
-- `VITE_TINANAI_SOLANA_MINT=6FQCFFmcCE4WY2X2hxquMnKgnzwSy1sJLX5VuRMe9Ddp`
+- Uploaded files are stored privately in the browser with IndexedDB
+- Proof records store hashes, timestamps, ownership references, metadata, and lightweight storage references
+- Large files are **not** stored on-chain
+- Tokenization creates a digital representation and verification layer; it does **not** promise automatic market value
+- Additional storage providers such as IPFS or Arweave can be added later without redesigning the asset model
 
-## Local development
+## Local setup
 
 ```bash
-npm install --legacy-peer-deps
+npm install
 npm run build
 ```
 
-## Cloudflare Pages
+Optional environment variables:
 
-- Framework preset: `Vite`
-- Root directory: `/`
-- Build command: `npm run build`
-- Output directory: `dist`
-- Node version: `22`
-- Env: `NODE_VERSION=22`, `NPM_FLAGS=--legacy-peer-deps`
+```bash
+cp .env.example .env
+```
 
-SPA routing fallback is handled by `public/_redirects`.
+- `VITE_WALLETCONNECT_PROJECT_ID` enables WalletConnect v2 pairing.
+
+## Cloudflare deploy
+
+Build:
+
+```bash
+npm install && npm run build
+```
+
+Deploy:
+
+```bash
+npx wrangler deploy
+```
+
+The repository includes:
+
+- `wrangler.toml` for the Worker + static assets deployment
+- `cloudflare/worker.js` to serve the Vite `dist` output
+- `public/whitepaper/EUREKA_CHAIN_Whitepaper_v2.pdf` for the embedded whitepaper route
+
+## Vercel preview deploy
+
+This repository is **not** a Next.js app. The active frontend is the root Vite SPA:
+
+- frontend root: repository root
+- app entry: `index.html` → `script.js`
+- framework: Vite
+- build command: `npm run build`
+- output directory: `dist`
+
+For Vercel previews:
+
+- keep the **Root Directory** set to the repository root (`.`)
+- use the committed `vercel.json`
+- do **not** switch the project to a Next.js framework preset
+
+Cloudflare Workers remains the production deployment path for `tinaneureka.com`. Vercel should only mirror the existing static frontend for preview builds unless the deployment architecture is intentionally changed later.
+
+## Project structure
+
+- `index.html`
+- `styles.css`
+- `script.js`
+- `config.js`
+- `components/`
+- `pages/`
+- `js/config.js`
+- `js/data-tokenization.js`
+- `js/tinan-agent.js`
+- `js/wallet.js`
+- `public/`
+- `cloudflare/`
 
 ## Routes
 
 - `/`
-- `/assets` — browser-local data asset records and file hash checks
-- `/proofs` — Proof of Data, signed Proof of Action statements, and user-authored knowledge records
-- `/tokenize` — export content-hash metadata packages; minting is not connected
-- `/ecosystem` — current integrations and coming-soon networks
 - `/dashboard`
 - `/wallet`
 - `/tinan-ai`
-- `/marketplace`
+- `/eureka` (`/token` is an alias)
+- `/data`
+- `/tokenize`
+- `/my-assets`
+- `/assets/:id`
+- `/proofs`
+- `/ecosystem`
 - `/whitepaper`
-- `/staking`
-- `/swap`
-- `/explorer`
-- `/settings`
-- `/tinan-ai-token`
-- `/pumpfun`
 
 ## Data assets, proofs, and TINAN AI
 
-- Supported files (maximum 25 MB) are SHA-256 hashed in the browser. File contents are not uploaded or stored by this application.
-- Data asset and proof metadata is stored in browser IndexedDB for the current origin/profile only. It is not encrypted, synchronized, backed up, or anchored to a blockchain.
-- Proof of Data hash comparison only confirms that a re-selected file matches a locally stored hash record.
-- Proof of Action verifies that a connected EVM wallet signed a user-submitted statement. A signature does not independently prove the described external action occurred.
-- Proof of Knowledge hashes a user-authored structured record; it does not certify the truth of its contents or represent AI analysis.
-- Token metadata can be exported as JSON. The repository has no data-token contract, data storage backend, mint transaction, or tokenization API; exported metadata is not a minted asset.
-- TINAN AI is presented as Natural Intelligence. This static frontend has no AI provider, `/api/ai/analyze`, or `/api/ai/summarize` backend. It does not return fabricated summaries or analysis. Provider-backed AI requires a future authenticated server-side integration; provider credentials must never be placed in `VITE_` variables.
-- Ethereum and Solana retain their existing wallet/token-read integrations. Other multichain networks are marked Coming Soon for this data-asset flow.
+- Files are hashed in the browser; uploaded file contents are stored privately in IndexedDB. Asset and proof metadata is stored in localStorage for the current browser profile.
+- Proof records remain local to the current browser profile and are not anchored to a blockchain.
+- Proof of Action links a user-triggered event to its created artifact; it does not independently prove an external event occurred.
+- Tokenization creates a local metadata record. On-chain registration and transactions are not connected.
+- TINAN AI uses client-side responses; there is no AI provider backend in this application.
