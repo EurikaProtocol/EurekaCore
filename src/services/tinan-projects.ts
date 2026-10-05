@@ -30,6 +30,19 @@ function isBlueprint(value: unknown): value is TINANBlueprint {
     && typeof blueprint.createdAt === 'string';
 }
 
+function isTokenizationPlan(value: unknown): value is TokenizationPlan {
+  if (typeof value !== 'object' || value === null) return false;
+  const plan = value as Partial<TokenizationPlan>;
+  return typeof plan.model === 'string'
+    && typeof plan.network === 'string'
+    && typeof plan.name === 'string'
+    && typeof plan.symbol === 'string'
+    && typeof plan.decimals === 'number'
+    && typeof plan.supply === 'string'
+    && typeof plan.utility === 'string'
+    && typeof plan.metadata === 'string';
+}
+
 function isProject(value: unknown): value is TINANProject {
   if (typeof value !== 'object' || value === null) return false;
   const project = value as Partial<TINANProject>;
@@ -40,7 +53,8 @@ function isProject(value: unknown): value is TINANProject {
     && PROJECT_STATUSES.includes(project.status as (typeof PROJECT_STATUSES)[number])
     && typeof project.createdAt === 'string'
     && typeof project.updatedAt === 'string'
-    && (project.blueprint === undefined || isBlueprint(project.blueprint));
+    && (project.blueprint === undefined || isBlueprint(project.blueprint))
+    && (project.tokenizationPlan === undefined || isTokenizationPlan(project.tokenizationPlan));
 }
 
 export function listProjects(): TINANProject[] {

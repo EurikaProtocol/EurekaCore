@@ -41,7 +41,7 @@ External AI API credentials, if added later, must be Cloudflare Worker secrets o
 
 ## Cloudflare deployment
 
-The existing `wrangler.toml` Worker asset binding and custom domain are preserved. Build the app with `npm run build`, configure the variables above in the Cloudflare Worker environment, and deploy using an authenticated Wrangler CLI with `npx wrangler deploy`. Do not configure secret values as public Vite build variables.
+The existing `wrangler.toml` Worker asset binding and custom domain are preserved. `VITE_*` settings are compiled into browser assets and must be available to the build process before building; setting them only as Worker runtime variables will not configure the frontend. Use only public-safe values for Vite variables. Build with `npm run build`, then deploy the generated `dist` assets and Worker using an authenticated Wrangler CLI with `npx wrangler deploy`. Configure future private API credentials as Cloudflare Worker secrets only when a server-side Worker integration consumes them; no AI secret is required by the current demo.
 
 Vercel's existing `vercel.json` remains available as a separate deployment configuration.
 

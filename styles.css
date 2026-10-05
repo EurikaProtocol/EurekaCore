@@ -228,13 +228,20 @@ body:after {
   display: block;
 }
 
+.network-mark {
+  color: #a9d9ef;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+
 .nav-networks .network-badge {
   width: 34px;
   height: 34px;
   border-radius: 12px;
 }
 
-.nav-networks .network-badge img {
+.nav-networks .network-mark {
   width: 24px;
   height: 24px;
 }
@@ -632,10 +639,14 @@ noscript .multichain-noscript-fallback {
   transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease, opacity .25s ease, filter .25s ease;
 }
 
-.multichain-node img {
+.multichain-node span {
   width: clamp(30px, 6vw, 44px);
   height: clamp(30px, 6vw, 44px);
-  object-fit: contain;
+  display: grid;
+  place-items: center;
+  color: #a9d9ef;
+  font-size: 10px;
+  font-weight: 700;
 }
 
 .multichain-node:hover,
@@ -686,7 +697,11 @@ noscript .multichain-noscript-fallback {
 .multichain-panel-logo {
   width: 39px;
   height: 39px;
-  object-fit: contain;
+  display: grid;
+  place-items: center;
+  color: #a9d9ef;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .multichain-panel-kicker {
@@ -895,8 +910,11 @@ h2 {
 .node-logo {
   width: 28px;
   height: 28px;
-  object-fit: contain;
-  display: block;
+  display: grid;
+  place-items: center;
+  color: #a9d9ef;
+  font-size: 9px;
+  font-weight: 700;
 }
 
 .n1 { left: 10%; top: 18%; }
@@ -1814,7 +1832,7 @@ footer .brand {
   }
 
   .node-logo,
-  .network-badge img {
+  .network-mark {
     width: 28px;
     height: 28px;
   }

@@ -37,8 +37,8 @@ export function TINANProjectsPage() {
                 <div className='flex min-w-0 items-center gap-3'>
                   <img alt='' className='h-10 w-10 shrink-0' src='/assets/tinan-logo.svg' />
                   <div className='min-w-0'>
-                  <h2 className='text-lg font-semibold'>{project.title}</h2>
-                  <p className='mt-1 text-xs text-white/55'>Updated {new Date(project.updatedAt).toLocaleString()}</p>
+                    <h2 className='text-lg font-semibold'>{project.title}</h2>
+                    <p className='mt-1 text-xs text-white/55'>Updated {new Date(project.updatedAt).toLocaleString()}</p>
                   </div>
                 </div>
                 <StatusPill>{project.status}</StatusPill>
@@ -110,6 +110,26 @@ export function TINANProjectPage() {
         {error ? <p className='mt-3 text-sm text-rose-200' role='alert'>{error}</p> : null}
         <button className='mt-3 rounded-xl bg-tinan-cyan px-4 py-2 text-sm font-semibold text-black disabled:opacity-50' disabled={loading} onClick={() => void analyzeProject()} type='button'>{loading ? 'Analyzing…' : 'Analyze and save changes'}</button>
       </PageSection>
+      {project.tokenizationPlan ? (
+        <PageSection>
+          <div className='flex items-center gap-3'>
+            <img alt='' className='h-9 w-9' src='/assets/tinan-logo.svg' />
+            <div>
+              <p className='text-xs uppercase tracking-wider text-tinan-cyan'>Saved locally · demo plan</p>
+              <h2 className='text-lg font-semibold'>Tokenization configuration</h2>
+            </div>
+          </div>
+          <dl className='mt-4 grid gap-3 sm:grid-cols-2'>
+            <div className='rounded-xl border border-white/10 p-3'><dt className='text-xs text-white/50'>Model</dt><dd className='mt-1 text-sm'>{project.tokenizationPlan.model}</dd></div>
+            <div className='rounded-xl border border-white/10 p-3'><dt className='text-xs text-white/50'>Network</dt><dd className='mt-1 text-sm'>{project.tokenizationPlan.network}</dd></div>
+            <div className='rounded-xl border border-white/10 p-3'><dt className='text-xs text-white/50'>Token name / symbol</dt><dd className='mt-1 text-sm'>{project.tokenizationPlan.name} ({project.tokenizationPlan.symbol})</dd></div>
+            <div className='rounded-xl border border-white/10 p-3'><dt className='text-xs text-white/50'>Decimals / supply draft</dt><dd className='mt-1 text-sm'>{project.tokenizationPlan.decimals} / {project.tokenizationPlan.supply || 'Not specified'}</dd></div>
+            <div className='rounded-xl border border-white/10 p-3 sm:col-span-2'><dt className='text-xs text-white/50'>Utility</dt><dd className='mt-1 break-words text-sm'>{project.tokenizationPlan.utility}</dd></div>
+            <div className='rounded-xl border border-white/10 p-3 sm:col-span-2'><dt className='text-xs text-white/50'>Metadata URI</dt><dd className='mt-1 break-all text-sm'>{project.tokenizationPlan.metadata || 'Not specified'}</dd></div>
+          </dl>
+          <p className='mt-3 text-xs text-white/50'>Planning data only. No token has been created and no blockchain transaction was sent.</p>
+        </PageSection>
+      ) : null}
       {project.blueprint ? <BlueprintView blueprint={project.blueprint} /> : <PageSection className='text-sm text-white/60'>This draft does not have an analysis yet.</PageSection>}
       <div className='flex flex-wrap gap-3'>
         <Link className='rounded-xl border border-white/15 px-4 py-2 text-sm' to='/tokenize'>Build tokenization blueprint</Link>
