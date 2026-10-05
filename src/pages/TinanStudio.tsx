@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import type { TINANBlueprint } from '../core/tinan-blueprint';
 import { assessReadiness } from '../core/tinan-blueprint';
 import { PageHero, PageSection, StatusPill } from '../components/ui';
@@ -66,7 +66,8 @@ export function BlueprintView({ blueprint }: { blueprint: TINANBlueprint }) {
 
 function AnalysisForm({ allowSave }: { allowSave: boolean }) {
   const navigate = useNavigate();
-  const [idea, setIdea] = useState('');
+  const [searchParams] = useSearchParams();
+  const [idea, setIdea] = useState(() => (searchParams.get('idea') ?? '').slice(0, 4000));
   const [blueprint, setBlueprint] = useState<TINANBlueprint | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -97,43 +98,45 @@ function AnalysisForm({ allowSave }: { allowSave: boolean }) {
   }
 
   return (
-    <>
-      <PageSection>
+    <div className='grid items-start gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]'>
+      <PageSection className='lg:sticky lg:top-24'>
         <label className='block text-sm font-medium' htmlFor='tinan-idea'>Describe your idea, asset, energy system, data source, or Web3 project</label>
         <textarea
-          className='mt-3 min-h-36 w-full rounded-2xl border border-white/15 bg-black/30 p-4 text-sm text-white outline-none focus:border-tinan-cyan'
+          className='mt-3 min-h-48 w-full rounded-2xl border border-white/15 bg-black/30 p-4 text-sm text-white outline-none focus:border-tinan-cyan'
           id='tinan-idea'
           maxLength={4000}
           onChange={(event) => setIdea(event.target.value)}
           placeholder={EXAMPLE_IDEA}
           value={idea}
         />
-        <div className='mt-3 flex flex-wrap items-center justify-between gap-3'>
-          <span className='text-xs text-white/55'>{idea.length}/4000 characters · Demo mode; no external AI service is called.</span>
-          <button className='rounded-xl bg-tinan-cyan px-5 py-3 text-sm font-semibold text-black disabled:cursor-not-allowed disabled:opacity-50' disabled={loading || idea.trim().length < 12} onClick={() => void analyze()} type='button'>
-            {loading ? 'TINAN AI is analyzing…' : 'Analyze with TINAN AI'}
+        <p className='mt-3 text-xs text-white/55'>{idea.length}/4000 characters · Demo mode; no external AI service is called.</p>
+        <div className='mt-3 flex flex-wrap gap-3'>
+          <button className='btn btn-primary disabled:cursor-not-allowed disabled:opacity-50' disabled={loading || idea.trim().length < 12} onClick={() => void analyze()} type='button'>
+            {loading ? 'TINAN AI is analyzing…' : 'Analyze & Generate Blueprint'}
           </button>
         </div>
         {error ? <p className='mt-3 rounded-xl border border-rose-300/30 bg-rose-900/20 p-3 text-sm text-rose-100' role='alert'>{error}</p> : null}
         {loading ? <p aria-live='polite' className='mt-3 text-sm text-tinan-cyan'>Structuring your idea locally…</p> : null}
         {saved && !allowSave ? <p className='mt-3 text-sm text-emerald-200' role='status'>Project saved in this browser.</p> : null}
       </PageSection>
-      {blueprint ? (
-        <div className='grid gap-3'>
-          <BlueprintView blueprint={blueprint} />
-          <div className='flex flex-wrap gap-3'>
-            <button className='rounded-xl bg-tinan-cyan px-4 py-2 text-sm font-semibold text-black' onClick={save} type='button'>
-              {allowSave ? 'Save project' : 'Save to projects'}
-            </button>
-            <Link className='rounded-xl border border-white/15 px-4 py-2 text-sm' to='/tokenize'>Create tokenization blueprint</Link>
-          </div>
-        </div>
-      ) : (
-        <PageSection className='border-dashed text-sm text-white/60'>
-          Enter an idea and run an analysis to see a structured blueprint. No balances, prices, transactions, or real-world measurements are generated.
-        </PageSection>
-      )}
-    </>
+      <div className='grid min-w-0 gap-3'>
+        {blueprint ? (
+          <>
+            <BlueprintView blueprint={blueprint} />
+            <div className='flex flex-wrap gap-3'>
+              <button className='btn btn-primary' onClick={save} type='button'>
+                {allowSave ? 'Save project' : 'Save Project'}
+              </button>
+              <Link className='btn btn-ghost' to={`/tokenize?idea=${encodeURIComponent(idea.trim().slice(0, 4000))}`}>Create Tokenization Plan</Link>
+            </div>
+          </>
+        ) : (
+          <PageSection className='border-dashed text-sm text-white/60'>
+            Enter an idea and run an analysis to see a structured blueprint. No balances, prices, transactions, or real-world measurements are generated.
+          </PageSection>
+        )}
+      </div>
+    </div>
   );
 }
 
