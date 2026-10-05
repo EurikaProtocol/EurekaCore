@@ -7,6 +7,7 @@ import { isValidEvmAddress } from '../core/verify';
 import type { TINANProject } from '../core/tinan-blueprint';
 import type { RecentTransaction } from '../hooks/useEvmWallet';
 import { listProjects } from '../services/tinan-projects';
+import { addTokenToWallet } from '../services/wallet-assets';
 import { readTokenSnapshot, type TokenSnapshot } from '../services/token-reader';
 import { DetailRow, ExternalLinkButton, MetricCard, PageHero, PageSection, StatusPill } from '../components/ui';
 
@@ -17,34 +18,6 @@ function TinanLogo({ className = 'h-10 w-10' }: { className?: string }) {
 }
 
 function TokenSummary({ token }: { token: TokenSnapshot }) {
-  async function addToWallet() {
-    if (!window.ethereum) {
-      window.alert('No compatible injected EVM wallet was found.');
-      return;
-    }
-    if (!TINAN_TOKEN.chainId) {
-      window.alert('Set the token network before adding this token to a wallet.');
-      return;
-    }
-    try {
-      const currentChain = await window.ethereum.request({ method: 'eth_chainId' });
-      if (typeof currentChain !== 'string' || Number.parseInt(currentChain, 16) !== TINAN_TOKEN.chainId) {
-        window.alert(`Switch your wallet to ${TINAN_TOKEN.networkName} before adding this token.`);
-        return;
-      }
-      const accepted: unknown = await window.ethereum.request({
-        method: 'wallet_watchAsset',
-        params: {
-          type: 'ERC20',
-          options: { address: token.address, symbol: token.symbol, decimals: token.decimals },
-        },
-      });
-      if (accepted !== true) window.alert('The wallet did not confirm adding this token.');
-    } catch {
-      window.alert('The wallet could not add this token. No transaction was sent.');
-    }
-  }
-
   return (
     <PageSection>
       <div className='flex items-center gap-3'>
@@ -61,7 +34,7 @@ function TokenSummary({ token }: { token: TokenSnapshot }) {
         <DetailRow label='Connected wallet balance' value={token.balance ?? 'Connect an EVM wallet to read'} />
       </dl>
       <p className='mt-4 text-xs text-white/55'>Contract read succeeded. Explorer verification status has not been checked.</p>
-      <button className='mt-4 rounded-xl border border-tinan-cyan/40 px-4 py-2 text-sm hover:bg-white/5' onClick={() => void addToWallet()} type='button'>Add to Wallet</button>
+      <button className='mt-4 rounded-xl border border-tinan-cyan/40 px-4 py-2 text-sm hover:bg-white/5' onClick={() => void addTokenToWallet(token)} type='button'>Add to Wallet</button>
     </PageSection>
   );
 }
