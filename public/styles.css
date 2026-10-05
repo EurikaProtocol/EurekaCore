@@ -85,7 +85,7 @@ body:after {
     linear-gradient(135deg, transparent 20%, rgba(138, 43, 226, 0.15) 30%, transparent 50%),
     linear-gradient(-135deg, transparent 20%, rgba(138, 43, 226, 0.15) 30%, transparent 50%),
     linear-gradient(90deg, transparent 40%, rgba(75, 140, 255, 0.08) 50%, transparent 60%);
-  background-size: 
+  background-size:
     100% 100%,
     100% 100%,
     100% 100%;
@@ -99,7 +99,7 @@ body:after {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: 
+  background:
     linear-gradient(110deg, transparent 30%, rgba(138, 43, 226, 0.12) 40%, transparent 70%),
     linear-gradient(-110deg, transparent 30%, rgba(75, 140, 255, 0.1) 40%, transparent 70%);
   animation: lightning-2 8s ease-in-out infinite;
@@ -112,7 +112,7 @@ body:after {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: 
+  background:
     linear-gradient(120deg, transparent 25%, rgba(138, 43, 226, 0.1) 35%, transparent 65%),
     linear-gradient(-120deg, transparent 25%, rgba(75, 140, 255, 0.08) 35%, transparent 65%);
   animation: lightning-3 10s ease-in-out infinite;
