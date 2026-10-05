@@ -8,24 +8,32 @@ import { getSolscanAddressUrl, getSolscanTokenUrl } from '../solana/connection';
 export function TinanAiTokenPage() {
   const { connection } = useConnection();
   const { connected, publicKey } = useWallet();
-  const [solBalance, setSolBalance] = useState('0');
-  const [tokenBalance, setTokenBalance] = useState(TINANAI_SOLANA.mintAddress ? '0' : 'Mint not configured');
+  const [solBalance, setSolBalance] = useState('Connect wallet');
+  const [tokenBalance, setTokenBalance] = useState(TINANAI_SOLANA.mintAddress ? 'Connect wallet' : 'Mint not configured');
   const [status, setStatus] = useState('Connect Phantom to read wallet-linked Solana balances.');
   const publicKeyBase58 = publicKey?.toBase58() ?? '';
 
   useEffect(() => {
     if (!connected || !publicKeyBase58) {
+      setSolBalance('Connect wallet');
+      setTokenBalance(TINANAI_SOLANA.mintAddress ? 'Connect wallet' : 'Mint not configured');
       setStatus('Connect Phantom to read wallet-linked Solana balances.');
       return;
     }
 
+    setSolBalance('Loading…');
+    setTokenBalance(TINANAI_SOLANA.mintAddress ? 'Loading…' : 'Mint not configured');
     readSolanaWalletSnapshot(connection, publicKeyBase58, TINANAI_SOLANA.mintAddress)
       .then((snapshot) => {
         setSolBalance(snapshot.solBalance);
         setTokenBalance(snapshot.tokenBalance);
         setStatus('Solana balances loaded.');
       })
-      .catch((error: Error) => setStatus(`Solana read failed: ${error.message}`));
+      .catch((error: Error) => {
+        setSolBalance('Unavailable');
+        setTokenBalance(TINANAI_SOLANA.mintAddress ? 'Unavailable' : 'Mint not configured');
+        setStatus(`Solana read failed: ${error.message}`);
+      });
   }, [connected, connection, publicKeyBase58]);
 
   return (
