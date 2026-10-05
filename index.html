@@ -1,31 +1,419 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>EUREKA Data Tokenization | TINAN AI on Base</title>
-    <meta
-      name="description"
-      content="Transform valuable digital information into proof-backed, privacy-first digital assets with EUREKA, TINAN AI, and Base-ready wallet infrastructure on tinaneureka.com."
-    />
-    <meta name="theme-color" content="#05120c" />
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content="EUREKA Data Tokenization | TINAN AI" />
-    <meta property="og:description" content="DATA → PROOF → TOKENIZATION → UTILITY. Upload data, generate proof records, and manage tokenized digital assets inside the existing Eureka ecosystem." />
-    <meta property="og:url" content="https://tinaneureka.com" />
-    <meta property="og:image" content="/favicon-192.png" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="EUREKA Data Tokenization | TINAN AI" />
-    <meta name="twitter:description" content="Natural intelligence for proof-backed data assets, wallet tooling, and Base-native EUREKA infrastructure." />
-    <meta name="twitter:image" content="/favicon-192.png" />
-    <link rel="canonical" href="https://tinaneureka.com" />
-    <link rel="icon" href="/favicon.ico" sizes="any" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <link rel="manifest" href="/manifest.webmanifest" />
-  </head>
-  <body>
-    <div id="app"></div>
-    <script type="module" src="/script.js"></script>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#030615" />
+  <meta name="description" content="Eureka — The Final Block of the Blockchain. One app. Every chain." />
+  <title>EUREKA — The New Finance System</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="stars"></div>
+  <header class="nav">
+    <a href="/" class="brand" aria-label="Eureka home">
+      <img src="assets/eureka-logo.svg" alt="Eureka logo" class="brand-logo">
+      <span class="brand-text">EUREKA</span>
+    </a>
+    <div class="nav-links">
+      <nav class="nav-menu">
+        <a href="#platform">Platform</a>
+        <a href="#chains">Chains</a>
+        <a href="#vision">Vision</a>
+        <a href="#token">Token</a>
+        <a href="#wallet">Wallet</a>
+      </nav>
+      <ul class="nav-networks" aria-label="Featured supported networks"></ul>
+      <div class="nav-social-group" role="group" aria-label="Social links">
+        <div data-x-slot="mobile"></div>
+        <noscript>
+          <a class="nav-social-mobile" href="https://x.com/tinanasv?s=11" aria-label="Follow Tinana on X (opens in a new tab)" target="_blank" rel="noopener noreferrer">
+            <img src="assets/icons/x.svg" alt="" class="btn-icon" aria-hidden="true">
+            <span>Follow on X</span>
+          </a>
+        </noscript>
+      </div>
+      <a class="nav-cta-mobile" href="#launch">Enter Eureka <span>↗</span></a>
+    </div>
+    <a class="nav-cta" href="#launch">Enter Eureka <span>↗</span></a>
+    <button class="menu" aria-label="Open menu">☰</button>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="hero-art"></div>
+      <div class="hero-glow"></div>
+      <div class="hero-content">
+        <div class="eyebrow"><span></span> THE NEXT WEB3 INTERFACE</div>
+        <h1>The Final Block<br><em>of the Blockchain.</em></h1>
+        <p class="hero-copy">
+          One app. Every chain. Eureka creates a seamless gateway to the entire
+          blockchain universe — without the fragmentation.
+        </p>
+        <div class="hero-actions">
+          <a class="btn primary" href="#launch">Explore Eureka <span>→</span></a>
+          <a class="btn ghost" href="#platform">Discover the vision</a>
+        </div>
+        <div class="hero-stats">
+          <div><strong>01</strong><span>Unified interface</span></div>
+          <div><strong>∞</strong><span>Chains & networks</span></div>
+          <div><strong>24/7</strong><span>Global access</span></div>
+        </div>
+      </div>
+      <div class="scroll-hint">SCROLL <span>↓</span></div>
+    </section>
+
+    <section id="platform" class="section intro">
+      <div class="section-label">01 / THE PLATFORM</div>
+      <div class="split">
+        <div>
+          <h2>Every blockchain.<br><span>One destination.</span></h2>
+        </div>
+        <div>
+          <p>
+            Eureka is designed as an all-in-one home for blockchain users.
+            Choose the network you need and move directly into its ecosystem
+            through a single, clean interface.
+          </p>
+          <p class="muted">
+            No more switching between disconnected tools. No more fragmented
+            workflows. One doorway into Web3.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="chains" class="section chains multichain">
+      <span id="multichain" class="section-anchor" aria-hidden="true"></span>
+      <div class="section-heading">
+        <div>
+          <div class="section-label">02 / THE NETWORK</div>
+          <h2>Choose your <span>chain.</span></h2>
+        </div>
+        <p>Start with the ecosystems you already use. Expand into the rest of Web3.</p>
+      </div>
+
+      <div class="multichain-layout">
+        <div class="multichain-orbit-shell" data-multichain-shell>
+          <div class="multichain-neon-ring ring-a" aria-hidden="true"></div>
+          <div class="multichain-neon-ring ring-b" aria-hidden="true"></div>
+          <div class="multichain-neon-ring ring-c" aria-hidden="true"></div>
+          <div class="multichain-particles" aria-hidden="true">
+            <span class="particle p1"></span>
+            <span class="particle p2"></span>
+            <span class="particle p3"></span>
+            <span class="particle p4"></span>
+            <span class="particle p5"></span>
+            <span class="particle p6"></span>
+          </div>
+          <div class="multichain-core">
+            <img src="assets/eureka-logo.svg" alt="EUREKA core logo">
+          </div>
+          <ul class="multichain-wheel" id="multichainWheel" aria-label="Supported multichain selector"></ul>
+        </div>
+        <noscript>
+          <style>
+            .multichain-orbit-shell,
+            .multichain-layout > .multichain-panel:not(.multichain-noscript-panel) {
+              display: none !important;
+            }
+          </style>
+          <div class="multichain-noscript-fallback">
+            <aside class="multichain-panel multichain-noscript-panel">
+              <p class="multichain-panel-kicker">Multichain Selector</p>
+              <h3>JavaScript Required</h3>
+              <p class="multichain-panel-description">Enable JavaScript to browse all supported chains in the orbit selector.</p>
+            </aside>
+          </div>
+        </noscript>
+        <aside class="multichain-panel">
+          <div class="multichain-panel-head">
+            <div class="multichain-panel-logo-wrap">
+              <img id="multichainPanelLogo" src="assets/icons/ethereum.svg" alt="Ethereum logo" class="multichain-panel-logo">
+            </div>
+            <div>
+              <p class="multichain-panel-kicker">Selected Chain</p>
+              <h3 id="multichainPanelName">Ethereum</h3>
+            </div>
+          </div>
+          <p id="multichainPanelDescription" class="multichain-panel-description">The leading smart-contract ecosystem powering DeFi, NFTs, infrastructure, and ERC-20 liquidity.</p>
+          <p class="multichain-status" aria-label="Connected and ready"><span aria-hidden="true">●</span> <strong id="multichainPanelStatus"><span aria-hidden="true">Connected Ready</span><span class="sr-only">Connected and ready</span></strong></p>
+          <div class="multichain-data-grid">
+            <div>
+              <span>Native Token</span>
+              <strong id="multichainPanelToken">ETH</strong>
+            </div>
+            <div>
+              <span>Ecosystem</span>
+              <strong id="multichainPanelEcosystem">Layer 1</strong>
+            </div>
+          </div>
+          <a class="btn primary multichain-launch-btn" id="multichainLaunch" href="https://ethereum.org/" target="_blank" rel="noopener noreferrer" aria-label="Launch Ethereum official website (opens in a new tab)">
+            <span id="multichainLaunchLabel">Launch Ethereum</span> <span>↗</span>
+          </a>
+        </aside>
+      </div>
+    </section>
+
+    <section id="vision" class="section vision">
+      <div class="vision-orbit">
+        <div class="orbit-center"><span>EUREKA</span><small>ONE • WEB3</small></div>
+        <i class="node n1" aria-hidden="true"><img src="assets/icons/bitcoin.svg" alt="" class="node-logo"></i>
+        <i class="node n2" aria-hidden="true"><img src="assets/icons/ethereum.svg" alt="" class="node-logo"></i>
+        <i class="node n3" aria-hidden="true"><img src="assets/icons/solana.svg" alt="" class="node-logo"></i>
+        <i class="node n4" aria-hidden="true"><img src="assets/icons/avalanche.svg" alt="" class="node-logo"></i>
+        <i class="node n5" aria-hidden="true"><img src="assets/icons/cardano.svg" alt="" class="node-logo"></i>
+        <i class="node n6" aria-hidden="true"><img src="assets/icons/chainlink.svg" alt="" class="node-logo"></i>
+      </div>
+      <div class="vision-copy">
+        <div class="section-label">03 / THE VISION</div>
+        <h2>Where all chains<br><span>finally become one.</span></h2>
+        <p>
+          Blockchain should feel connected, not fragmented. Eureka is building
+          the interface layer for a multi-chain financial world.
+        </p>
+        <div class="feature-list">
+          <div><b>01</b><span>Multi-chain access from one interface</span></div>
+          <div><b>02</b><span>Simple discovery of blockchain ecosystems</span></div>
+          <div><b>03</b><span>A foundation for future Web3 services</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="token" class="section token">
+      <div class="token-panel">
+        <div class="section-label">04 / EUREKA TOKEN</div>
+        <div class="token-title">
+          <div class="coin-logo">E</div>
+          <div><h2>$EUREKA</h2><p>The ecosystem token</p></div>
+        </div>
+        <p>
+          A future utility layer for the Eureka ecosystem. The token section
+          can later connect to your live contract, staking, governance,
+          rewards and other utilities as they are launched.
+        </p>
+        <div class="token-grid">
+          <div><span>NETWORK</span><strong>Your chain</strong></div>
+          <div><span>UTILITY</span><strong>Coming soon</strong></div>
+          <div><span>STATUS</span><strong class="live">● Building</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="launch" class="section launch">
+      <div class="launch-glow"></div>
+      <div class="section-label">05 / ENTER THE NETWORK</div>
+      <h2>The blockchain universe<br><span>starts here.</span></h2>
+      <p>Join the next generation of multi-chain finance.</p>
+      <ul class="launch-networks" aria-label="Supported networks"></ul>
+      <div class="hero-actions">
+        <a class="btn primary" href="#chains">Explore networks <span>→</span></a>
+        <span data-x-slot="launch"></span>
+        <noscript>
+          <a class="btn ghost" href="https://x.com/tinanasv?s=11" aria-label="Follow Tinana on X (opens in a new tab)" target="_blank" rel="noopener noreferrer">
+            <img src="assets/icons/x.svg" alt="" class="btn-icon" aria-hidden="true">
+            <span>Follow on X</span>
+          </a>
+        </noscript>
+      </div>
+    </section>
+
+    <section id="wallet" class="section wallet-section">
+      <div class="section-heading wallet-heading">
+        <div>
+          <div class="section-label">06 / EUREKA WALLET</div>
+          <h2>One wallet layer.<br><span>Across every supported chain.</span></h2>
+        </div>
+        <p>Connect in read-only mode, sync your active chain with the EUREKA orbit selector, and monitor balances without leaving the current interface.</p>
+      </div>
+
+      <div class="wallet-shell">
+        <div class="wallet-dashboard">
+          <div class="wallet-dashboard-top">
+            <div>
+              <p class="wallet-kicker">Read-only wallet access</p>
+              <h3>EUREKA Wallet Dashboard</h3>
+            </div>
+            <div class="wallet-supported">
+              <span>MetaMask</span>
+              <span>Phantom</span>
+              <span>WalletConnect</span>
+              <span>Coinbase Wallet</span>
+            </div>
+          </div>
+
+          <div class="wallet-toolbar">
+            <div class="wallet-toolbar-main">
+              <button class="btn primary wallet-primary-action" id="walletPrimaryAction" type="button">Connect Wallet <span>→</span></button>
+              <p id="walletConnectionHint" class="wallet-connection-hint">Choose a wallet provider below. EUREKA stores only your public wallet address in memory.</p>
+            </div>
+            <div class="wallet-chain-control">
+              <label for="walletChainSelector">Selected Chain</label>
+              <select id="walletChainSelector" aria-label="Select active chain for the Eureka wallet dashboard"></select>
+              <p>Synced with the animated EUREKA orbit selector.</p>
+            </div>
+          </div>
+
+          <div class="wallet-provider-grid" aria-label="Supported wallet providers">
+            <button class="wallet-provider-btn" type="button" data-wallet-provider="metamask">
+              <strong>MetaMask</strong>
+              <span>Ethereum + EVM chains</span>
+            </button>
+            <button class="wallet-provider-btn" type="button" data-wallet-provider="phantom">
+              <strong>Phantom</strong>
+              <span>Solana wallet adapter</span>
+            </button>
+            <button class="wallet-provider-btn" type="button" data-wallet-provider="walletconnect">
+              <strong>WalletConnect</strong>
+              <span>QR-based EVM access</span>
+            </button>
+            <button class="wallet-provider-btn" type="button" data-wallet-provider="coinbase">
+              <strong>Coinbase Wallet</strong>
+              <span>Coinbase EVM connection</span>
+            </button>
+          </div>
+
+          <div class="wallet-status-grid">
+            <article class="wallet-card wallet-identity-card">
+              <div class="wallet-card-head">
+                <div>
+                  <p class="wallet-card-kicker">Connected Wallet</p>
+                  <h4 id="walletProviderName">Not connected</h4>
+                </div>
+                <span id="walletConnectionBadge" class="wallet-badge">Idle</span>
+              </div>
+              <div class="wallet-data-stack">
+                <div>
+                  <span>Address</span>
+                  <strong id="walletAddress">Not connected</strong>
+                </div>
+                <div>
+                  <span>ENS</span>
+                  <strong id="walletEns">Unavailable</strong>
+                </div>
+                <div>
+                  <span>Selected Chain</span>
+                  <strong id="walletSelectedChain">Solana</strong>
+                </div>
+              </div>
+              <div class="wallet-card-actions">
+                <button class="btn ghost wallet-inline-btn" id="copyWalletAddressButton" type="button">Copy Address</button>
+                <button class="btn ghost wallet-inline-btn" id="disconnectWalletButton" type="button">Disconnect</button>
+              </div>
+            </article>
+
+            <article class="wallet-card wallet-balance-card">
+              <div class="wallet-card-head">
+                <div>
+                  <p class="wallet-card-kicker">Portfolio Snapshot</p>
+                  <h4>Live Readouts</h4>
+                </div>
+              </div>
+              <div class="wallet-balance-grid">
+                <div>
+                  <span>Wallet Balance</span>
+                  <strong id="walletNativeBalance">—</strong>
+                </div>
+                <div>
+                  <span>Chain Family</span>
+                  <strong id="walletChainFamily">Solana</strong>
+                </div>
+              </div>
+              <div class="wallet-token-list-wrap">
+                <p class="wallet-subtitle">Token List</p>
+                <ul id="walletTokenList" class="wallet-token-list">
+                  <li>
+                    <span>Native</span>
+                    <strong>Connect a wallet to load balances.</strong>
+                  </li>
+                </ul>
+              </div>
+            </article>
+          </div>
+
+          <div class="wallet-token-panels">
+            <article class="wallet-card wallet-token-card">
+              <div class="wallet-card-head">
+                <div>
+                  <p class="wallet-card-kicker">EUREKA Token</p>
+                  <h4>Ethereum Mainnet ERC-20</h4>
+                </div>
+                <span id="eurekaTokenStatus" class="wallet-badge">Awaiting contract</span>
+              </div>
+              <div class="wallet-token-grid">
+                <div>
+                  <span>Token Balance</span>
+                  <strong id="eurekaTokenBalance">—</strong>
+                </div>
+                <div>
+                  <span>Symbol</span>
+                  <strong id="eurekaTokenSymbol">EUREKA</strong>
+                </div>
+                <div>
+                  <span>Decimals</span>
+                  <strong id="eurekaTokenDecimals">—</strong>
+                </div>
+                <div>
+                  <span>Total Supply</span>
+                  <strong id="eurekaTokenSupply">—</strong>
+                </div>
+              </div>
+              <div class="wallet-contract-row">
+                <div>
+                  <span>Contract Address</span>
+                  <strong id="eurekaTokenAddress">PASTE_CONTRACT_HERE</strong>
+                </div>
+              </div>
+              <div class="wallet-card-actions">
+                <button class="btn ghost wallet-inline-btn" id="copyTokenAddressButton" type="button">Copy Address</button>
+                <a class="btn ghost wallet-inline-btn wallet-link-btn" id="viewTokenOnExplorer" href="https://etherscan.io/" target="_blank" rel="noopener noreferrer">View on Etherscan</a>
+                <button class="btn primary wallet-inline-btn" id="addTokenToMetaMaskButton" type="button">Add to MetaMask</button>
+              </div>
+            </article>
+
+            <article class="wallet-card wallet-token-card">
+              <div class="wallet-card-head">
+                <div>
+                  <p class="wallet-card-kicker">TINAN</p>
+                  <h4>Future Solana SPL Support</h4>
+                </div>
+                <span class="wallet-badge wallet-badge-soon">Coming Soon</span>
+              </div>
+              <div class="wallet-token-grid">
+                <div>
+                  <span>Status</span>
+                  <strong>Coming Soon</strong>
+                </div>
+                <div>
+                  <span>Network</span>
+                  <strong>Solana</strong>
+                </div>
+                <div>
+                  <span>Mint Placeholder</span>
+                  <strong id="tinanMintPlaceholder">PASTE_SOLANA_MINT_HERE</strong>
+                </div>
+                <div>
+                  <span>Phantom Action</span>
+                  <strong>Disabled until launch</strong>
+                </div>
+              </div>
+              <div class="wallet-card-actions">
+                <button class="btn ghost wallet-inline-btn" type="button" id="addTinanToPhantomButton" disabled>Add Phantom</button>
+              </div>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="brand"><span class="brand-mark">E</span><span>EUREKA</span></div>
+    <p>The Final Block of the Blockchain — The New Finance System</p>
+    <span>© <span id="year"></span> Eureka Protocol</span>
+  </footer>
+
+  <script src="script.js"></script>
+  <script type="module" src="wallet.js"></script>
+</body>
 </html>
