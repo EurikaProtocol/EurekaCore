@@ -15,12 +15,17 @@ export const PROJECT_IDENTITY = {
 } as const;
 
 export const PRIMARY_NAVIGATION = [
-  ['/', 'Home'],
+  ['/', 'EUREKA'],
+  ['/assets', 'DATA'],
+  ['/tinan-ai', 'TINAN AI'],
+  ['/tokenize', 'TOKENIZE'],
+  ['/assets', 'MY ASSETS'],
+  ['/proofs', 'PROOFS'],
+  ['/ecosystem', 'ECOSYSTEM'],
+  ['/whitepaper', 'WHITEPAPER'],
   ['/dashboard', 'Dashboard'],
   ['/wallet', 'Wallet'],
-  ['/tinan-ai', 'TinanAI'],
   ['/marketplace', 'Marketplace'],
-  ['/whitepaper', 'Whitepaper'],
   ['/staking', 'Staking'],
   ['/swap', 'Swap'],
   ['/explorer', 'Explorer'],

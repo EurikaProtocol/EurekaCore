@@ -101,3 +101,26 @@ Cloudflare Workers remains the production deployment path for `tinaneureka.com`.
 - `js/wallet.js`
 - `public/`
 - `cloudflare/`
+
+## Routes
+
+- `/`
+- `/dashboard`
+- `/wallet`
+- `/tinan-ai`
+- `/eureka` (`/token` is an alias)
+- `/data`
+- `/tokenize`
+- `/my-assets`
+- `/assets/:id`
+- `/proofs`
+- `/ecosystem`
+- `/whitepaper`
+
+## Data assets, proofs, and TINAN AI
+
+- Files are hashed in the browser; uploaded file contents are stored privately in IndexedDB. Asset and proof metadata is stored in localStorage for the current browser profile.
+- Proof records remain local to the current browser profile and are not anchored to a blockchain.
+- Proof of Action links a user-triggered event to its created artifact; it does not independently prove an external event occurred.
+- Tokenization creates a local metadata record. On-chain registration and transactions are not connected.
+- TINAN AI uses client-side responses; there is no AI provider backend in this application.
