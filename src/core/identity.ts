@@ -31,3 +31,24 @@ export const PRIMARY_NAVIGATION = [
   ['/about', 'About'],
   ['/settings', 'Settings'],
 ] as const;
+
+export const HEADER_NAVIGATION = [
+  ['/ai', 'AI'],
+  ['/tokenize', 'Tokenize'],
+  ['/projects', 'Projects'],
+  ['/dashboard', 'Dashboard'],
+  ['/tokens', 'Tokens'],
+  ['/docs', 'Docs'],
+] as const;
+
+export const FOOTER_NAVIGATION = [
+  ['/ai', 'AI'],
+  ['/tokenize', 'Tokenize'],
+  ['/projects', 'Projects'],
+  ['/dashboard', 'Dashboard'],
+  ['/tokens', 'Tokens'],
+  ['/docs', 'Docs'],
+  ['/about', 'About'],
+  ['/privacy', 'Privacy'],
+  ['/terms', 'Terms'],
+] as const;

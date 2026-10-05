@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { EVM_NETWORKS, TOKENIZATION_NETWORKS } from '../config/networks';
 import type { TINANBlueprint } from '../core/tinan-blueprint';
 import { PageHero, PageSection, StatusPill } from '../components/ui';
@@ -12,7 +12,8 @@ const WIZARD_STEPS = ['Describe project', 'TINAN AI analysis', 'Token model', 'B
 
 export function TINANTokenizationPage() {
   const [step, setStep] = useState(0);
-  const [idea, setIdea] = useState('');
+  const [searchParams] = useSearchParams();
+  const [idea, setIdea] = useState(() => (searchParams.get('idea') ?? '').slice(0, 4000));
   const [blueprint, setBlueprint] = useState<TINANBlueprint | null>(null);
   const [model, setModel] = useState<string>(TOKEN_MODELS[0]);
   const [network, setNetwork] = useState('');

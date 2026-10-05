@@ -1,99 +1,274 @@
-import { Link } from 'react-router-dom';
-import { PageSection, StatusPill } from '../components/ui';
-import { TINAN_TOKEN } from '../config/tinan-token';
-import { ECOSYSTEM_ASSETS } from '../core/asset';
-import { PROOF_MODULES } from '../core/proof';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ParticleField } from '../components/ParticleField';
+import { Reveal } from '../components/Reveal';
+import { TokenPanel, TRADE_URL } from '../components/TokenPanel';
+import { classNames } from '../components/ui';
+import type { TINANProject } from '../core/tinan-blueprint';
+import type { EvmWalletController } from '../hooks/useEvmWallet';
+import { listProjects } from '../services/tinan-projects';
 
-const WORKFLOW = ['IDEA', 'TINAN AI', 'ANALYSIS', 'TOKENIZATION BLUEPRINT', 'BLOCKCHAIN', 'PROJECT'];
+const EXAMPLE_PROMPT = 'I want to tokenize solar energy produced by my solar installation.';
 
-export function HomePage() {
+function Flow({ steps, accent = 1 }: { steps: readonly string[]; accent?: number }) {
   return (
-    <div className='grid gap-5'>
-      <PageSection className='cyan-outline relative overflow-hidden bg-[radial-gradient(circle_at_80%_10%,rgba(21,208,201,0.2),transparent_38%),rgba(255,255,255,0.04)] p-7 sm:p-12'>
-        <p className='text-xs font-semibold uppercase tracking-[0.38em] text-tinan-cyan'>EUREKA · A BRIGHTER TOMORROW</p>
-        <p className='mt-8 text-sm font-semibold uppercase tracking-[0.45em] text-white/65'>TINAN AI</p>
-        <h1 className='mt-4 max-w-4xl text-4xl font-semibold leading-tight sm:text-6xl'>Not Artificial Intelligence.<br /><span className='text-tinan-cyan'>Natural Intelligence.</span></h1>
-        <p className='mt-5 max-w-2xl text-base leading-7 text-white/70'>Move from a real-world idea to a clear project and tokenization blueprint—without inventing data or making on-chain claims.</p>
-        <div className='mt-7 flex flex-wrap gap-3'>
-          <Link className='rounded-xl bg-tinan-cyan px-5 py-3 text-sm font-semibold text-black' to='/ai'>Start with TINAN AI</Link>
-          <Link className='rounded-xl border border-white/20 px-5 py-3 text-sm font-semibold text-white' to='/tokenize'>Explore Tokenization</Link>
-        </div>
-        <p className='mt-6 text-xs text-white/50'>DEMO MODE · Analyses are generated locally; transactions are not sent.</p>
-      </PageSection>
+    <ol className='mt-8 grid gap-2 sm:grid-cols-3 xl:flex xl:items-stretch xl:gap-0'>
+      {steps.map((step, index) => (
+        <li className='flex flex-1 items-center' key={step}>
+          <div className={classNames('eu-card flex min-h-20 flex-1 flex-col justify-center p-4 text-center', index === accent && 'border-tinan-turquoise/50 shadow-[0_0_30px_rgba(21,208,201,0.18)]')}>
+            <span className='text-[10px] text-tinan-turquoise'>{String(index + 1).padStart(2, '0')}</span>
+            <span className='mt-1 text-sm font-semibold uppercase tracking-wider'>{step}</span>
+          </div>
+          {index < steps.length - 1 ? <span aria-hidden='true' className='hidden px-2 text-tinan-turquoise/70 xl:block'>→</span> : null}
+        </li>
+      ))}
+    </ol>
+  );
+}
 
-      <PageSection>
-        <p className='text-xs uppercase tracking-[0.28em] text-tinan-cyan'>From idea to project</p>
-        <div className='mt-5 grid gap-2 sm:grid-cols-3 xl:grid-cols-6'>
-          {WORKFLOW.map((step, index) => (
-            <div className='flex min-h-24 flex-col justify-between rounded-xl border border-white/10 bg-black/20 p-4' key={step}>
-              <span className='text-xs text-tinan-cyan'>0{index + 1}</span>
-              <span className='text-sm font-semibold'>{step}</span>
+const DEMO_PROJECTS = [
+  { id: 'demo-1', title: 'Community Solar Token', category: 'Energy', description: 'Illustrative concept: tokenize shares of a community solar installation.', readiness: 'Not assessed', blockchain: 'To be selected', status: 'DEMO' },
+  { id: 'demo-2', title: 'Sensor Data Proof', category: 'Data', description: 'Illustrative concept: anchor verifiable proofs of IoT sensor datasets.', readiness: 'Not assessed', blockchain: 'To be selected', status: 'DEMO' },
+  { id: 'demo-3', title: 'Impact Project Token', category: 'Community', description: 'Illustrative concept: a project token for a community initiative.', readiness: 'Not assessed', blockchain: 'To be selected', status: 'DEMO' },
+] as const;
+
+type ShowcaseCard = { id: string; title: string; category: string; description: string; readiness: string; blockchain: string; status: string; href?: string };
+
+function toCard(project: TINANProject): ShowcaseCard {
+  return {
+    id: project.id,
+    title: project.title,
+    category: project.blueprint?.category ?? 'Uncategorized',
+    description: project.blueprint?.description ?? project.idea,
+    readiness: project.blueprint ? `${project.blueprint.readinessScore}/100` : 'Not assessed',
+    blockchain: project.tokenizationPlan?.network || project.blueprint?.blockchain || 'To be selected',
+    status: project.status,
+    href: `/project/${project.id}`,
+  };
+}
+
+export function HomePage({ evm }: { evm: EvmWalletController }) {
+  const navigate = useNavigate();
+  const [prompt, setPrompt] = useState(EXAMPLE_PROMPT);
+  const [projects, setProjects] = useState<TINANProject[]>([]);
+
+  useEffect(() => {
+    try { setProjects(listProjects()); } catch { setProjects([]); }
+  }, []);
+
+  const goToAi = (text: string) => navigate(`/ai?idea=${encodeURIComponent(text.trim().slice(0, 1500))}`);
+  const cards: ShowcaseCard[] = projects.length ? projects.slice(0, 3).map(toCard) : [...DEMO_PROJECTS];
+  const analyses = projects.filter((project) => project.blueprint).length;
+  const plans = projects.filter((project) => project.tokenizationPlan).length;
+
+  const blueprint: Array<[string, string]> = [
+    ['Project', 'Solar energy tokenization'],
+    ['Token Model', 'Energy token (concept)'],
+    ['Blockchain', 'Network to be selected'],
+    ['Utility', 'Access to production-linked rights'],
+    ['Data', 'Meter / inverter readings required'],
+    ['Readiness', 'Calculated when you run TINAN AI'],
+  ];
+
+  return (
+    <div className='-mt-24'>
+      {/* Hero */}
+      <section aria-labelledby='hero-title' className='relative flex min-h-[100svh] items-center overflow-hidden'>
+        <ParticleField className='absolute inset-0 h-full w-full opacity-80' />
+        <div aria-hidden='true' className='pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_30%,rgba(21,208,201,0.16),transparent_55%)]' />
+        <div className='relative z-10 py-32'>
+          <p className='eu-eyebrow'>EUREKA</p>
+          <p className='mt-2 text-sm uppercase tracking-[0.4em] text-white/60'>A BRIGHTER TOMORROW</p>
+          <p className='mt-10 text-sm font-semibold uppercase tracking-[0.5em] text-white/70'>TINAN AI</p>
+          <h1 className='mt-4 max-w-4xl text-4xl font-semibold leading-[1.08] tracking-tight sm:text-6xl lg:text-7xl' id='hero-title'>
+            Not Artificial Intelligence.<br /><span className='eu-gradient-text'>Natural Intelligence.</span>
+          </h1>
+          <div className='mt-9 flex flex-wrap gap-3'>
+            <Link className='eu-btn-primary' to='/ai'>Enter TINAN AI</Link>
+            <a className='eu-btn-ghost' href='#ecosystem'>Explore EUREKA</a>
+            {TRADE_URL ? <a className='eu-btn-ghost' href={TRADE_URL} rel='noreferrer' target='_blank'>Trade $EUREKA</a> : null}
+          </div>
+        </div>
+      </section>
+
+      {/* Meet TINAN AI */}
+      <Reveal as='section' className='eu-section'>
+        <p className='eu-eyebrow'>The product</p>
+        <h2 className='eu-h2'>Meet TINAN AI</h2>
+        <p className='eu-lead'>TINAN AI transforms ideas into structured Web3 projects, tokenization concepts and actionable blockchain strategies.</p>
+        <Flow steps={['Idea', 'TINAN AI', 'Analysis', 'Blueprint', 'Tokenization', 'Blockchain']} />
+        <Link className='eu-btn-primary mt-8' to='/ai'>Start with your idea</Link>
+      </Reveal>
+
+      {/* AI preview */}
+      <Reveal as='section' className='eu-section pt-0 sm:pt-0'>
+        <div className='eu-card grid gap-6 p-5 sm:p-8 lg:grid-cols-2'>
+          <div>
+            <p className='eu-eyebrow'>TINAN AI interface</p>
+            <label className='mt-3 block text-2xl font-semibold' htmlFor='home-prompt'>What do you want to build?</label>
+            <textarea className='mt-4 min-h-32 w-full rounded-2xl border border-white/15 bg-black/40 p-4 text-sm outline-none focus:border-tinan-turquoise' id='home-prompt' maxLength={1500} onChange={(event) => setPrompt(event.target.value)} value={prompt} />
+            <button className='eu-btn-primary mt-4' onClick={() => goToAi(prompt)} type='button'>Try TINAN AI</button>
+            <p className='mt-3 text-xs text-white/50'>Opens the TINAN AI workspace with your text. Nothing is sent until you press Analyze.</p>
+          </div>
+          <div className='rounded-2xl border border-tinan-turquoise/25 bg-black/30 p-5'>
+            <div className='flex items-center justify-between gap-2'>
+              <p className='font-semibold'>Blueprint preview</p>
+              <span className='rounded-full border border-white/15 px-3 py-1 text-[10px] uppercase tracking-widest text-white/60'>Illustrative</span>
+            </div>
+            <dl className='mt-4 grid gap-2'>
+              {blueprint.map(([label, value]) => (
+                <div className='flex flex-col gap-1 rounded-xl border border-white/10 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between' key={label}>
+                  <dt className='text-xs uppercase tracking-wider text-tinan-turquoise'>{label}</dt>
+                  <dd className='text-sm text-white/85'>{value}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </div>
+      </Reveal>
+
+      {/* Features */}
+      <section className='eu-section pt-0 sm:pt-0'>
+        <Reveal>
+          <p className='eu-eyebrow'>Core features</p>
+          <h2 className='eu-h2'>Everything between idea and chain.</h2>
+        </Reveal>
+        <div className='mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
+          {[
+            ['TINAN AI', 'Intelligent project analysis.', '/ai'],
+            ['TOKENIZATION', 'Transform projects into blockchain-ready concepts.', '/tokenize'],
+            ['WEB3', 'Connect projects with decentralized networks.', '/wallet'],
+            ['DATA PROOF', 'Create verifiable data structures and blockchain proofs.', '/verify'],
+            ['ENERGY', 'Prepare renewable energy and IoT data for tokenization.', '/docs'],
+            ['PROJECTS', 'Create, manage and analyze Web3 projects.', '/projects'],
+          ].map(([title, text, path], index) => (
+            <Reveal delay={index * 60} key={title}>
+              <Link className='eu-card eu-card-hover block h-full' to={path}>
+                <h3 className='text-sm font-semibold tracking-[0.2em] text-tinan-turquoise'>{title}</h3>
+                <p className='mt-3 text-white/75'>{text}</p>
+              </Link>
+            </Reveal>
+          ))}
+        </div>
+      </section>
+
+      {/* From idea to token */}
+      <Reveal as='section' className='eu-section pt-0 sm:pt-0'>
+        <p className='eu-eyebrow'>Tokenization</p>
+        <h2 className='eu-h2'>From Idea to Token</h2>
+        <Flow accent={2} steps={['Idea', 'AI Analysis', 'Token Blueprint', 'Wallet', 'Blockchain', 'Token']} />
+        <Link className='eu-btn-primary mt-8' to='/tokenize'>Create a Tokenization Plan</Link>
+      </Reveal>
+
+      {/* Ecosystem */}
+      <Reveal as='section' className='eu-section pt-0 sm:pt-0' id='ecosystem'>
+        <div>
+          <p className='eu-eyebrow'>Ecosystem</p>
+          <h2 className='eu-h2'>The EUREKA Ecosystem</h2>
+          <p className='eu-lead'>TINAN AI is a product inside the EUREKA ecosystem: the tool that turns ideas into structured, blockchain-ready plans.</p>
+          <ul className='mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7'>
+            {['EUREKA', 'TINAN AI', 'Web3', 'Tokenization', 'Data', 'Energy', 'Community'].map((item) => (
+              <li className={classNames('eu-card flex min-h-24 items-center justify-center p-3 text-center text-sm font-semibold', item === 'EUREKA' && 'border-tinan-turquoise/50')} key={item}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      </Reveal>
+
+      {/* Token */}
+      <Reveal as='section' className='eu-section pt-0 sm:pt-0'>
+        <TokenPanel walletAddress={evm.state.address} />
+      </Reveal>
+
+      {/* Showcase */}
+      <section className='eu-section pt-0 sm:pt-0'>
+        <Reveal>
+          <p className='eu-eyebrow'>Projects</p>
+          <h2 className='eu-h2'>Built with TINAN AI</h2>
+          <p className='eu-lead'>{projects.length ? 'Your most recent projects, stored in this browser.' : 'No saved projects yet. These cards are labeled DEMO and illustrate the format.'}</p>
+        </Reveal>
+        <div className='mt-8 grid gap-4 md:grid-cols-3'>
+          {cards.map((card) => {
+            const body = (
+              <>
+                <div className='flex items-center justify-between gap-2'>
+                  <span className='text-xs uppercase tracking-wider text-tinan-turquoise'>{card.category}</span>
+                  <span className={classNames('rounded-full border px-3 py-1 text-[10px] uppercase tracking-widest', card.status === 'DEMO' ? 'border-amber-300/40 text-amber-100' : 'border-white/20 text-white/70')}>{card.status}</span>
+                </div>
+                <h3 className='mt-3 text-lg font-semibold'>{card.title}</h3>
+                <p className='mt-2 line-clamp-3 text-sm text-white/65'>{card.description}</p>
+                <dl className='mt-4 grid grid-cols-2 gap-2 text-xs'>
+                  <div><dt className='text-white/45'>Readiness</dt><dd className='text-white/85'>{card.readiness}</dd></div>
+                  <div><dt className='text-white/45'>Blockchain</dt><dd className='text-white/85'>{card.blockchain}</dd></div>
+                </dl>
+              </>
+            );
+            return (
+              <Reveal key={card.id}>
+                {card.href ? <Link className='eu-card eu-card-hover block h-full' to={card.href}>{body}</Link> : <article className='eu-card h-full'>{body}</article>}
+              </Reveal>
+            );
+          })}
+        </div>
+        <Link className='eu-btn-ghost mt-6' to='/projects'>View all projects</Link>
+      </section>
+
+      {/* Energy */}
+      <Reveal as='section' className='eu-section pt-0 sm:pt-0'>
+        <p className='eu-eyebrow'>Energy · Data</p>
+        <h2 className='eu-h2'>From sunlight to a verifiable record.</h2>
+        <p className='eu-lead'>Solar is used as an example pathway. No energy readings are shown or simulated here; real data would come from your own meters, inverters or IoT devices.</p>
+        <Flow accent={3} steps={['Energy', 'IoT', 'Data', 'Verification', 'Blockchain', 'Tokenization']} />
+        <Link className='eu-btn-primary mt-8' to='/ai?idea=I%20want%20to%20tokenize%20solar%20energy%20produced%20by%20my%20solar%20installation.'>Explore Energy Tokenization</Link>
+      </Reveal>
+
+      {/* Dashboard */}
+      <Reveal as='section' className='eu-section pt-0 sm:pt-0'>
+        <p className='eu-eyebrow'>Dashboard</p>
+        <h2 className='eu-h2'>Your workspace at a glance.</h2>
+        <div className='mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3'>
+          {[
+            ['Projects', String(projects.length)],
+            ['AI analyses', String(analyses)],
+            ['Tokenization plans', String(plans)],
+            ['Wallet', evm.state.address ? `${evm.state.address.slice(0, 6)}…${evm.state.address.slice(-4)}` : 'Not connected'],
+            ['Blockchain', evm.state.address ? evm.state.network : 'Not connected'],
+            ['Data Proof', 'Verify tool available'],
+          ].map(([label, value]) => (
+            <div className='eu-card p-5' key={label}>
+              <p className='text-xs uppercase tracking-wider text-white/50'>{label}</p>
+              <p className='mt-2 break-all text-xl font-semibold'>{value}</p>
             </div>
           ))}
         </div>
-      </PageSection>
+        <p className='mt-3 text-xs text-white/45'>Project counts are read from this browser's storage.</p>
+        <Link className='eu-btn-primary mt-6' to='/dashboard'>Open Dashboard</Link>
+      </Reveal>
 
-      <div className='grid gap-4 lg:grid-cols-2'>
-        <PageSection>
-          <p className='text-xs uppercase tracking-[0.28em] text-tinan-cyan'>What is TINAN AI?</p>
-          <h2 className='mt-3 text-2xl font-semibold'>A structured thinking partner for real projects.</h2>
-          <p className='mt-3 text-sm leading-7 text-white/70'>TINAN AI turns a written idea into a draft covering the problem, proposed solution, tokenization concept, data requirements, risks, and recommended next steps. Demo output is a starting point—not an authoritative assessment.</p>
-          <Link className='mt-5 inline-flex text-sm font-semibold text-tinan-cyan' to='/ai'>Try a local demo analysis →</Link>
-        </PageSection>
-        <PageSection>
-          <p className='text-xs uppercase tracking-[0.28em] text-tinan-cyan'>Existing token</p>
-          <div className='mt-3 flex items-center gap-3'>
-            <img alt='Eureka logo' className='h-12 w-12' src='/assets/tinan-logo.svg' />
-            <div><h2 className='text-xl font-semibold'>TINAN token</h2><p className='text-sm text-white/60'>{TINAN_TOKEN.networkName ?? 'Network not configured'}</p></div>
+      {/* How it works */}
+      <section className='eu-section pt-0 sm:pt-0'>
+        <Reveal><p className='eu-eyebrow'>How it works</p><h2 className='eu-h2'>Four steps.</h2></Reveal>
+        <ol className='mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4'>
+          {['Describe your idea', 'TINAN AI analyzes it', 'Generate your Web3 blueprint', 'Build and connect it to blockchain'].map((text, index) => (
+            <Reveal as='li' className='eu-card' delay={index * 70} key={text}>
+              <span className='eu-gradient-text text-4xl font-semibold'>{String(index + 1).padStart(2, '0')}</span>
+              <p className='mt-4 font-semibold'>{text}</p>
+            </Reveal>
+          ))}
+        </ol>
+      </section>
+
+      {/* Final CTA */}
+      <Reveal as='section' className='eu-section pt-0 sm:pt-0'>
+        <div className='eu-card relative overflow-hidden p-8 text-center sm:p-16'>
+          <div aria-hidden='true' className='pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(21,208,201,0.2),transparent_60%)]' />
+          <h2 className='relative mx-auto max-w-3xl text-3xl font-semibold tracking-tight sm:text-5xl'>Your idea could be the next EUREKA.</h2>
+          <p className='relative mt-4 text-lg text-white/70'>Start building with TINAN AI.</p>
+          <div className='relative mt-8 flex flex-wrap justify-center gap-3'>
+            <Link className='eu-btn-primary' to='/ai'>Start with TINAN AI</Link>
+            <a className='eu-btn-ghost' href='#ecosystem'>Explore the Ecosystem</a>
           </div>
-          <p className='mt-3 break-all text-sm text-white/65'>{TINAN_TOKEN.address ?? 'Token address not configured'}</p>
-          <p className='mt-2 text-xs text-white/50'>Existing token only · No replacement deployment · Network is never assumed.</p>
-          <Link className='mt-4 inline-flex text-sm font-semibold text-tinan-cyan' to='/tokens'>Open token reader →</Link>
-        </PageSection>
-      </div>
-
-      <div className='grid gap-4 md:grid-cols-3'>
-        {[
-          ['Tokenization', 'Explore possible token models only after defining rights, utility, and user responsibilities.', '/tokenize'],
-          ['Data Proof', 'Identify the source, timestamp, and verification method before describing a record as proven.', '/docs'],
-          ['Energy', 'Plan connections to real meter, inverter, battery, grid, API, or IoT data; no readings are simulated.', '/docs'],
-        ].map(([title, description, path]) => (
-          <PageSection key={title}>
-            <h2 className='text-lg font-semibold'>{title}</h2>
-            <p className='mt-3 text-sm leading-6 text-white/65'>{description}</p>
-            <Link className='mt-4 inline-flex text-sm text-tinan-cyan' to={path}>Explore {title} →</Link>
-          </PageSection>
-        ))}
-      </div>
-
-      <PageSection>
-        <div className='flex flex-wrap items-center justify-between gap-3'>
-          <div><p className='text-xs uppercase tracking-[0.28em] text-tinan-cyan'>Eureka ecosystem</p><h2 className='mt-2 text-xl font-semibold'>Preserving the existing product</h2></div>
-          <StatusPill tone={TINAN_TOKEN.configured ? 'success' : 'warning'}>{TINAN_TOKEN.configured ? 'Token network configured' : 'Token network not configured'}</StatusPill>
         </div>
-        <div className='mt-4 grid gap-3 md:grid-cols-2'>
-          {ECOSYSTEM_ASSETS.map((asset) => (
-            <article className='rounded-xl border border-white/10 bg-black/20 p-4' key={asset.id}>
-              <div className='flex items-center justify-between gap-2'><h3 className='font-semibold'>{asset.name}</h3><StatusPill>{asset.symbol}</StatusPill></div>
-              <p className='mt-2 text-sm text-white/65'>{asset.summary}</p>
-            </article>
-          ))}
-        </div>
-        <div className='mt-4 grid gap-3 md:grid-cols-3'>
-          {PROOF_MODULES.map((module) => (
-            <div className='rounded-xl border border-white/10 p-4' key={module.title}><h3 className='font-semibold'>{module.title}</h3><p className='mt-2 text-sm text-white/60'>{module.description}</p></div>
-          ))}
-        </div>
-      </PageSection>
-
-      <PageSection className='flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
-        <div><h2 className='text-xl font-semibold'>Have a project in mind?</h2><p className='mt-1 text-sm text-white/60'>Start with a description. Save your project locally when you are ready.</p></div>
-        <div className='flex flex-wrap gap-3'>
-          <Link className='rounded-xl bg-tinan-cyan px-4 py-2 text-sm font-semibold text-black' to='/create'>Create project</Link>
-          <Link className='rounded-xl border border-white/15 px-4 py-2 text-sm' to='/community'>Community</Link>
-          <Link className='rounded-xl border border-white/15 px-4 py-2 text-sm' to='/docs'>Documentation</Link>
-        </div>
-      </PageSection>
+      </Reveal>
     </div>
   );
 }
