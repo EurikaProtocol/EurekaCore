@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
-import type { ReactNode } from 'react';
+import type { AriaRole, ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
+import { toTrustedUrl } from '../core/verify';
 
 export function classNames(...values: Array<string | false | null | undefined>) {
   return values.filter(Boolean).join(' ');
@@ -10,16 +11,19 @@ export function PageSection({
   children,
   className,
   delay = 0,
+  role,
 }: {
   children: ReactNode;
   className?: string;
   delay?: number;
+  role?: AriaRole;
 }) {
   return (
     <motion.section
       animate={{ opacity: 1, y: 0 }}
       className={classNames('glass p-6', className)}
       initial={{ opacity: 0, y: 12 }}
+      role={role}
       transition={{ duration: 0.3, delay }}
     >
       {children}
@@ -73,12 +77,13 @@ export function StatusPill({ tone = 'neutral', children }: { tone?: 'neutral' | 
 }
 
 export function ExternalLinkButton({ href, label }: { href: string | null; label: string }) {
-  if (!href) {
+  const safeHref = toTrustedUrl(href);
+  if (!safeHref) {
     return <span className='rounded-xl border border-dashed border-white/15 px-4 py-2 text-sm text-white/40'>{label} unavailable</span>;
   }
 
   return (
-    <a className='rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm text-white transition hover:border-tinan-cyan/50 hover:bg-white/10' href={href} rel='noreferrer' target='_blank'>
+    <a className='rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm text-white transition hover:border-tinan-cyan/50 hover:bg-white/10' href={safeHref} rel='noreferrer' target='_blank'>
       {label}
     </a>
   );

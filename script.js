@@ -203,10 +203,11 @@ window.EurekaOrbit = {
 };
 
 function badgeMarkup(network) {
+  const mark = network.token || network.name.slice(0, 3).toUpperCase();
   return `
     <li>
       <a class="network-badge" href="${network.url}" target="_blank" rel="noopener noreferrer" aria-label="${network.label || `Open ${network.name}`}">
-        <img src="${network.icon}" alt="${network.name} logo">
+        <span class="network-mark" aria-hidden="true">${mark}</span>
       </a>
     </li>
   `;
@@ -215,7 +216,7 @@ function badgeMarkup(network) {
 function textXLinkMarkup(className) {
   return `
     <a class="${className}" href="${xUrl}" aria-label="${xProfile.label}" target="_blank" rel="noopener noreferrer">
-      <img src="${xProfile.icon}" alt="" class="btn-icon" aria-hidden="true">
+      <span class="btn-icon" aria-hidden="true">X</span>
       <span>Follow on X</span>
     </a>
   `;
@@ -249,10 +250,11 @@ if (yearElement) {
 }
 
 function multichainNodeMarkup(network, index) {
+  const mark = network.token || network.name.slice(0, 3).toUpperCase();
   return `
     <li class="multichain-item" data-index="${index}">
       <button class="multichain-node" type="button" data-chain-id="${network.id}" aria-label="Select ${network.name}">
-        <img src="${network.icon}" alt="${network.name} logo">
+        <span aria-hidden="true">${mark}</span>
       </button>
     </li>
   `;
@@ -333,8 +335,7 @@ if (
   const updatePanel = index => {
     const chain = networks[index];
     if (!chain) return;
-    multichainPanelLogo.src = chain.icon;
-    multichainPanelLogo.alt = `${chain.name} logo`;
+    multichainPanelLogo.textContent = chain.token || chain.name.slice(0, 3).toUpperCase();
     multichainPanelName.textContent = chain.name;
     multichainPanelDescription.textContent = chain.description;
     multichainPanelStatus.innerHTML = '<span aria-hidden="true">Connected Ready</span><span class="sr-only">Connected and ready</span>';

@@ -2,6 +2,10 @@
 
 interface ImportMetaEnv {
   readonly VITE_WALLETCONNECT_PROJECT_ID?: string;
+  readonly VITE_TINAN_TOKEN_ADDRESS?: string;
+  readonly VITE_TINAN_TOKEN_CHAIN_ID?: string;
+  readonly VITE_RPC_URL?: string;
+  readonly VITE_EXPLORER_URL?: string;
   readonly VITE_SOLANA_NETWORK?: string;
   readonly VITE_SOLANA_RPC_URL?: string;
   readonly VITE_TINANAI_SOLANA_MINT?: string;

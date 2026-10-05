@@ -1,10 +1,10 @@
 import { toTrustedUrl } from './verify';
 
 export const PROJECT_IDENTITY = {
-  brand: 'TinanEureka',
+  brand: 'EUREKA',
   protocol: 'EUREKA Protocol',
   website: 'tinaneureka.com',
-  websiteUrl: toTrustedUrl('https://tinaneureka.com'),
+  websiteUrl: toTrustedUrl('https://www.tinaneureka.com'),
   coreAI: 'TinanAI',
   coreEngine: 'EurekaCore',
   evmTokenSymbol: 'EKA',
@@ -16,15 +16,18 @@ export const PROJECT_IDENTITY = {
 
 export const PRIMARY_NAVIGATION = [
   ['/', 'Home'],
+  ['/ai', 'AI'],
+  ['/tokenize', 'Tokenize'],
+  ['/create', 'Create'],
+  ['/projects', 'Projects'],
   ['/dashboard', 'Dashboard'],
   ['/wallet', 'Wallet'],
-  ['/tinan-ai', 'TinanAI'],
-  ['/marketplace', 'Marketplace'],
-  ['/whitepaper', 'Whitepaper'],
-  ['/staking', 'Staking'],
-  ['/swap', 'Swap'],
-  ['/explorer', 'Explorer'],
+  ['/tokens', 'Tokens'],
+  ['/contracts', 'Contracts'],
+  ['/deploy', 'Deploy'],
+  ['/verify', 'Verify'],
+  ['/community', 'Community'],
+  ['/docs', 'Docs'],
+  ['/about', 'About'],
   ['/settings', 'Settings'],
-  ['/tinan-ai-token', 'TinanAI Token'],
-  ['/pumpfun', 'Pump.fun'],
 ] as const;

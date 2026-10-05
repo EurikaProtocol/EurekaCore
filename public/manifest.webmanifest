@@ -1,19 +1,19 @@
 {
-  "name": "EUREKA Data Tokenization",
-  "short_name": "EUREKA",
-  "description": "Proof-backed data tokenization, TINAN AI workflows, and Base-native EUREKA infrastructure on tinaneureka.com.",
+  "name": "TINAN AI — EUREKA",
+  "short_name": "TINAN AI",
+  "description": "EUREKA — A Brighter Tomorrow. Not Artificial Intelligence. Natural Intelligence.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#05120c",
-  "theme_color": "#05120c",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0da4ac",
   "icons": [
     {
-      "src": "/favicon-192.png",
+      "src": "/assets/tinan-logo.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/apple-touch-icon.png",
+      "src": "/assets/tinan-logo.png",
       "sizes": "180x180",
       "type": "image/png"
     }

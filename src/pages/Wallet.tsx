@@ -16,22 +16,30 @@ export function WalletPage({ evm }: { evm: EvmWalletController }) {
   const { connection } = useConnection();
   const { connect, connected, disconnect, publicKey, select, wallets } = useWallet();
   const [solanaStatus, setSolanaStatus] = useState('Solana wallet disconnected.');
-  const [solBalance, setSolBalance] = useState('0');
-  const [tokenBalance, setTokenBalance] = useState('0');
+  const [solBalance, setSolBalance] = useState('Connect wallet');
+  const [tokenBalance, setTokenBalance] = useState(TINANAI_SOLANA.mintAddress ? 'Connect wallet' : 'Mint not configured');
 
   const publicKeyBase58 = publicKey?.toBase58() ?? '';
   const phantomWallet = useMemo(() => wallets.find((wallet) => wallet.adapter.name === 'Phantom'), [wallets]);
 
   const refreshSolana = useCallback(async () => {
     if (!publicKeyBase58) {
-      setSolBalance('0');
-      setTokenBalance(TINANAI_SOLANA.mintAddress ? '0' : 'Mint not configured');
+      setSolBalance('Connect wallet');
+      setTokenBalance(TINANAI_SOLANA.mintAddress ? 'Connect wallet' : 'Mint not configured');
       return;
     }
 
-    const snapshot = await readSolanaWalletSnapshot(connection, publicKeyBase58, TINANAI_SOLANA.mintAddress);
-    setSolBalance(snapshot.solBalance);
-    setTokenBalance(snapshot.tokenBalance);
+    setSolBalance('Loading…');
+    setTokenBalance(TINANAI_SOLANA.mintAddress ? 'Loading…' : 'Mint not configured');
+    try {
+      const snapshot = await readSolanaWalletSnapshot(connection, publicKeyBase58, TINANAI_SOLANA.mintAddress);
+      setSolBalance(snapshot.solBalance);
+      setTokenBalance(snapshot.tokenBalance);
+    } catch (error) {
+      setSolBalance('Unavailable');
+      setTokenBalance(TINANAI_SOLANA.mintAddress ? 'Unavailable' : 'Mint not configured');
+      throw error;
+    }
   }, [connection, publicKeyBase58]);
 
   useEffect(() => {
