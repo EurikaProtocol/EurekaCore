@@ -4,6 +4,7 @@ import { EVM_NETWORKS, TOKENIZATION_NETWORKS } from '../config/networks';
 import type { TINANBlueprint } from '../core/tinan-blueprint';
 import { PageHero, PageSection, StatusPill } from '../components/ui';
 import { tinanAIProvider } from '../services/tinan-ai';
+import { saveProject } from '../services/tinan-projects';
 import { BlueprintView } from './TinanStudio';
 
 const TOKEN_MODELS = ['ERC-20', 'ERC-721', 'ERC-1155', 'Data Proof', 'Energy Token', 'Project Token'] as const;
@@ -23,6 +24,7 @@ export function TINANTokenizationPage() {
   const [metadata, setMetadata] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [savedProjectId, setSavedProjectId] = useState('');
 
   async function analyze() {
     setLoading(true);
@@ -42,8 +44,38 @@ export function TINANTokenizationPage() {
     if (step === 1) return Boolean(blueprint);
     if (step === 2) return Boolean(model);
     if (step === 3) return Boolean(network);
-    if (step === 4) return name.trim().length > 0 && symbol.trim().length > 0 && utility.trim().length > 0;
+    if (step === 4) {
+      const decimalCount = Number(decimals);
+      const supplyValue = Number(supply);
+      return name.trim().length > 0
+        && symbol.trim().length > 0
+        && utility.trim().length > 0
+        && Number.isInteger(decimalCount)
+        && decimalCount >= 0
+        && decimalCount <= 18
+        && (!supply || (Number.isFinite(supplyValue) && supplyValue > 0));
+    }
     return true;
+  }
+
+  function saveDraft() {
+    if (!blueprint) return;
+    try {
+      const project = saveProject(idea, blueprint, undefined, {
+        model,
+        network,
+        name: name.trim(),
+        symbol: symbol.trim(),
+        decimals: Number(decimals),
+        supply,
+        utility: utility.trim(),
+        metadata: metadata.trim(),
+      });
+      setSavedProjectId(project.id);
+      setError('');
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : 'The tokenization draft could not be saved.');
+    }
   }
 
   return (
@@ -106,6 +138,8 @@ export function TINANTokenizationPage() {
               <p>Token: {name || '—'} ({symbol || '—'}) · Decimals: {decimals} · Supply: {supply || 'Not specified'}</p>
               <p>Utility: {utility || 'Not specified'} · Metadata: {metadata || 'Not specified'}</p>
               <p className='rounded-xl border border-amber-200/20 bg-amber-900/10 p-3 text-amber-100'>Review this planning draft with qualified technical and compliance professionals. No contract has been created.</p>
+              <button className='w-fit rounded-xl border border-tinan-cyan/50 px-4 py-2 text-sm text-tinan-cyan' onClick={saveDraft} type='button'>Save planning draft to Projects</button>
+              {savedProjectId ? <Link className='text-tinan-cyan' to={`/project/${savedProjectId}`}>Open saved project →</Link> : null}
             </div>
           ) : null}
           {step === 6 ? (

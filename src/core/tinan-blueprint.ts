@@ -39,12 +39,24 @@ export type ProjectStatus =
   | 'VERIFIED'
   | 'LIVE';
 
+export type TokenizationPlan = {
+  model: string;
+  network: string;
+  name: string;
+  symbol: string;
+  decimals: number;
+  supply: string;
+  utility: string;
+  metadata: string;
+};
+
 export type TINANProject = {
   id: string;
   title: string;
   idea: string;
   status: ProjectStatus;
   blueprint?: TINANBlueprint;
+  tokenizationPlan?: TokenizationPlan;
   createdAt: string;
   updatedAt: string;
 };

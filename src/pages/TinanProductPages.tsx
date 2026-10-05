@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Contract, JsonRpcProvider, formatUnits } from 'ethers';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { EKA_TOKEN } from '../config/token';
 import { EVM_NETWORKS, type SupportedEvmChain } from '../config/networks';
 import { TINAN_TOKEN } from '../config/tinan-token';
 import { isValidEvmAddress } from '../core/verify';
 import type { TINANProject } from '../core/tinan-blueprint';
+import type { RecentTransaction } from '../hooks/useEvmWallet';
 import { listProjects } from '../services/tinan-projects';
 import { readTokenSnapshot, type TokenSnapshot } from '../services/token-reader';
 import { DetailRow, ExternalLinkButton, MetricCard, PageHero, PageSection, StatusPill } from '../components/ui';
@@ -22,7 +22,16 @@ function TokenSummary({ token }: { token: TokenSnapshot }) {
       window.alert('No compatible injected EVM wallet was found.');
       return;
     }
+    if (!TINAN_TOKEN.chainId) {
+      window.alert('Set the token network before adding this token to a wallet.');
+      return;
+    }
     try {
+      const currentChain = await window.ethereum.request({ method: 'eth_chainId' });
+      if (typeof currentChain !== 'string' || Number.parseInt(currentChain, 16) !== TINAN_TOKEN.chainId) {
+        window.alert(`Switch your wallet to ${TINAN_TOKEN.networkName} before adding this token.`);
+        return;
+      }
       const accepted: unknown = await window.ethereum.request({
         method: 'wallet_watchAsset',
         params: {
@@ -78,7 +87,7 @@ function TokenReadCard({ address, walletAddress }: { address: string; walletAddr
     }
 
     setLoading(true);
-    void readTokenSnapshot(address, TINAN_TOKEN.rpcUrl, walletAddress)
+    void readTokenSnapshot(address, TINAN_TOKEN.rpcUrl, TINAN_TOKEN.chainId, walletAddress)
       .then((snapshot) => { if (active) setToken(snapshot); })
       .catch((readError: unknown) => {
         if (active) setError(readError instanceof Error ? readError.message : 'Token contract read failed.');
@@ -144,24 +153,47 @@ export function TINANTokenDetailPage({ walletAddress }: { walletAddress: string 
   );
 }
 
-export function TINANDashboardPage({ address, network, nativeBalance }: { address: string; network: string; nativeBalance: string }) {
+export function TINANDashboardPage({
+  address,
+  network,
+  nativeBalance,
+  ekaBalance,
+  recentTransactions,
+}: {
+  address: string;
+  network: string;
+  nativeBalance: string;
+  ekaBalance: string;
+  recentTransactions: RecentTransaction[];
+}) {
   const [projects, setProjects] = useState<TINANProject[]>([]);
   useEffect(() => setProjects(listProjects()), []);
   const analyzed = projects.filter((project) => project.blueprint);
   return (
     <div className='grid gap-4'>
       <PageHero eyebrow='Dashboard' title='A clear view of your TINAN workspace.' description='Project metrics are browser-local. Wallet and network fields are reported only from the connected wallet.' />
-      <div className='grid gap-3 sm:grid-cols-2 xl:grid-cols-4'>
+      <div className='grid gap-3 sm:grid-cols-2 xl:grid-cols-5'>
         <MetricCard hint='Stored in this browser' label='Projects' value={String(projects.length)} />
         <MetricCard hint='Saved local analyses' label='AI analyses' value={String(analyzed.length)} />
         <MetricCard hint='Wallet connection' label='Wallet' value={address ? `${address.slice(0, 6)}…${address.slice(-4)}` : 'Not connected'} />
         <MetricCard hint={network} label='Native balance' value={address ? nativeBalance : 'Unavailable'} />
+        <MetricCard hint='Live wallet read' label='EKA balance' value={address ? ekaBalance : 'Unavailable'} />
       </div>
       <PageSection>
-        <h2 className='text-lg font-semibold'>Recent projects</h2>
-        {projects.length === 0 ? <p className='mt-3 text-sm text-white/60'>No saved projects. Create one to see it here.</p> : (
+        <h2 className='text-lg font-semibold'>Readiness snapshots</h2>
+        {analyzed.length === 0 ? <p className='mt-3 text-sm text-white/60'>Analyze a project to calculate a transparent planning score.</p> : (
+          <ul className='mt-3 grid gap-2 sm:grid-cols-2'>
+            {analyzed.slice(0, 6).map((project) => <li className='flex justify-between gap-3 rounded-xl border border-white/10 p-3 text-sm' key={project.id}><Link className='truncate text-tinan-cyan' to={`/project/${project.id}`}>{project.title}</Link><span>{project.blueprint?.readinessScore ?? 0}/100</span></li>)}
+          </ul>
+        )}
+        <p className='mt-3 text-xs text-white/50'>Scores are planning aids, not legal, financial, or compliance certification.</p>
+      </PageSection>
+      <PageSection>
+        <h2 className='text-lg font-semibold'>Recent activity</h2>
+        {projects.length === 0 && recentTransactions.length === 0 ? <p className='mt-3 text-sm text-white/60'>No saved project updates or wallet transactions to show.</p> : (
           <ul className='mt-3 divide-y divide-white/10'>
-            {projects.slice(0, 5).map((project) => <li className='flex flex-wrap justify-between gap-2 py-3 text-sm' key={project.id}><Link className='text-tinan-cyan' to={`/project/${project.id}`}>{project.title}</Link><span className='text-white/55'>{project.status}</span></li>)}
+            {projects.slice(0, 3).map((project) => <li className='flex flex-wrap justify-between gap-2 py-3 text-sm' key={project.id}><Link className='text-tinan-cyan' to={`/project/${project.id}`}>{project.title}</Link><span className='text-white/55'>{project.status} · {new Date(project.updatedAt).toLocaleString()}</span></li>)}
+            {recentTransactions.slice(0, 3).map((transaction) => <li className='flex flex-wrap justify-between gap-2 py-3 text-sm' key={transaction.hash}><a className='text-tinan-cyan' href={`${EKA_TOKEN.explorerBaseUrl}/tx/${transaction.hash}`} rel='noreferrer' target='_blank'>Transaction {transaction.hash.slice(0, 10)}…</a><span className='text-white/55'>{new Date(transaction.createdAt).toLocaleString()}</span></li>)}
           </ul>
         )}
       </PageSection>
@@ -291,7 +323,6 @@ const INFO_CONTENT: Record<Exclude<TINANInfoPageKind, 'settings'>, { title: stri
 
 export function TINANInfoPage({ kind, address, network }: { kind: TINANInfoPageKind; address?: string; network?: string }) {
   const navigate = useNavigate();
-  const [demoMode, setDemoMode] = useState(true);
 
   if (kind === 'settings') {
     return (
@@ -303,11 +334,11 @@ export function TINANInfoPage({ kind, address, network }: { kind: TINANInfoPageK
           <DetailRow label='AI provider' value='Deterministic DemoAIProvider · local only' />
           <DetailRow label='RPC configuration' value={TINAN_TOKEN.rpcUrl ? 'Configured (value hidden)' : 'Not configured'} />
           <DetailRow label='Token network' value={TINAN_TOKEN.networkName ?? 'Not configured'} />
-          <label className='flex items-center justify-between gap-4 rounded-xl border border-white/10 p-4 text-sm'>
-            Demo mode
-            <input checked={demoMode} onChange={(event) => setDemoMode(event.target.checked)} type='checkbox' />
-          </label>
-          <p className='text-xs text-white/55'>{demoMode ? 'Demo mode is active. No external AI provider or blockchain transaction is used by analysis.' : 'Analysis continues to use the local DemoAIProvider; production providers are not configured.'}</p>
+          <div className='flex items-center justify-between gap-4 rounded-xl border border-white/10 p-4 text-sm'>
+            <span>Demo mode</span>
+            <StatusPill tone='warning'>Always on</StatusPill>
+          </div>
+          <p className='text-xs text-white/55'>The deterministic local DemoAIProvider is the only configured AI provider. Analysis does not call an external API.</p>
           <button className='w-fit rounded-xl border border-white/15 px-4 py-2 text-sm' onClick={() => navigate('/wallet')} type='button'>Open wallet settings</button>
         </PageSection>
       </div>

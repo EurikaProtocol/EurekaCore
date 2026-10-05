@@ -6,6 +6,7 @@ export default defineConfig({
   build: {
     outDir: "dist",
     rollupOptions: {
+      input: ["index.html", "eureka-legacy.html"],
       output: {
         manualChunks(id) {
           if (!id.includes("node_modules")) return undefined;

@@ -21,6 +21,7 @@ export type TokenSnapshot = {
 export async function readTokenSnapshot(
   address: string,
   rpcUrl: string,
+  expectedChainId: number,
   walletAddress?: string,
 ): Promise<TokenSnapshot> {
   if (!isValidEvmAddress(address)) throw new Error('Enter a valid EVM contract address.');
@@ -28,6 +29,10 @@ export async function readTokenSnapshot(
 
   const provider = new JsonRpcProvider(rpcUrl);
   try {
+    const network = await provider.getNetwork();
+    if (Number(network.chainId) !== expectedChainId) {
+      throw new Error(`RPC network mismatch: expected chain ${expectedChainId}, received ${network.chainId}.`);
+    }
     const contract = new Contract(address, ERC20_READ_ABI, provider);
     const [name, symbol, decimalsValue, supplyValue, balanceValue] = await Promise.all([
       contract.name() as Promise<string>,

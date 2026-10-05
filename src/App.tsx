@@ -35,7 +35,7 @@ export default function App() {
       <Routes>
         <Route element={<HomePage />} path='/' />
         <Route element={<DashboardPage evm={evm} />} path='/eureka-dashboard' />
-        <Route element={<TINANDashboardPage address={evm.state.address} nativeBalance={evm.state.nativeBalance} network={evm.state.network} />} path='/dashboard' />
+        <Route element={<TINANDashboardPage address={evm.state.address} ekaBalance={evm.state.ekaBalance} nativeBalance={evm.state.nativeBalance} network={evm.state.network} recentTransactions={evm.recentTransactions} />} path='/dashboard' />
         <Route element={<WalletPage evm={evm} />} path='/wallet' />
         <Route element={<TINANAIStudioPage />} path='/ai' />
         <Route element={<TINANTokenizationPage />} path='/tokenize' />

@@ -1,4 +1,4 @@
-import type { TINANBlueprint, TINANProject, ProjectStatus } from '../core/tinan-blueprint';
+import type { TINANBlueprint, TINANProject, ProjectStatus, TokenizationPlan } from '../core/tinan-blueprint';
 
 const STORAGE_KEY = 'tinan-ai.projects.v1';
 
@@ -36,6 +36,7 @@ export function saveProject(
   idea: string,
   blueprint?: TINANBlueprint,
   existingId?: string,
+  tokenizationPlan?: TokenizationPlan,
 ): TINANProject {
   const projects = listProjects();
   const existing = existingId ? projects.find((project) => project.id === existingId) : undefined;
@@ -46,6 +47,7 @@ export function saveProject(
     idea: idea.trim(),
     status: blueprint ? 'READY' : existing?.status ?? 'DRAFT',
     blueprint: blueprint ?? existing?.blueprint,
+    tokenizationPlan: tokenizationPlan ?? existing?.tokenizationPlan,
     createdAt: existing?.createdAt ?? now,
     updatedAt: now,
   };

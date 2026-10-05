@@ -29,9 +29,12 @@ export function TINANProjectsPage() {
           {projects.map((project) => (
             <PageSection key={project.id} className='p-5'>
               <div className='flex items-start justify-between gap-3'>
-                <div>
+                <div className='flex min-w-0 items-center gap-3'>
+                  <img alt='' className='h-10 w-10 shrink-0' src='/assets/tinan-logo.svg' />
+                  <div className='min-w-0'>
                   <h2 className='text-lg font-semibold'>{project.title}</h2>
                   <p className='mt-1 text-xs text-white/55'>Updated {new Date(project.updatedAt).toLocaleString()}</p>
+                  </div>
                 </div>
                 <StatusPill>{project.status}</StatusPill>
               </div>
@@ -52,11 +55,13 @@ export function TINANProjectPage() {
   const [idea, setIdea] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     const stored = findProject(id);
     setProject(stored);
     setIdea(stored?.idea ?? '');
+    setLoaded(true);
   }, [id]);
 
   async function analyzeProject() {
@@ -71,6 +76,10 @@ export function TINANProjectPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (!loaded) {
+    return <PageSection aria-live='polite'>Loading project from this browser…</PageSection>;
   }
 
   if (!project) {

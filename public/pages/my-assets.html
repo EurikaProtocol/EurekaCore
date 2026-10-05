@@ -1,0 +1,47 @@
+<section class="page-shell">
+  <article class="page-panel glass-outline stack">
+    <div class="status-row">
+      <div>
+        <p class="eyebrow">My Data Assets</p>
+        <h1 class="section-title">Track uploaded data, proofs, and tokenized records</h1>
+      </div>
+      <a class="button ghost" href="/tokenize" data-route="/tokenize">Create new asset</a>
+    </div>
+    <p class="section-copy">Browse locally stored asset metadata, proof references, verification status, storage location, and tokenization state.</p>
+    <div class="filter-row" id="assetFilterRow"></div>
+  </article>
+
+  <div class="metrics-grid metrics-grid-compact">
+    <article class="metric-card glass-outline">
+      <p class="metric-label">Assets</p>
+      <p class="metric-value" id="assetCountValue">0</p>
+      <p class="metric-meta">Total items in your local portfolio</p>
+    </article>
+    <article class="metric-card glass-outline">
+      <p class="metric-label">Proofs</p>
+      <p class="metric-value" id="proofCountValue">0</p>
+      <p class="metric-meta">Generated proof records</p>
+    </article>
+    <article class="metric-card glass-outline">
+      <p class="metric-label">Private vault</p>
+      <p class="metric-value" id="privateVaultValue">0</p>
+      <p class="metric-meta">Files stored privately in browser</p>
+    </article>
+    <article class="metric-card glass-outline">
+      <p class="metric-label">Verification</p>
+      <p class="metric-value" id="verifiedAssetValue">0</p>
+      <p class="metric-meta">Assets with proof-backed status</p>
+    </article>
+  </div>
+
+  <article class="page-panel glass-outline stack">
+    <div class="status-row">
+      <div>
+        <p class="eyebrow">Portfolio</p>
+        <h2 class="section-title">Asset registry</h2>
+      </div>
+      <span class="status-chip" id="assetFilterStatus">Showing all assets</span>
+    </div>
+    <div class="asset-list" id="assetList"></div>
+  </article>
+</section>

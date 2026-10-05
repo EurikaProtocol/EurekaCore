@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
-import { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import { PRIMARY_NAVIGATION, PROJECT_IDENTITY } from '../core/identity';
 import { shortenAddress } from '../core/verify';
 import { classNames } from './ui';
@@ -17,6 +17,20 @@ export function AppShell({
   address: string;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    const section = pathname === '/' ? 'Home' : pathname.split('/').filter(Boolean)[0] ?? 'Home';
+    const title = `${section === 'ai' ? 'TINAN AI' : section.replace(/-/g, ' ')} | EUREKA`;
+    const description = 'EUREKA — A Brighter Tomorrow. Not Artificial Intelligence. Natural Intelligence.';
+    const canonical = `https://www.tinaneureka.com${pathname}`;
+    document.title = title;
+    document.querySelector('meta[name="description"]')?.setAttribute('content', description);
+    document.querySelector('meta[property="og:title"]')?.setAttribute('content', title);
+    document.querySelector('meta[property="og:description"]')?.setAttribute('content', description);
+    document.querySelector('meta[property="og:url"]')?.setAttribute('content', canonical);
+    document.querySelector('link[rel="canonical"]')?.setAttribute('href', canonical);
+  }, [pathname]);
 
   return (
     <div className='min-h-screen bg-tinan-black text-white'>
@@ -80,6 +94,7 @@ export function AppShell({
           <NavLink to='/terms'>Terms</NavLink>
           <NavLink to='/whitepaper'>Eureka Whitepaper</NavLink>
           <NavLink to='/marketplace'>Eureka Marketplace</NavLink>
+          <a href='/eureka-legacy.html'>Legacy Eureka landing</a>
           {PROJECT_IDENTITY.websiteUrl ? (
             <a href={PROJECT_IDENTITY.websiteUrl} rel='noreferrer' target='_blank'>Official site</a>
           ) : null}

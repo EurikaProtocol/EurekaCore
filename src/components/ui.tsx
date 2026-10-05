@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import type { ReactNode } from 'react';
+import type { AriaRole, ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
 
 export function classNames(...values: Array<string | false | null | undefined>) {
@@ -10,16 +10,19 @@ export function PageSection({
   children,
   className,
   delay = 0,
+  role,
 }: {
   children: ReactNode;
   className?: string;
   delay?: number;
+  role?: AriaRole;
 }) {
   return (
     <motion.section
       animate={{ opacity: 1, y: 0 }}
       className={classNames('glass p-6', className)}
       initial={{ opacity: 0, y: 12 }}
+      role={role}
       transition={{ duration: 0.3, delay }}
     >
       {children}
