@@ -7,6 +7,8 @@ export const TRUSTED_EXTERNAL_HOSTS = [
   'github.com',
   'etherscan.io',
   'www.etherscan.io',
+  'basescan.org',
+  'www.basescan.org',
   'bscscan.com',
   'www.bscscan.com',
   'arbiscan.io',
