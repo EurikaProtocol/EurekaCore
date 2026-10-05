@@ -81,7 +81,7 @@ body:after {
   inset: 0;
   pointer-events: none;
   z-index: -1;
-  background: 
+  background:
     linear-gradient(135deg, transparent 20%, rgba(138, 43, 226, 0.15) 30%, transparent 50%),
     linear-gradient(-135deg, transparent 20%, rgba(138, 43, 226, 0.15) 30%, transparent 50%),
     linear-gradient(90deg, transparent 40%, rgba(75, 140, 255, 0.08) 50%, transparent 60%);
