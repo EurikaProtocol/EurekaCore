@@ -9,16 +9,21 @@ import { BlueprintView } from './TinanStudio';
 export function TINANProjectsPage() {
   const [projects, setProjects] = useState<TINANProject[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    setProjects(listProjects());
+    try {
+      setProjects(listProjects());
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : 'Saved projects are unavailable.');
+    }
     setLoaded(true);
   }, []);
 
   return (
     <div className='grid gap-4'>
       <PageHero eyebrow='Projects' title='Your project workspace.' description='Projects are stored in this browser only. No server sync or blockchain deployment is enabled.' actions={<Link className='rounded-xl bg-tinan-cyan px-4 py-2 text-sm font-semibold text-black' to='/create'>Create project</Link>} />
-      {!loaded ? <PageSection aria-live='polite'>Loading browser projects…</PageSection> : projects.length === 0 ? (
+      {!loaded ? <PageSection aria-live='polite'>Loading browser projects…</PageSection> : error ? <PageSection role='alert'>{error}</PageSection> : projects.length === 0 ? (
         <PageSection className='text-center'>
           <p className='text-lg font-semibold'>No saved projects yet</p>
           <p className='mt-2 text-sm text-white/60'>Start with a project idea and save an analysis to see it here.</p>
@@ -58,9 +63,13 @@ export function TINANProjectPage() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    const stored = findProject(id);
-    setProject(stored);
-    setIdea(stored?.idea ?? '');
+    try {
+      const stored = findProject(id);
+      setProject(stored);
+      setIdea(stored?.idea ?? '');
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : 'The project could not be loaded.');
+    }
     setLoaded(true);
   }, [id]);
 

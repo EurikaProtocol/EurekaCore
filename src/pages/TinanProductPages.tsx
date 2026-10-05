@@ -76,9 +76,7 @@ function TokenReadCard({ address, walletAddress }: { address: string; walletAddr
     setToken(null);
     setError('');
     if (!TINAN_TOKEN.chainId || !TINAN_TOKEN.rpcUrl) {
-      setError(!TINAN_TOKEN.chainId
-        ? 'Token network is not configured. Set VITE_TINAN_TOKEN_CHAIN_ID; no network is assumed.'
-        : 'Read-only RPC is not configured. Set VITE_RPC_URL to query on-chain data.');
+      setError(TINAN_TOKEN.issues.join(' '));
       return () => { active = false; };
     }
     if (!isValidEvmAddress(address)) {
@@ -109,6 +107,7 @@ export function TINANTokensPage({ walletAddress }: { walletAddress: string }) {
   function readToken() {
     if (!isValidEvmAddress(address)) {
       setValidationError('Enter a valid EVM contract address.');
+      setSubmittedAddress('');
       return;
     }
     setValidationError('');
@@ -131,6 +130,7 @@ export function TINANTokensPage({ walletAddress }: { walletAddress: string }) {
         <p className='mt-1 text-xs text-white/55'>Network is deliberately unset until VITE_TINAN_TOKEN_CHAIN_ID is configured.</p>
       </PageSection>
       {submittedAddress ? <TokenReadCard address={submittedAddress} walletAddress={walletAddress || undefined} /> : <PageSection className='text-sm text-white/60'>Set the token address and network configuration to load on-chain metadata.</PageSection>}
+      {submittedAddress ? <Link className='text-sm text-tinan-cyan' to={`/tokens/${submittedAddress}`}>Open token detail route →</Link> : null}
       <PageSection>
         <div className='flex flex-wrap items-center justify-between gap-3'>
           <div><p className='text-xs uppercase tracking-wider text-tinan-cyan'>Wallet import</p><p className='mt-1 text-sm text-white/65'>The wallet will receive metadata only; no transaction is initiated.</p></div>
@@ -167,15 +167,25 @@ export function TINANDashboardPage({
   recentTransactions: RecentTransaction[];
 }) {
   const [projects, setProjects] = useState<TINANProject[]>([]);
-  useEffect(() => setProjects(listProjects()), []);
+  const [projectLoadError, setProjectLoadError] = useState('');
+  useEffect(() => {
+    try {
+      setProjects(listProjects());
+    } catch (loadError) {
+      setProjectLoadError(loadError instanceof Error ? loadError.message : 'Project data is unavailable.');
+    }
+  }, []);
   const analyzed = projects.filter((project) => project.blueprint);
+  const tokenized = projects.filter((project) => ['TOKENIZING', 'DEPLOYED', 'VERIFIED', 'LIVE'].includes(project.status));
   return (
     <div className='grid gap-4'>
       <PageHero eyebrow='Dashboard' title='A clear view of your TINAN workspace.' description='Project metrics are browser-local. Wallet and network fields are reported only from the connected wallet.' />
-      <div className='grid gap-3 sm:grid-cols-2 xl:grid-cols-5'>
+      <div className='grid gap-3 sm:grid-cols-2 xl:grid-cols-7'>
         <MetricCard hint='Stored in this browser' label='Projects' value={String(projects.length)} />
+        <MetricCard hint='Project status reflects saved workflow only' label='Tokenized projects' value={String(tokenized.length)} />
         <MetricCard hint='Saved local analyses' label='AI analyses' value={String(analyzed.length)} />
         <MetricCard hint='Wallet connection' label='Wallet' value={address ? `${address.slice(0, 6)}…${address.slice(-4)}` : 'Not connected'} />
+        <MetricCard hint='Connected wallet' label='Network' value={network} />
         <MetricCard hint={network} label='Native balance' value={address ? nativeBalance : 'Unavailable'} />
         <MetricCard hint='Live wallet read' label='EKA balance' value={address ? ekaBalance : 'Unavailable'} />
       </div>
@@ -190,6 +200,7 @@ export function TINANDashboardPage({
       </PageSection>
       <PageSection>
         <h2 className='text-lg font-semibold'>Recent activity</h2>
+        {projectLoadError ? <p className='mt-3 text-sm text-rose-200' role='alert'>{projectLoadError}</p> : null}
         {projects.length === 0 && recentTransactions.length === 0 ? <p className='mt-3 text-sm text-white/60'>No saved project updates or wallet transactions to show.</p> : (
           <ul className='mt-3 divide-y divide-white/10'>
             {projects.slice(0, 3).map((project) => <li className='flex flex-wrap justify-between gap-2 py-3 text-sm' key={project.id}><Link className='text-tinan-cyan' to={`/project/${project.id}`}>{project.title}</Link><span className='text-white/55'>{project.status} · {new Date(project.updatedAt).toLocaleString()}</span></li>)}

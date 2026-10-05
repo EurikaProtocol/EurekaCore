@@ -31,7 +31,6 @@ export function TINANTokenizationPage() {
     setError('');
     try {
       setBlueprint(await tinanAIProvider.analyze(idea));
-      setStep(2);
     } catch (analysisError) {
       setError(analysisError instanceof Error ? analysisError.message : 'The analysis could not be completed.');
     } finally {
@@ -82,6 +81,10 @@ export function TINANTokenizationPage() {
     <div className='grid gap-4'>
       <PageHero eyebrow='Tokenization · Demo blueprint' title='Turn a project into a responsible tokenization plan.' description='This wizard records a local planning draft only. It never deploys a contract or broadcasts a transaction.' />
       <PageSection>
+        <div className='mb-4 flex items-center gap-3'>
+          <img alt='' className='h-9 w-9' src='/assets/tinan-logo.svg' />
+          <p className='text-sm text-white/60'>DEMO MODE · Save only after reviewing each step.</p>
+        </div>
         <ol aria-label='Tokenization steps' className='grid gap-2 sm:grid-cols-3 lg:grid-cols-9'>
           {WIZARD_STEPS.map((label, index) => (
             <li aria-current={index === step ? 'step' : undefined} className={`rounded-xl border p-3 text-xs ${index === step ? 'border-tinan-cyan bg-tinan-cyan/10 text-white' : 'border-white/10 text-white/50'}`} key={label}>

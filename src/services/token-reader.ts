@@ -57,8 +57,10 @@ export async function readTokenSnapshot(
       balance: balanceValue === null ? null : formatUnits(balanceValue, decimals),
     };
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'The contract could not be read.';
-    throw new Error(`Unable to read this token on the configured network. ${message}`);
+    if (error instanceof Error && error.message.startsWith('RPC network mismatch:')) {
+      throw error;
+    }
+    throw new Error('Unable to read this token on the configured network. Check the RPC, chain, address, and ERC-20 contract methods.');
   } finally {
     provider.destroy();
   }
