@@ -147,7 +147,7 @@ export function DataAssetsPage({
       };
       const asset: DataAsset = {
         id: assetId,
-        owner: evm.state.address || null,
+        owner: null,
         type: kind,
         name: assetName.trim(),
         description: assetDescription.trim(),
