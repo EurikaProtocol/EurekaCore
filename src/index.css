@@ -41,7 +41,7 @@ button, a, input, textarea, select {
   -webkit-tap-highlight-color: transparent;
 }
 
-button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+button:focus-visible, a:focus-visible, summary:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
   outline: 2px solid #15d0c9;
   outline-offset: 2px;
 }
@@ -197,4 +197,104 @@ main a[class*='rounded-xl'], main button[class*='rounded-xl'] {
 
 .cyan-outline {
   @apply border-tinan-cyan/50;
+}
+
+/* ---- EUREKA design system ---- */
+:root {
+  --eu-bg: #07090b;
+  --eu-surface: rgba(255, 255, 255, 0.045);
+  --eu-border: rgba(255, 255, 255, 0.1);
+  --eu-accent: #15d0c9;
+  --eu-accent-deep: #0da4ac;
+  --eu-glow: 0 0 40px rgba(21, 208, 201, 0.22);
+}
+
+html, body {
+  overflow-x: hidden;
+}
+
+img, svg, canvas {
+  max-width: 100%;
+}
+
+@layer components {
+.eu-container {
+  @apply mx-auto w-full max-w-7xl px-4 sm:px-6;
+}
+
+.eu-eyebrow {
+  @apply text-xs font-semibold uppercase tracking-[0.3em] text-tinan-turquoise;
+}
+
+.eu-h2 {
+  @apply mt-3 text-3xl font-semibold leading-tight tracking-tight sm:text-4xl;
+}
+
+.eu-lead {
+  @apply mt-4 max-w-2xl text-base leading-7 text-white/70;
+}
+
+.eu-btn {
+  @apply inline-flex min-h-11 items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold transition duration-200;
+}
+
+.eu-btn-primary {
+  @apply eu-btn bg-gradient-to-r from-tinan-cyan to-tinan-turquoise text-black hover:shadow-[0_0_28px_rgba(21,208,201,0.45)];
+}
+
+.eu-btn-ghost {
+  @apply eu-btn border border-white/20 bg-white/5 text-white hover:border-tinan-turquoise/60 hover:bg-white/10;
+}
+
+.eu-card {
+  @apply rounded-2xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl transition duration-300;
+}
+
+.eu-card-hover:hover {
+  @apply -translate-y-1 border-tinan-turquoise/40;
+  box-shadow: var(--eu-glow);
+}
+
+.eu-gradient-text {
+  @apply bg-gradient-to-r from-tinan-turquoise to-white bg-clip-text text-transparent;
+}
+
+.eu-section {
+  @apply py-16 sm:py-24;
+}
+
+}
+
+.eu-reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+
+.eu-reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+@keyframes eu-pulse-line {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
+}
+
+.eu-pulse {
+  animation: eu-pulse-line 3.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .eu-reveal { opacity: 1; transform: none; }
+}
+
+main button, main select, main input:not([type='checkbox']):not([type='radio']) {
+  min-height: 2.75rem;
 }
