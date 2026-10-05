@@ -41,7 +41,21 @@ External AI API credentials, if added later, must be Cloudflare Worker secrets o
 
 ## Cloudflare deployment
 
-The existing `wrangler.toml` Worker asset binding and custom domain are preserved. `VITE_*` settings are compiled into browser assets and must be available to the build process before building; setting them only as Worker runtime variables will not configure the frontend. Use only public-safe values for Vite variables. Build with `npm run build`, then deploy the generated `dist` assets and Worker using an authenticated Wrangler CLI with `npx wrangler deploy`. Configure future private API credentials as Cloudflare Worker secrets only when a server-side Worker integration consumes them; no AI secret is required by the current demo.
+This project deploys as a Cloudflare Worker with static assets, not as a Pages project. Wrangler uses `cloudflare/worker.js`, serves the Vite build from `dist`, and configures `www.tinaneureka.com` as a custom domain in `wrangler.toml`.
+
+The production build command is `npm run build`; its output directory is `dist`. To deploy locally, run `npm ci`, `npm run build`, and `npm run deploy` with Wrangler authenticated. Wrangler is pinned in the lockfile for reproducible installs.
+
+To enable automatic deployment from pushes to `main`:
+
+1. Add `www.tinaneureka.com` to an active Cloudflare DNS zone for `tinaneureka.com`. The zone must be managed by Cloudflare.
+2. Create a Cloudflare API token with Workers Scripts Edit permission for the account and DNS Edit plus Zone Read permissions for the domain's zone.
+3. In the GitHub repository, add Actions secrets named `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
+4. Merge or push to `main`. The workflow runs `npm ci`, `npm test` (TypeScript check and production build), then deploys the Worker. Wrangler provisions the configured custom domain and its DNS record; do not add a conflicting `www` DNS record manually.
+5. Confirm the `www.tinaneureka.com` custom domain and HTTPS status in the Cloudflare Worker dashboard.
+
+The Worker sets basic browser security headers, avoids caching HTML so deployments become visible promptly, and gives Vite-hashed assets a one-year immutable cache lifetime. `public/_redirects` and Wrangler's single-page-app asset fallback preserve direct navigation to client-side routes.
+
+`VITE_*` settings are compiled into browser assets and must be available to the build process before building; setting them only as Worker runtime variables will not configure the frontend. Use only public-safe values for Vite variables. Configure future private API credentials as Cloudflare Worker secrets only when a server-side Worker integration consumes them; no AI secret is required by the current demo.
 
 Vercel's existing `vercel.json` remains available as a separate deployment configuration.
 
