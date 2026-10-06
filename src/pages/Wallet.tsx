@@ -128,7 +128,7 @@ export function WalletPage({ evm }: { evm: EvmWalletController }) {
           >
             <input className='rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-white outline-none' onChange={(event) => setSendTo(event.target.value)} placeholder='Recipient EVM address' value={sendTo} />
             <input className='rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-white outline-none' onChange={(event) => setSendAmount(event.target.value)} placeholder='Amount in EKA' value={sendAmount} />
-            <button className='rounded-xl bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15' disabled={evm.busy} type='submit'>
+            <button className='rounded-xl bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50' disabled={evm.busy || !sendTo.trim() || !sendAmount.trim()} type='submit'>
               Send EKA
             </button>
           </form>
