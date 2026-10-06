@@ -96,7 +96,7 @@ export function TINANTokensPage({ walletAddress }: { walletAddress: string }) {
           <label className='min-w-0 flex-1 text-sm' htmlFor='token-address'>Contract address
             <input className='mt-2 w-full rounded-xl border border-white/15 bg-black/30 p-3 font-mono text-sm' id='token-address' onChange={(event) => setAddress(event.target.value)} value={address} />
           </label>
-          <button className='self-end rounded-xl bg-tinan-cyan px-4 py-3 text-sm font-semibold text-black' onClick={readToken} type='button'>Read token</button>
+          <button className='self-end rounded-xl bg-tinan-cyan px-4 py-3 text-sm font-semibold text-black disabled:cursor-not-allowed disabled:opacity-50' disabled={!address.trim()} onClick={readToken} type='button'>Read token</button>
         </div>
         {validationError ? <p className='mt-2 text-sm text-rose-200' role='alert'>{validationError}</p> : null}
         <p className='mt-3 break-all text-xs text-white/55'>Configured address: {TINAN_TOKEN.address ?? 'Invalid or missing'}</p>
@@ -262,7 +262,7 @@ export function TINANVerifyPage() {
           <label className='text-sm'>Network<select className='mt-2 w-full rounded-xl border border-white/15 bg-black/30 p-3' onChange={(event) => setChainId(event.target.value)} value={chainId}><option value=''>Choose network</option>{NETWORK_OPTIONS.map((item) => <option key={item.chainId} value={item.chainId}>{item.name}</option>)}</select></label>
         </div>
         {error ? <p className='mt-3 text-sm text-rose-200' role='alert'>{error}</p> : null}
-        <button className='mt-4 rounded-xl bg-tinan-cyan px-4 py-2 text-sm font-semibold text-black' onClick={submit} type='button'>Prepare explorer lookup</button>
+        <button className='mt-4 rounded-xl bg-tinan-cyan px-4 py-2 text-sm font-semibold text-black disabled:cursor-not-allowed disabled:opacity-50' disabled={!address.trim() || !chainId} onClick={submit} type='button'>Prepare explorer lookup</button>
       </PageSection>
       {lookup ? (
         <PageSection>
