@@ -1,6 +1,7 @@
-import { motion } from 'framer-motion';
-import type { ReactNode } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import type { AriaRole, ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
+import { toTrustedUrl } from '../core/verify';
 
 export function classNames(...values: Array<string | false | null | undefined>) {
   return values.filter(Boolean).join(' ');
@@ -10,16 +11,20 @@ export function PageSection({
   children,
   className,
   delay = 0,
+  role,
 }: {
   children: ReactNode;
   className?: string;
   delay?: number;
+  role?: AriaRole;
 }) {
+  const reduceMotion = useReducedMotion();
   return (
     <motion.section
       animate={{ opacity: 1, y: 0 }}
-      className={classNames('glass p-6', className)}
-      initial={{ opacity: 0, y: 12 }}
+      className={classNames('glass p-6 transition duration-300 hover:border-white/20', className)}
+      initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+      role={role}
       transition={{ duration: 0.3, delay }}
     >
       {children}
@@ -40,8 +45,8 @@ export function PageHero({
 }) {
   return (
     <PageSection className='cyan-outline overflow-hidden bg-[radial-gradient(circle_at_top,rgba(21,208,201,0.18),transparent_42%),rgba(255,255,255,0.04)]'>
-      <p className='text-xs uppercase tracking-[0.32em] text-tinan-cyan'>{eyebrow}</p>
-      <h1 className='mt-3 text-3xl font-semibold text-white sm:text-4xl'>{title}</h1>
+      <p className='eu-eyebrow'>{eyebrow}</p>
+      <h1 className='mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl'>{title}</h1>
       <p className='mt-3 max-w-3xl text-sm leading-7 text-white/75'>{description}</p>
       {actions ? <div className='mt-5 flex flex-wrap gap-3'>{actions}</div> : null}
     </PageSection>
@@ -73,12 +78,13 @@ export function StatusPill({ tone = 'neutral', children }: { tone?: 'neutral' | 
 }
 
 export function ExternalLinkButton({ href, label }: { href: string | null; label: string }) {
-  if (!href) {
+  const safeHref = toTrustedUrl(href);
+  if (!safeHref) {
     return <span className='rounded-xl border border-dashed border-white/15 px-4 py-2 text-sm text-white/40'>{label} unavailable</span>;
   }
 
   return (
-    <a className='rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm text-white transition hover:border-tinan-cyan/50 hover:bg-white/10' href={href} rel='noreferrer' target='_blank'>
+    <a className='eu-btn-ghost' href={safeHref} rel='noreferrer' target='_blank'>
       {label}
     </a>
   );
@@ -86,7 +92,7 @@ export function ExternalLinkButton({ href, label }: { href: string | null; label
 
 export function RouteButton({ to, label }: { to: string; label: string }) {
   return (
-    <NavLink className='rounded-xl bg-tinan-cyan px-4 py-2 text-sm font-semibold text-black transition hover:bg-tinan-turquoise' to={to}>
+    <NavLink className='eu-btn-primary' to={to}>
       {label}
     </NavLink>
   );

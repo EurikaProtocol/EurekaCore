@@ -1,0 +1,83 @@
+<section class="page-shell">
+  <article class="page-panel glass-outline">
+    <div class="status-row">
+      <div>
+        <p class="eyebrow">Wallet</p>
+        <h1 class="section-title">Connect, send, receive, and refresh on Base</h1>
+      </div>
+      <span class="status-chip" id="walletStatusBadge">Disconnected</span>
+    </div>
+    <p class="section-copy">Use MetaMask, WalletConnect v2, or Coinbase Wallet. Token data is read from the shared config layer and every transfer remains wallet approved.</p>
+  </article>
+
+  <div class="provider-grid">
+    <button class="provider-card glass-outline" id="connectMetaMask" type="button">
+      <strong>MetaMask</strong>
+      <p>Connect with the browser extension and switch to Base automatically.</p>
+    </button>
+    <button class="provider-card glass-outline" id="connectWalletConnect" type="button">
+      <strong>WalletConnect v2</strong>
+      <p>Scan a QR code from any supported wallet once a project ID is configured.</p>
+    </button>
+    <button class="provider-card glass-outline" id="connectCoinbase" type="button">
+      <strong>Coinbase Wallet</strong>
+      <p>Use the extension when available or hand off with a production deep link.</p>
+    </button>
+    <button class="provider-card glass-outline" id="disconnectAction" type="button">
+      <strong>Disconnect</strong>
+      <p>Reset local session state without changing the deployed application.</p>
+    </button>
+  </div>
+
+  <div class="two-column">
+    <article class="page-panel glass-outline">
+      <p class="eyebrow">Account</p>
+      <div class="detail-grid">
+        <div class="detail-item">
+          <div class="detail-label">Wallet address</div>
+          <div class="detail-value code" id="walletAddressValue">Not connected</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Network</div>
+          <div class="detail-value" id="walletNetworkValue">Base</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Wallet balance</div>
+          <div class="detail-value" id="walletNativeValue">0 ETH</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">EUREKA balance</div>
+          <div class="detail-value" id="walletTokenValue">0 EUREKA</div>
+        </div>
+      </div>
+      <div class="connection-actions">
+        <button class="button primary" id="receiveAction" type="button">Receive</button>
+        <button class="button ghost" id="copyAddressAction" type="button">Copy address</button>
+        <a class="button subtle" id="walletExplorerButton" href="#" target="_blank" rel="noreferrer">Open BaseScan</a>
+      </div>
+      <p class="helper-copy" id="walletConnectStatus">Ready to connect your Base wallet.</p>
+    </article>
+
+    <article class="page-panel glass-outline">
+      <p class="eyebrow">Send {{TOKEN_SYMBOL}}</p>
+      <form class="stack" id="sendForm">
+        <div class="input-card glass-outline">
+          <label class="field-label" for="sendToInput">Recipient</label>
+          <input id="sendToInput" name="recipient" placeholder="0x..." />
+        </div>
+        <div class="input-card glass-outline">
+          <label class="field-label" for="sendAmountInput">Amount</label>
+          <input id="sendAmountInput" name="amount" inputmode="decimal" placeholder="0.0" />
+        </div>
+        <div class="inline-actions">
+          <button class="button primary" id="sendAction" type="submit">Send {{TOKEN_SYMBOL}}</button>
+          <button class="button subtle" id="refreshWalletAction" type="button">Refresh balances</button>
+        </div>
+      </form>
+      <div class="receive-panel">
+        <strong>Token source</strong>
+        <p class="helper-copy">This wallet page reads contract name, symbol, decimals, and address from <span class="code">/js/config.js</span>.</p>
+      </div>
+    </article>
+  </div>
+</section>

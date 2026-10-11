@@ -1,126 +1,70 @@
-# EurekaCore
+# EUREKA · TINAN AI
 
-EurekaCore is the existing **tinaneureka.com** frontend for **EUREKA**, **TINAN AI**, and the new **Eureka Data Tokenization** workflow.
+TINAN AI is the React/TypeScript application in this existing EurekaCore repository. The former static Eureka landing page remains available at `/eureka-legacy.html`.
 
-## Production profile
+## Local development
 
-- Primary domain: `tinaneureka.com`
-- Canonical host: `www.tinaneureka.com`
-- App: `EurekaCore`
-- AI: `TINAN AI`
-- Core message: `DATA → PROOF → TOKENIZATION → UTILITY`
-- Active network: `Base`
-- Token contract: `0x4042973c0863cca0d73f028ca98465f44f0e6f97`
-
-## Integrated surfaces
-
-- Homepage with data-tokenization vision, TINAN AI messaging, ecosystem overview, and roadmap
-- Dashboard for wallet telemetry, activity, and runtime notifications
-- Wallet flows for MetaMask, WalletConnect v2, Coinbase Wallet, send, and receive
-- EUREKA token page with live on-chain metadata and BaseScan access
-- Data Tokenizer for upload, device-side analysis, hashing, proof generation, and local tokenized asset records
-- My Assets portfolio with proof filters and dedicated asset detail pages
-- Proofs page for Proof of Data, Proof of Action, and Proof of Knowledge
-- Whitepaper page with embedded PDF and download access
-- Shared runtime config in `/js/config.js`
-
-## Data tokenization architecture
-
-The current implementation is privacy-first and production-safe:
-
-- Uploaded files are stored privately in the browser with IndexedDB
-- Proof records store hashes, timestamps, ownership references, metadata, and lightweight storage references
-- Large files are **not** stored on-chain
-- Tokenization creates a digital representation and verification layer; it does **not** promise automatic market value
-- Additional storage providers such as IPFS or Arweave can be added later without redesigning the asset model
-
-## Local setup
-
-```bash
+```sh
 npm install
+npm run dev
+```
+
+Validation:
+
+```sh
 npm run build
+npm test
 ```
 
-Optional environment variables:
+There is no lint script configured in `package.json`.
 
-```bash
-cp .env.example .env
-```
+## Product routes
 
-- `VITE_WALLETCONNECT_PROJECT_ID` enables WalletConnect v2 pairing.
+The app includes `/`, `/ai`, `/tokenize`, `/create`, `/projects`, `/project/:id`, `/dashboard`, `/wallet`, `/tokens`, `/tokens/:address`, `/contracts`, `/deploy`, `/verify`, `/community`, `/docs`, `/about`, `/privacy`, `/terms`, and `/settings`. Existing Eureka routes remain available, including `/assets`, `/data-tokenize`, `/proofs`, `/ecosystem`, `/marketplace`, `/explorer`, `/staking`, `/swap`, `/whitepaper`, `/tinan-ai`, `/tinan-ai-token`, and `/pumpfun`.
 
-## Cloudflare deploy
+## Demo behavior and storage
 
-Build:
+The current `DemoAIProvider` is deterministic, local-only, and requires no AI API. Project drafts and blueprints are stored in browser localStorage. The tokenization wizard is a planning flow only; it does not deploy contracts or submit transactions. On-chain token values are read from the configured RPC and show an error when a contract cannot be read. Energy measurements, prices, balances, transactions, and verification status are never fabricated.
 
-```bash
-npm install && npm run build
-```
+The data asset and proof workspace stores its records locally in IndexedDB. These records are browser-specific and are not anchored on-chain.
 
-Deploy:
+## Environment
 
-```bash
-npx wrangler deploy
-```
+Copy `.env.example` to `.env.local` and set only values appropriate for the target deployment:
 
-The repository includes:
+- `VITE_TINAN_TOKEN_ADDRESS` optionally overrides the supplied existing-token address.
+- `VITE_TINAN_TOKEN_CHAIN_ID` must explicitly select a supported EVM chain; no chain is assumed.
+- `VITE_RPC_URL` enables read-only ERC-20 queries. It is bundled into the browser, so use only a public-safe HTTPS endpoint; do not put private API keys or credentials in it.
+- `VITE_EXPLORER_URL` optionally selects a trusted explorer host.
+- `VITE_WALLETCONNECT_PROJECT_ID` configures the existing WalletConnect integration.
+- Existing Solana variables configure the separate Solana wallet/token surfaces.
 
-- `wrangler.toml` for the Worker + static assets deployment
-- `cloudflare/worker.js` to serve the Vite `dist` output
-- `public/whitepaper/EUREKA_CHAIN_Whitepaper_v2.pdf` for the embedded whitepaper route
+External AI API credentials, if added later, must be Cloudflare Worker secrets or another server-side secret store. Never add private API keys to `VITE_` variables, React source, or public files.
 
-## Vercel preview deploy
+## Cloudflare deployment
 
-This repository is **not** a Next.js app. The active frontend is the root Vite SPA:
+This project deploys as a Cloudflare Worker with static assets, not as a Pages project. Wrangler uses `cloudflare/worker.js`, serves the Vite build from `dist`, and configures `www.tinaneureka.com` as a custom domain in `wrangler.toml`.
 
-- frontend root: repository root
-- app entry: `index.html` → `script.js`
-- framework: Vite
-- build command: `npm run build`
-- output directory: `dist`
+The production build command is `npm run build`; its output directory is `dist`. To deploy locally, run `npm ci`, `npm run build`, and `npm run deploy` with Wrangler authenticated. Wrangler is pinned in the lockfile for reproducible installs.
 
-For Vercel previews:
+To enable automatic deployment from pushes to `main`:
 
-- keep the **Root Directory** set to the repository root (`.`)
-- use the committed `vercel.json`
-- do **not** switch the project to a Next.js framework preset
+1. Add `www.tinaneureka.com` to an active Cloudflare DNS zone for `tinaneureka.com`. The zone must be managed by Cloudflare.
+2. Create a Cloudflare API token with Workers Scripts Edit permission for the account and DNS Edit plus Zone Read permissions for the domain's zone.
+3. In the GitHub repository, add Actions secrets named `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
+4. Merge or push to `main`. The workflow runs `npm ci`, `npm test` (TypeScript check and production build), then deploys the Worker. Wrangler provisions the configured custom domain and its DNS record; do not add a conflicting `www` DNS record manually.
+5. Confirm the `www.tinaneureka.com` custom domain and HTTPS status in the Cloudflare Worker dashboard.
 
-Cloudflare Workers remains the production deployment path for `tinaneureka.com`. Vercel should only mirror the existing static frontend for preview builds unless the deployment architecture is intentionally changed later.
+The Worker sets basic browser security headers, avoids caching HTML so deployments become visible promptly, and gives Vite-hashed assets a one-year immutable cache lifetime. `public/_redirects` and Wrangler's single-page-app asset fallback preserve direct navigation to client-side routes.
 
-## Project structure
+`VITE_*` settings are compiled into browser assets and must be available to the build process before building; setting them only as Worker runtime variables will not configure the frontend. Use only public-safe values for Vite variables. Configure future private API credentials as Cloudflare Worker secrets only when a server-side Worker integration consumes them; no AI secret is required by the current demo.
 
-- `index.html`
-- `styles.css`
-- `script.js`
-- `config.js`
-- `components/`
-- `pages/`
-- `js/config.js`
-- `js/data-tokenization.js`
-- `js/tinan-agent.js`
-- `js/wallet.js`
-- `public/`
-- `cloudflare/`
+Vercel's existing `vercel.json` remains available as a separate deployment configuration.
 
-## Routes
+## Production limitations
 
-- `/`
-- `/dashboard`
-- `/wallet`
-- `/tinan-ai`
-- `/eureka` (`/token` is an alias)
-- `/data`
-- `/tokenize`
-- `/my-assets`
-- `/assets/:id`
-- `/proofs`
-- `/ecosystem`
-- `/whitepaper`
-
-## Data assets, proofs, and TINAN AI
-
-- Files are hashed in the browser; uploaded file contents are stored privately in IndexedDB. Asset and proof metadata is stored in localStorage for the current browser profile.
-- Proof records remain local to the current browser profile and are not anchored to a blockchain.
-- Proof of Action links a user-triggered event to its created artifact; it does not independently prove an external event occurred.
-- Tokenization creates a local metadata record. On-chain registration and transactions are not connected.
-- TINAN AI uses client-side responses; there is no AI provider backend in this application.
+- The demo AI provider is not a production AI service.
+- Network options in the tokenization wizard are architectural choices, not enabled deployments.
+- Deploy and verify pages do not claim or submit on-chain actions.
+- Repository Solidity sources are not evidence of deployed or audited contracts.
+- Browser-local project storage is device-specific and is not a backup.

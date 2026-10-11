@@ -1,0 +1,96 @@
+<section class="page-shell">
+  <article class="page-panel glass-outline stack">
+    <div class="status-row">
+      <div>
+        <p class="eyebrow">Data Tokenizer</p>
+        <h1 class="section-title">Upload, analyze, prove, and tokenize digital information</h1>
+      </div>
+      <span class="status-chip success">Privacy-first local workflow</span>
+    </div>
+    <p class="section-copy">
+      TINAN AI currently performs device-side file classification and metadata structuring. This creates verifiable proof records without claiming semantic verification the software cannot technically prove.
+    </p>
+  </article>
+
+  <div class="two-column tokenizer-layout">
+    <article class="page-panel glass-outline stack">
+      <div class="step-block">
+        <p class="eyebrow">Step 1</p>
+        <h2 class="section-title">Upload data</h2>
+        <p class="helper-copy">Supported inputs include images, screenshots, audio, video, PDFs, documents, CSV, JSON, analytics exports, and other digital files.</p>
+      </div>
+      <label class="upload-dropzone" for="tokenizerFileInput">
+        <input id="tokenizerFileInput" type="file" />
+        <span class="upload-title">Choose a file to tokenize</span>
+        <span class="helper-copy" id="selectedFileLabel">No file selected</span>
+      </label>
+      <div class="stack compact-stack">
+        <div class="input-card glass-outline">
+          <label class="field-label" for="assetTitleInput">Asset name</label>
+          <input id="assetTitleInput" placeholder="Optional title for the asset" />
+        </div>
+        <div class="input-card glass-outline">
+          <label class="field-label" for="assetDescriptionInput">Description</label>
+          <textarea id="assetDescriptionInput" placeholder="Describe the context, origin, or intended utility"></textarea>
+        </div>
+        <div class="detail-grid compact-grid">
+          <div class="input-card glass-outline">
+            <label class="field-label" for="proofTypeSelect">Proof type</label>
+            <select id="proofTypeSelect"></select>
+          </div>
+          <div class="input-card glass-outline">
+            <label class="field-label" for="storageProviderSelect">Storage provider</label>
+            <select id="storageProviderSelect"></select>
+          </div>
+          <div class="input-card glass-outline">
+            <label class="field-label" for="visibilitySelect">Privacy</label>
+            <select id="visibilitySelect">
+              <option value="private">Private data</option>
+              <option value="verified">Verified data</option>
+              <option value="public">Public-ready metadata</option>
+            </select>
+          </div>
+          <div class="input-card glass-outline">
+            <label class="field-label" for="assetTagsInput">Tags</label>
+            <input id="assetTagsInput" placeholder="knowledge, analytics, invoice" />
+          </div>
+        </div>
+      </div>
+      <div class="inline-actions">
+        <button class="button primary" id="analyzeDataButton" type="button">Analyze data</button>
+        <button class="button ghost" id="createAssetButton" type="button">Create Eureka asset</button>
+        <a class="button subtle" href="/my-assets" data-route="/my-assets">My assets</a>
+      </div>
+      <p class="helper-copy" id="tokenizerStatusMessage">Select a file to begin a proof-backed tokenization workflow.</p>
+    </article>
+
+    <article class="page-panel glass-outline stack">
+      <div class="step-block">
+        <p class="eyebrow">Steps 2 → 5</p>
+        <h2 class="section-title">Analysis, proof, tokenization, and asset output</h2>
+      </div>
+      <div class="detail-grid" id="analysisGrid">
+        <div class="detail-item">
+          <div class="detail-label">TINAN AI analysis</div>
+          <div class="detail-value">Waiting for file analysis.</div>
+        </div>
+      </div>
+      <div class="detail-grid" id="proofGrid">
+        <div class="detail-item">
+          <div class="detail-label">Proof of Data</div>
+          <div class="detail-value">Generate a cryptographic hash, timestamp, metadata record, storage reference, and ownership reference.</div>
+        </div>
+      </div>
+      <div class="detail-grid" id="assetOutputGrid">
+        <div class="detail-item">
+          <div class="detail-label">Eureka Asset</div>
+          <div class="detail-value">After analysis, create an asset record with Data ID, Proof ID, hash, verification status, token ID, network, and transaction status.</div>
+        </div>
+      </div>
+      <div class="helper-panel">
+        <strong>Important</strong>
+        <p class="helper-copy">Tokenization does not guarantee financial value. It creates a digital representation and verification layer that may later integrate with broader Eureka ecosystem utility.</p>
+      </div>
+    </article>
+  </div>
+</section>
