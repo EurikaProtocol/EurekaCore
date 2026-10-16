@@ -41,6 +41,7 @@ export type EvmWalletController = {
   addToken: () => Promise<void>;
   switchToEthereumMainnet: () => Promise<void>;
   sendTransfer: (to: string, amount: string) => Promise<void>;
+  signMessage: (message: string) => Promise<{ address: string; signature: string }>;
 };
 
 const INITIAL_STATE: EvmWalletState = {
@@ -225,6 +226,24 @@ export function useEvmWallet(): EvmWalletController {
     [provider, state.address, state.connected, state.ekaReady, state.networkWarning, state.providerType, syncWallet]
   );
 
+  const signMessage = useCallback(async (message: string) => {
+    if (!provider || !state.address || !state.connected) {
+      throw new Error('Connect an EVM wallet before signing a proof message.');
+    }
+    if (!message.trim()) {
+      throw new Error('A message is required for wallet signing.');
+    }
+
+    const signer = await provider.getSigner();
+    const address = await signer.getAddress();
+    if (address.toLowerCase() !== state.address.toLowerCase()) {
+      throw new Error('The connected wallet changed. Reconnect before signing.');
+    }
+
+    const signature = await signer.signMessage(message);
+    return { address, signature };
+  }, [provider, state.address, state.connected]);
+
   useEffect(() => {
     if (!provider || !state.address || !state.providerType) return;
     const interval = window.setInterval(() => {
@@ -277,6 +296,7 @@ export function useEvmWallet(): EvmWalletController {
       addToken,
       switchToEthereumMainnet,
       sendTransfer,
+      signMessage,
     }),
     [
       addToken,
@@ -288,6 +308,7 @@ export function useEvmWallet(): EvmWalletController {
       recentTransactions,
       refresh,
       sendTransfer,
+      signMessage,
       state,
       status,
       switchToEthereumMainnet,
