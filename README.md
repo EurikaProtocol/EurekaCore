@@ -24,9 +24,9 @@ The app includes `/`, `/ai`, `/tokenize`, `/create`, `/projects`, `/project/:id`
 
 ## Demo behavior and storage
 
-The current `DemoAIProvider` is deterministic, local-only, and requires no AI API. Project drafts and blueprints are stored in browser localStorage. The tokenization wizard is a planning flow only; it does not deploy contracts or submit transactions. On-chain token values are read from the configured RPC and show an error when a contract cannot be read. Energy measurements, prices, balances, transactions, and verification status are never fabricated.
+The current `DemoAIProvider` is deterministic, local-only, and requires no AI API. There is no authenticated AI API, external provider integration, agent task/tool executor, streaming, or server-side conversation/project persistence. Project drafts and blueprints are stored in browser localStorage. The tokenization wizard is a planning flow only; it does not deploy contracts or submit transactions. On-chain token values are read from the configured RPC and show an error when a contract cannot be read. Energy measurements, prices, balances, transactions, and verification status are never fabricated.
 
-The data asset and proof workspace stores its records locally in IndexedDB. These records are browser-specific and are not anchored on-chain.
+The data asset and proof workspace stores its records locally in IndexedDB. Files are hashed in the browser but are not retained or uploaded. Wallet signatures verify the exact signed statement and signer locally; they do not prove an external action occurred. These records are browser-specific and are not anchored on-chain.
 
 ## Environment
 

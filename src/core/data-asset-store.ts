@@ -1,3 +1,4 @@
+import { normalizeDataAssetRecord, normalizeDataProofRecord, verifySignedAction } from './data-assets';
 import type { AssetWorkspace, DataAsset, DataProof } from './data-assets';
 
 const DATABASE_NAME = 'eureka-data-assets';
@@ -37,10 +38,26 @@ export async function loadAssetWorkspace(): Promise<AssetWorkspace> {
   const database = await openDatabase();
   try {
     const transaction = database.transaction([ASSETS_STORE, PROOFS_STORE], 'readonly');
-    const [assets, proofs] = await Promise.all([
-      requestResult<DataAsset[]>(transaction.objectStore(ASSETS_STORE).getAll()),
-      requestResult<DataProof[]>(transaction.objectStore(PROOFS_STORE).getAll()),
+    const [storedAssets, storedProofs] = await Promise.all([
+      requestResult<unknown[]>(transaction.objectStore(ASSETS_STORE).getAll()),
+      requestResult<unknown[]>(transaction.objectStore(PROOFS_STORE).getAll()),
     ]);
+    const assets = storedAssets
+      .map(normalizeDataAssetRecord)
+      .filter((asset): asset is DataAsset => Boolean(asset));
+    const assetIds = new Set(assets.map((asset) => asset.id));
+    const validProofs = storedProofs
+      .map(normalizeDataProofRecord)
+      .filter((proof): proof is DataProof => proof !== null);
+    const proofs = await Promise.all(validProofs
+      .filter((proof) => assetIds.has(proof.assetId))
+      .map(async (proof) => (
+        proof.type === 'action'
+          && proof.status === 'signature-verified'
+          && !await verifySignedAction(proof)
+          ? { ...proof, owner: null, signature: null, status: 'recorded' as const }
+          : proof
+      )));
     return {
       assets: assets.sort((left, right) => right.createdAt.localeCompare(left.createdAt)),
       proofs: proofs.sort((left, right) => right.timestamp.localeCompare(left.timestamp)),
@@ -75,21 +92,6 @@ export async function saveProof(proof: DataProof): Promise<void> {
       transaction.oncomplete = () => resolve();
       transaction.onerror = () => reject(transaction.error ?? new Error('Could not save the local proof.'));
       transaction.onabort = () => reject(transaction.error ?? new Error('Local proof save was cancelled.'));
-    });
-  } finally {
-    database.close();
-  }
-}
-
-export async function saveAsset(asset: DataAsset): Promise<void> {
-  const database = await openDatabase();
-  try {
-    const transaction = database.transaction(ASSETS_STORE, 'readwrite');
-    transaction.objectStore(ASSETS_STORE).put(asset);
-    await new Promise<void>((resolve, reject) => {
-      transaction.oncomplete = () => resolve();
-      transaction.onerror = () => reject(transaction.error ?? new Error('Could not update the local asset.'));
-      transaction.onabort = () => reject(transaction.error ?? new Error('Local asset update was cancelled.'));
     });
   } finally {
     database.close();

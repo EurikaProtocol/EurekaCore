@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { RouteButton, PageHero, PageSection, StatusPill } from '../components/ui';
-import { deleteAssetAndProofs, loadAssetWorkspace, saveAsset, saveAssetAndProof, saveProof } from '../core/data-asset-store';
+import { deleteAssetAndProofs, loadAssetWorkspace, saveAssetAndProof, saveProof } from '../core/data-asset-store';
 import {
   createId,
   MAX_ASSET_DESCRIPTION_LENGTH,
@@ -61,7 +61,7 @@ function makeActionMessage(asset: DataAsset, description: string, owner: string,
     `Owner: ${owner}`,
     `Asset ID: ${asset.id}`,
     `Asset SHA-256: ${asset.hash}`,
-    `Action: ${description.trim()}`,
+    `Action: ${description.trim().replace(/\s+/g, ' ')}`,
     `Timestamp: ${timestamp}`,
   ].join('\n');
 }
@@ -136,7 +136,7 @@ export function DataAssetsPage({
         assetId,
         hash,
         timestamp: createdAt,
-        owner: evm.state.address || null,
+        owner: null,
         signature: null,
         metadata: {
           fileType: selectedFile.type || 'unknown',
@@ -198,11 +198,14 @@ export function DataAssetsPage({
         return;
       }
 
-      const dataProof = workspace.proofs.find((proof) => proof.id === asset.proofId);
-      if (dataProof) {
-        await saveProof({ ...dataProof, status: 'integrity-verified' });
+      const dataProof = workspace.proofs.find((proof) => proof.id === asset.proofId && proof.type === 'data');
+      if (!dataProof) {
+        throw new Error('The local Proof of Data record is missing. The asset was not marked as verified.');
       }
-      await saveAsset({ ...asset, verificationStatus: 'integrity-verified' });
+      await saveAssetAndProof(
+        { ...asset, verificationStatus: 'integrity-verified' },
+        { ...dataProof, status: 'integrity-verified' },
+      );
       await reload();
       setNotice(`Hash match confirmed for “${asset.name}”. This verifies file integrity against the local record only.`);
     } catch (verificationError) {
@@ -324,7 +327,7 @@ export function DataAssetsPage({
         assetId: asset.id,
         hash: await sha256Text(content),
         timestamp,
-        owner: evm.state.address || null,
+        owner: null,
         signature: null,
         metadata: {
           title: knowledgeTitle.trim(),
@@ -502,11 +505,13 @@ export function DataAssetsPage({
             <h2 className='mt-2 text-xl font-semibold text-white'>Sign a user-submitted statement</h2>
             <p className='mt-2 text-sm leading-6 text-white/70'>The signature verifies which wallet authorized the message. It does not prove an external action occurred.</p>
             <form className='mt-4 grid gap-3' onSubmit={(event) => void handleCreateActionProof(event)}>
-              <select className='rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white' onChange={(event) => setActionAssetId(event.target.value)} required value={actionAssetId}>
+              <label className='grid gap-1 text-sm text-white/75' htmlFor='action-asset'>Related data</label>
+              <select className='rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white' id='action-asset' onChange={(event) => setActionAssetId(event.target.value)} required value={actionAssetId}>
                 <option value=''>Choose related data</option>
                 {workspace.assets.map((asset) => <option key={asset.id} value={asset.id}>{asset.name}</option>)}
               </select>
-              <textarea className='min-h-24 rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm text-white' maxLength={MAX_PROOF_DESCRIPTION_LENGTH} onChange={(event) => setActionDescription(event.target.value)} placeholder='Describe the action statement to sign' required value={actionDescription} />
+              <label className='grid gap-1 text-sm text-white/75' htmlFor='action-description'>Action statement</label>
+              <textarea className='min-h-24 rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm text-white' id='action-description' maxLength={MAX_PROOF_DESCRIPTION_LENGTH} onChange={(event) => setActionDescription(event.target.value)} placeholder='Describe the action statement to sign' required value={actionDescription} />
               <button className='w-fit rounded-xl bg-tinan-cyan px-4 py-2 text-sm font-semibold text-black disabled:opacity-50' disabled={isBusy || !evm.state.connected} type='submit'>Sign with connected wallet</button>
               <p className='text-xs text-white/50'>{evm.state.connected ? `Wallet: ${evm.state.address}` : 'Connect an EVM wallet in the Wallet hub to sign.'}</p>
             </form>
@@ -517,13 +522,17 @@ export function DataAssetsPage({
             <h2 className='mt-2 text-xl font-semibold text-white'>Structure a knowledge record</h2>
             <p className='mt-2 text-sm leading-6 text-white/70'>Add your own title, category, and summary. This browser creates a content hash; it does not call an AI provider or validate factual claims.</p>
             <form className='mt-4 grid gap-3' onSubmit={(event) => void handleCreateKnowledgeProof(event)}>
-              <select className='rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white' onChange={(event) => setKnowledgeAssetId(event.target.value)} required value={knowledgeAssetId}>
+              <label className='grid gap-1 text-sm text-white/75' htmlFor='knowledge-asset'>Source data</label>
+              <select className='rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white' id='knowledge-asset' onChange={(event) => setKnowledgeAssetId(event.target.value)} required value={knowledgeAssetId}>
                 <option value=''>Choose source data</option>
                 {workspace.assets.map((asset) => <option key={asset.id} value={asset.id}>{asset.name}</option>)}
               </select>
-              <input className='rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm text-white' maxLength={MAX_ASSET_NAME_LENGTH} onChange={(event) => setKnowledgeTitle(event.target.value)} placeholder='Knowledge title' required value={knowledgeTitle} />
-              <input className='rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm text-white' maxLength={80} onChange={(event) => setKnowledgeCategory(event.target.value)} placeholder='Category' required value={knowledgeCategory} />
-              <textarea className='min-h-24 rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm text-white' maxLength={MAX_ASSET_DESCRIPTION_LENGTH} onChange={(event) => setKnowledgeSummary(event.target.value)} placeholder='Your structured summary' required value={knowledgeSummary} />
+              <label className='grid gap-1 text-sm text-white/75' htmlFor='knowledge-title'>Title</label>
+              <input className='rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm text-white' id='knowledge-title' maxLength={MAX_ASSET_NAME_LENGTH} onChange={(event) => setKnowledgeTitle(event.target.value)} placeholder='Knowledge title' required value={knowledgeTitle} />
+              <label className='grid gap-1 text-sm text-white/75' htmlFor='knowledge-category'>Category</label>
+              <input className='rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm text-white' id='knowledge-category' maxLength={80} onChange={(event) => setKnowledgeCategory(event.target.value)} placeholder='Category' required value={knowledgeCategory} />
+              <label className='grid gap-1 text-sm text-white/75' htmlFor='knowledge-summary'>Summary</label>
+              <textarea className='min-h-24 rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm text-white' id='knowledge-summary' maxLength={MAX_ASSET_DESCRIPTION_LENGTH} onChange={(event) => setKnowledgeSummary(event.target.value)} placeholder='Your structured summary' required value={knowledgeSummary} />
               <button className='w-fit rounded-xl bg-tinan-cyan px-4 py-2 text-sm font-semibold text-black disabled:opacity-50' disabled={isBusy || workspace.assets.length === 0} type='submit'>Create knowledge record</button>
             </form>
           </PageSection>
