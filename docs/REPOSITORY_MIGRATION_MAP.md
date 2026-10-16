@@ -4,7 +4,7 @@ Snapshot: 2026-10-16. This map separates capabilities already in EurekaCore from
 
 | Source | Source reference | EurekaCore destination/status | Follow-up |
 | --- | --- | --- | --- |
-| EurekaCore | `main@9c9b3d0d3ebff80f019a06aac267d1392b51accf`; PR #19 head `29d8c19aa52fa2d81da8379a92df753a54bbca0b` | Canonical app; PR #12's React/TINAN UI and local data/proof capability are merged on `main`. | Review PR #19 for lockfile fix and audited compatible dependency updates. |
+| EurekaCore | `main@9c9b3d0d3ebff80f019a06aac267d1392b51accf`; PR #19 head `738b5935f9aa41711c209a64b5582aba45c4f269` | Canonical app; PR #12's React/TINAN UI and local data/proof capability are merged on `main`. | Review PR #19 for lockfile fix, audited compatible dependency updates and migration documentation. |
 | EurekaCoreMain | `main@66f2696913e6e015046d2f15b296318775a77ab5` | No files copied; overlapping site. | Compare only a specifically identified unique, MIT-compatible feature. |
 | EurekaAI | `main@4e75502990f247eff980a9b69ce05866c2f82ff3` | No files copied; static prototype/assets. | No license; retain as design reference pending rights confirmation. |
 | TinanAi | `main@dd8e659f3fd9661955abc1c9784c501483c2309d` | Existing EurekaCore `/ai` UI is local demo only. Server implementation is not migrated or connected. | No license; after rights approval, integrate server logic into an in-repo backend module and authenticated same-origin API; keep provider secrets server-side. |

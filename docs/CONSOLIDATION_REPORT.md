@@ -21,7 +21,7 @@ Nine organization repositories were discovered. EurekaCore is the only active ca
 - Vite emits an existing warning that the classic script in `eureka-legacy.html` is not bundled as a module; build completes.
 - No lint script or Solidity test/compiler harness exists. No contract tests were run.
 - `npm audit` after safe updates reports **27 total: 16 high, 11 moderate, no critical**. Remaining risks include Tailwind 3 dependency chain (suggested Tailwind 4 fix is major), Solana wallet/mobile adapter and React Native/Metro tree, and transitive jayson/stream-json/uuid paths. Do not blindly force overrides. Re-evaluate at remediation time.
-- GitHub Actions run `38934456288` on the preceding PR #19 head passed npm install/type-check/tests/build. The current `29d8c19` check was `action_required`, not a confirmed pass; local checks above validate the new lockfile. Cloudflare preview builds have failed, but provider logs returned 404 through available GitHub tooling. No deployment result is claimed.
+- GitHub Actions run `38934456288` on the preceding PR #19 head passed npm install/type-check/tests/build. The current head `738b5935` run `38937872142` is `action_required`, not a confirmed pass; local checks above validate the current lockfile. Cloudflare preview builds have failed, but provider logs returned 404 through available GitHub tooling. No deployment result is claimed.
 - Secret scan and CodeQL should be run on final review commits; no secret values were read or modified. Secret presence cannot be inspected here.
 
 ## Open blockers / owner action
