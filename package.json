@@ -19,7 +19,7 @@
     "tailwindcss": "^3.4.19",
     "typescript": "^5.9.3",
     "vite": "^8.3.0",
-    "wrangler": "4.147.0"
+    "wrangler": "^4.151.1"
   },
   "dependencies": {
     "@solana/wallet-adapter-base": "^0.9.28",
