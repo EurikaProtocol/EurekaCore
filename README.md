@@ -17,6 +17,9 @@ npm test
 ```
 
 There is no lint script configured in `package.json`.
+`npm test` runs TypeScript checking, focused Node tests under `tests/`, and the production Vite build.
+
+The current organization-wide repository inventory, migration decisions, architecture, and blockers are documented in `docs/`.
 
 ## Product routes
 
@@ -52,7 +55,7 @@ To enable automatic deployment from pushes to `main`:
 1. Add `www.tinaneureka.com` to an active Cloudflare DNS zone for `tinaneureka.com`. The zone must be managed by Cloudflare.
 2. Create a Cloudflare API token with Workers Scripts Edit permission for the account and DNS Edit plus Zone Read permissions for the domain's zone.
 3. In the GitHub repository, add Actions secrets named `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
-4. Merge or push to `main`. The workflow runs `npm ci`, `npm test` (TypeScript check and production build), then deploys the Worker. Wrangler provisions the configured custom domain and its DNS record; do not add a conflicting `www` DNS record manually.
+4. Merge or push to `main`. The workflow runs `npm ci`, `npm test` (TypeScript check, focused data/proof tests, and production build), then deploys the Worker. Wrangler provisions the configured custom domain and its DNS record; do not add a conflicting `www` DNS record manually.
 5. Confirm the `www.tinaneureka.com` custom domain and HTTPS status in the Cloudflare Worker dashboard.
 
 The Worker sets basic browser security headers, avoids caching HTML so deployments become visible promptly, and gives Vite-hashed assets a one-year immutable cache lifetime. `public/_redirects` and Wrangler's single-page-app asset fallback preserve direct navigation to client-side routes.
@@ -68,3 +71,4 @@ Vercel's existing `vercel.json` remains available as a separate deployment confi
 - Deploy and verify pages do not claim or submit on-chain actions.
 - Repository Solidity sources are not evidence of deployed or audited contracts.
 - Browser-local project storage is device-specific and is not a backup.
+- Ecosystem inventory and migration blockers are tracked in `docs/CONSOLIDATION_REPORT.md`; unlicensed or unverified external code has not been copied.
