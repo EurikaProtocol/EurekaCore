@@ -34,7 +34,7 @@ const SITE = 'https://www.tinaneureka.com';
 function Logo() {
   return (
     <Link aria-label='EUREKA — home' className='flex min-h-11 items-center gap-3 rounded-xl' to='/'>
-      <img alt='' className='h-9 w-9 rounded-xl border border-white/10 bg-black/30 p-1.5' height={36} src='/assets/tinan-logo.svg' width={36} />
+      <img alt='' className='h-9 w-9 rounded-xl border border-white/10 bg-black/30 p-1.5' height={36} src='/assets/eureka-emblem.svg' width={36} />
       <span className='text-base font-semibold tracking-[0.14em] sm:text-lg sm:tracking-[0.18em]'>EUREKA</span>
     </Link>
   );

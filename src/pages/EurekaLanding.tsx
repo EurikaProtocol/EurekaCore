@@ -83,8 +83,12 @@ export function EurekaLandingPage() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    document.title = 'EUREKA — The Final Block of the Blockchain';
-    document.querySelector('meta[name="description"]')?.setAttribute('content', 'EUREKA: a Web3 ecosystem preview with wallet-signed approvals, data proofs and an AI control core. Demonstration data is labelled.');
+    const title = 'EUREKA — The Final Block of the Blockchain';
+    const description = 'Explore EUREKA, a Web3 ecosystem preview with wallet-signed approvals, data proofs and a guarded AI control core. Demonstration data is labelled.';
+    document.title = title;
+    document.querySelector('meta[name="description"]')?.setAttribute('content', description);
+    document.querySelector('meta[property="og:title"]')?.setAttribute('content', title);
+    document.querySelector('meta[property="og:description"]')?.setAttribute('content', description);
   }, []);
 
   return (
