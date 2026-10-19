@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
+import { Wallet } from 'ethers';
 import { loadSource } from './helpers/load-src.mjs';
 
 const sdk = await loadSource('src/sdk/index.ts');
@@ -62,29 +64,88 @@ test('unauthorized tool use is rejected', async () => {
 test('agent-supplied approvals are stripped and cannot authorize actions', async () => {
   const r = await sdk.dispatchAgentTask(task().value, new MockAgentProvider((q) => ({
     contractVersion: '1.0', taskId: q.id, status: 'completed', toolsUsed: [],
-    approval: { actionId: 'a1', approvedBy: 'ai', method: 'wallet-confirmation', expiresAt: '2999-01-01T00:00:00Z' },
-    output: { text: 'send funds', proposedActions: [{ id: 'a1', type: 'fund-transfer', description: 'send', approval: { actionId: 'a1' } }] },
+    approval: { approvedBy: 'ai', signature: '0x' },
+    output: { text: 'send funds', proposedActions: [{ id: 'a1', type: 'fund-transfer', description: 'send', parameters: { to: 'x', amount: 1 }, approval: { signature: '0x' } }] },
   })));
   const action = r.value.output.proposedActions[0];
   assert.equal('approval' in r.value, false);
   assert.equal('approval' in action, false);
-  assert.equal(sdk.authorizeAction(action).error.code, 'UNAUTHORIZED');
+  assert.deepEqual(action.parameters, { to: 'x', amount: 1 });
+  assert.equal(sdk.authorizeAction(action, undefined, { replayGuard: new sdk.InMemoryReplayGuard() }).error.code, 'UNAUTHORIZED');
 });
 
-test('consequential actions need a matching, unexpired human approval', () => {
-  const note = { id: 'n1', type: 'note', description: 'fyi' };
-  assert.equal(sdk.authorizeAction(note).ok, true);
-  for (const type of ['blockchain-transaction', 'contract-deploy', 'fund-transfer', 'permission-change']) {
-    const a = { id: 'a1', type, description: 'x' };
-    assert.equal(sdk.isConsequential(type), true);
-    assert.equal(sdk.authorizeAction(a, undefined, NOW).error.code, 'UNAUTHORIZED');
-    const approval = sdk.createHumanApproval({ actionId: 'a1', approvedBy: '0xUser', now: NOW }).value;
-    assert.equal(sdk.authorizeAction(a, approval, NOW).value.authorizedBy, '0xUser');
-    assert.equal(sdk.authorizeAction({ ...a, id: 'a2' }, approval, NOW).ok, false);
-    assert.equal(sdk.authorizeAction(a, approval, '2026-01-01T00:05:00.000Z').ok, false);
-    assert.equal(sdk.authorizeAction(a, { ...approval, method: 'ai' }, NOW).ok, false);
+test('malformed action parameters are rejected', async () => {
+  for (const parameters of [[1], { 'bad key': 1 }, { a: { nested: 1 } }, { a: NaN }, 'x']) {
+    const r = await sdk.dispatchAgentTask(task().value, new MockAgentProvider((q) => ({
+      contractVersion: '1.0', taskId: q.id, status: 'completed', toolsUsed: [],
+      output: { text: 'a', proposedActions: [{ id: 'a1', type: 'note', description: 'x', parameters }] },
+    })));
+    assert.equal(r.ok, false);
   }
-  assert.equal(sdk.createHumanApproval({ actionId: '', approvedBy: 'u' }).ok, false);
-  assert.equal(sdk.createHumanApproval({ actionId: 'a', approvedBy: '' }).ok, false);
-  assert.equal(sdk.createHumanApproval({ actionId: 'a', approvedBy: 'u', ttlMs: 24 * 3600_000 }).ok, false);
+});
+
+test('agent timeout fails closed', async () => {
+  const r = await sdk.dispatchAgentTask(task().value, new MockAgentProvider(() => new Promise(() => {})), { timeoutMs: 20 });
+  assert.equal(r.error.code, 'UNAVAILABLE');
+  assert.match(r.error.message, /timed out/);
+});
+
+const NONCE = 'nonce-0123456789abcdef';
+const wallet = Wallet.createRandom();
+const action = { id: 'a1', type: 'fund-transfer', description: 'send', parameters: { to: '0x' + '2'.repeat(40), amount: '1' } };
+
+async function approve(a, { signer = wallet, nonce = NONCE, now = NOW, ttlMs } = {}) {
+  const req = sdk.prepareApprovalRequest({ action: a, approvedBy: wallet.address, nonce, now, ttlMs }).value;
+  return { approvedBy: wallet.address, nonce, approvedAt: req.approvedAt, expiresAt: req.expiresAt, signature: await signer.signMessage(req.message) };
+}
+
+test('non-consequential actions need no approval', () => {
+  assert.equal(sdk.authorizeAction({ id: 'n', type: 'note', description: 'x', parameters: {} }, undefined).ok, true);
+});
+
+test('consequential action: valid wallet approval authorizes exactly once', async () => {
+  const guard = new sdk.InMemoryReplayGuard();
+  const ap = await approve(action);
+  assert.equal(sdk.authorizeAction(action, undefined, { now: NOW, replayGuard: guard }).ok, false);
+  assert.equal(sdk.authorizeAction(action, ap, { now: NOW }).ok, false, 'replay guard required');
+  const first = sdk.authorizeAction(action, ap, { now: NOW, replayGuard: guard });
+  assert.equal(first.value.authorizedBy, wallet.address);
+  const replay = sdk.authorizeAction(action, ap, { now: NOW, replayGuard: guard });
+  assert.equal(replay.error.code, 'UNAUTHORIZED');
+  assert.match(replay.error.message, /already been used/);
+});
+
+test('approval is bound to the exact action and parameters', async () => {
+  const ap = await approve(action);
+  const guard = new sdk.InMemoryReplayGuard();
+  const opts = { now: NOW, replayGuard: guard };
+  assert.equal(sdk.authorizeAction({ ...action, parameters: { ...action.parameters, amount: '1000' } }, ap, opts).ok, false);
+  assert.equal(sdk.authorizeAction({ ...action, id: 'a2' }, ap, opts).ok, false);
+  assert.equal(sdk.authorizeAction({ ...action, type: 'contract-deploy' }, ap, opts).ok, false);
+  // failed checks must not burn the nonce
+  assert.equal(sdk.authorizeAction(action, ap, opts).ok, true);
+});
+
+test('approval must be signed by the stated wallet', async () => {
+  const guard = new sdk.InMemoryReplayGuard();
+  const forged = await approve(action, { signer: Wallet.createRandom() });
+  assert.equal(sdk.authorizeAction(action, forged, { now: NOW, replayGuard: guard }).ok, false);
+  assert.equal(sdk.authorizeAction(action, { ...forged, signature: 'garbage' }, { now: NOW, replayGuard: guard }).ok, false);
+  assert.equal(sdk.authorizeAction(action, { ...forged, approvedBy: 'ai' }, { now: NOW, replayGuard: guard }).ok, false);
+});
+
+test('approvals expire, cannot be future-dated, and have bounded lifetime', async () => {
+  const ap = await approve(action);
+  const g = () => new sdk.InMemoryReplayGuard();
+  assert.equal(sdk.authorizeAction(action, ap, { now: '2026-01-01T00:04:59.000Z', replayGuard: g() }).ok, true);
+  assert.equal(sdk.authorizeAction(action, ap, { now: '2026-01-01T00:05:00.000Z', replayGuard: g() }).ok, false);
+  assert.equal(sdk.authorizeAction(action, ap, { now: '2025-12-31T23:00:00.000Z', replayGuard: g() }).ok, false);
+  assert.equal(sdk.prepareApprovalRequest({ action, approvedBy: wallet.address, nonce: NONCE, ttlMs: 24 * 3600_000 }).ok, false);
+  assert.equal(sdk.prepareApprovalRequest({ action, approvedBy: 'nope', nonce: NONCE }).ok, false);
+  assert.equal(sdk.prepareApprovalRequest({ action, approvedBy: wallet.address, nonce: 'short' }).ok, false);
+});
+
+test('authorization is pure: it performs no signing or submission', () => {
+  const src = readFileSync(new URL('../src/core/approval.ts', import.meta.url), 'utf8');
+  assert.doesNotMatch(src, /signMessage|sendTransaction|sendRawTransaction|\.transfer\(|deploy\(/);
 });

@@ -14,7 +14,8 @@ Pure, framework-free domain logic in `src/core/`, usable and testable without a 
 | `proof.ts` | `verifyProof`: data proofs (SHA-256 match) and action proofs (wallet signature). Knowledge proofs are unsupported. |
 | `device.ts` | Self-reported `DeviceMetadata` validation and a `DeviceAttestationProvider` boundary. |
 | `agent.ts` | Versioned (v1.0) task/result contract for an AI agent, strict result validation, `dispatchAgentTask`. |
-| `approval.ts` | Which actions are consequential and the human-approval check; AI output alone never authorizes them. |
+| `task.ts` | Task lifecycle, cancellation, `TaskStore` interface and in-memory store. |
+| `approval.ts` | Consequential actions and wallet-signed, parameter-bound, single-use approvals; AI output alone never authorizes them. |
 | `transaction.ts` | Chain-agnostic lifecycle `proposed → submitted → confirmed / failed`. |
 
 SDK (`src/sdk`): `evm.ts`, `solana.ts` (wallet readers), `blockchain-adapter.ts` (`EVMAdapter`, `SolanaAdapter`), plus `../solana/transactions.ts` (unsigned SOL transfer + proposed record) and a re-export of the core. Entry points: `src/core/index.ts` (pure) and `src/sdk/index.ts` (core + chain adapters).

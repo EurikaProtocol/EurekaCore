@@ -24,7 +24,25 @@ export const PROPOSED_ACTION_TYPES = ['note', 'blockchain-transaction', 'contrac
 export type ProposedActionType = (typeof PROPOSED_ACTION_TYPES)[number];
 
 /** An action the AI *suggests*. It carries no authority. */
-export type ProposedAction = { id: string; type: ProposedActionType; description: string };
+export type ActionParameters = Record<string, string | number | boolean | null>;
+export type ProposedAction = { id: string; type: ProposedActionType; description: string; parameters: ActionParameters };
+
+const MAX_PARAMETERS = 20;
+const MAX_PARAMETER_STRING = 500;
+
+function validateParameters(value: unknown): ActionParameters | null {
+  if (value === undefined) return {};
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const entries = Object.entries(value as Record<string, unknown>);
+  if (entries.length > MAX_PARAMETERS) return null;
+  const out: ActionParameters = {};
+  for (const [k, v] of entries) {
+    if (!/^[A-Za-z0-9_.-]{1,64}$/.test(k)) return null;
+    if (typeof v === 'string' ? v.length > MAX_PARAMETER_STRING : !(v === null || typeof v === 'boolean' || (typeof v === 'number' && Number.isFinite(v)))) return null;
+    out[k] = v as string | number | boolean | null;
+  }
+  return out;
+}
 
 export type AgentResult =
   | {
@@ -114,7 +132,9 @@ export function validateAgentResult(request: AgentTaskRequest, raw: unknown): Re
       || !PROPOSED_ACTION_TYPES.includes(a.type as ProposedActionType)) {
       return fail('INVALID_INPUT', 'Agent returned a malformed proposed action.');
     }
-    actions.push({ id: a.id, type: a.type as ProposedActionType, description: a.description.slice(0, 1000) });
+    const parameters = validateParameters(a.parameters);
+    if (!parameters) return fail('INVALID_INPUT', 'Agent returned malformed action parameters.');
+    actions.push({ id: a.id, type: a.type as ProposedActionType, description: a.description.slice(0, 1000), parameters });
   }
   const tools = r.toolsUsed ?? [];
   if (!Array.isArray(tools) || tools.some((t) => typeof t !== 'string')) {
@@ -132,13 +152,28 @@ export function validateAgentResult(request: AgentTaskRequest, raw: unknown): Re
 }
 
 /** Runs a task through a provider. Without a provider this is UNAVAILABLE; it never fabricates a result. */
-export async function dispatchAgentTask(request: AgentTaskRequest, provider?: AgentProvider): Promise<Result<AgentResult>> {
+export const DEFAULT_AGENT_TIMEOUT_MS = 30_000;
+
+export async function dispatchAgentTask(
+  request: AgentTaskRequest,
+  provider?: AgentProvider,
+  options: { timeoutMs?: number } = {}
+): Promise<Result<AgentResult>> {
   if (!provider) return fail('UNAVAILABLE', 'No AI agent is configured; the task was not executed.');
+  const timeoutMs = options.timeoutMs ?? DEFAULT_AGENT_TIMEOUT_MS;
   let raw: unknown;
+  let timer: ReturnType<typeof setTimeout> | undefined;
   try {
-    raw = await provider.execute(request);
+    raw = await Promise.race([
+      provider.execute(request),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`timed out after ${timeoutMs} ms`)), timeoutMs);
+      }),
+    ]);
   } catch (error) {
     return fail('UNAVAILABLE', `Agent "${provider.name}" failed: ${error instanceof Error ? error.message : 'unknown error'}`);
+  } finally {
+    if (timer) clearTimeout(timer);
   }
   return validateAgentResult(request, raw);
 }

@@ -8,3 +8,4 @@ export * from './transaction';
 export * from './verify';
 export * from './agent';
 export * from './approval';
+export * from './task';

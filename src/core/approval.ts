@@ -1,5 +1,7 @@
+import { verifyMessage } from 'ethers';
 import { fail, isIsoTimestamp, ok, type Result } from './errors';
 import type { ProposedAction, ProposedActionType } from './agent';
+import { isValidEvmAddress } from './verify';
 
 /** Action types that change state, move value or alter authority. */
 export const CONSEQUENTIAL_ACTIONS: readonly ProposedActionType[] = [
@@ -9,57 +11,109 @@ export const CONSEQUENTIAL_ACTIONS: readonly ProposedActionType[] = [
   'permission-change',
 ];
 
+export const MAX_APPROVAL_TTL_MS = 60 * 60_000;
+export const DEFAULT_APPROVAL_TTL_MS = 5 * 60_000;
+
 export function isConsequential(type: ProposedActionType): boolean {
   return CONSEQUENTIAL_ACTIONS.includes(type);
 }
 
+/** Deterministic text of the exact action (id, type, description, sorted parameters). */
+export function canonicalizeAction(action: ProposedAction): string {
+  const params = Object.keys(action.parameters ?? {}).sort().map((k) => [k, action.parameters[k]]);
+  return JSON.stringify([action.id, action.type, action.description, params]);
+}
+
+/** The statement a wallet signs. Binds approver, exact action + parameters, nonce and validity window. */
+export function buildApprovalMessage(action: ProposedAction, p: { approvedBy: string; nonce: string; approvedAt: string; expiresAt: string }): string {
+  return [
+    'EUREKA ACTION APPROVAL',
+    `Approver: ${p.approvedBy}`,
+    `Nonce: ${p.nonce}`,
+    `Approved at: ${p.approvedAt}`,
+    `Expires at: ${p.expiresAt}`,
+    `Action: ${canonicalizeAction(action)}`,
+  ].join('\n');
+}
+
 /**
- * Evidence that a human explicitly approved one specific action (e.g. after a wallet confirmation).
- * Only the application's own approval flow should construct this; agent output can never carry one.
+ * A human approval of one specific action, proven by an EVM wallet signature (EIP-191 personal_sign)
+ * over `buildApprovalMessage`. It is created from a wallet signature only; agent output cannot carry one.
+ * Only EVM wallets are supported; Solana approvals are not implemented.
  */
 export type HumanApproval = {
-  actionId: string;
   approvedBy: string;
+  nonce: string;
   approvedAt: string;
   expiresAt: string;
-  method: 'wallet-confirmation';
+  signature: string;
 };
 
-export function createHumanApproval(input: {
-  actionId: string;
+/** Prepares the unsigned approval statement for the wallet UI. Does not sign or submit anything. */
+export function prepareApprovalRequest(input: {
+  action: ProposedAction;
   approvedBy: string;
+  nonce: string;
   now?: string;
   ttlMs?: number;
-}): Result<HumanApproval> {
-  if (!input.actionId?.trim()) return fail('INVALID_INPUT', 'An action id is required.');
-  if (!input.approvedBy?.trim()) return fail('INVALID_INPUT', 'The approving user is required.');
-  const nowIso = input.now ?? new Date().toISOString();
-  if (!isIsoTimestamp(nowIso)) return fail('INVALID_INPUT', 'Timestamp must be ISO-8601.');
-  const ttl = input.ttlMs ?? 5 * 60_000;
-  if (!Number.isFinite(ttl) || ttl <= 0 || ttl > 60 * 60_000) return fail('INVALID_INPUT', 'Approval lifetime must be between 1 ms and 1 hour.');
-  return ok({
-    actionId: input.actionId,
-    approvedBy: input.approvedBy.trim(),
-    approvedAt: nowIso,
-    expiresAt: new Date(Date.parse(nowIso) + ttl).toISOString(),
-    method: 'wallet-confirmation',
-  });
+}): Result<{ message: string; nonce: string; approvedAt: string; expiresAt: string }> {
+  if (!isValidEvmAddress(input.approvedBy)) return fail('INVALID_INPUT', 'The approving wallet must be a valid EVM address.');
+  if (!/^[A-Za-z0-9-]{16,128}$/.test(input.nonce)) return fail('INVALID_INPUT', 'Nonce must be 16-128 random letters, digits or hyphens.');
+  const approvedAt = input.now ?? new Date().toISOString();
+  if (!isIsoTimestamp(approvedAt)) return fail('INVALID_INPUT', 'Timestamp must be ISO-8601.');
+  const ttl = input.ttlMs ?? DEFAULT_APPROVAL_TTL_MS;
+  if (!Number.isFinite(ttl) || ttl <= 0 || ttl > MAX_APPROVAL_TTL_MS) return fail('INVALID_INPUT', 'Approval lifetime must be between 1 ms and 1 hour.');
+  const expiresAt = new Date(Date.parse(approvedAt) + ttl).toISOString();
+  return ok({ message: buildApprovalMessage(input.action, { approvedBy: input.approvedBy, nonce: input.nonce, approvedAt, expiresAt }), nonce: input.nonce, approvedAt, expiresAt });
+}
+
+/** Single-use guard. `consume` returns false if the nonce was already used. */
+export interface ReplayGuard {
+  consume(nonce: string, expiresAt: string): boolean;
+}
+
+export class InMemoryReplayGuard implements ReplayGuard {
+  private readonly used = new Set<string>();
+  consume(nonce: string): boolean {
+    if (this.used.has(nonce)) return false;
+    this.used.add(nonce);
+    return true;
+  }
 }
 
 export type Authorization = { actionId: string; authorizedBy: 'none-required' | string };
 
 /**
- * Decides whether a proposed action may proceed. AI output alone never authorizes a consequential action;
- * that requires a matching, unexpired human approval. Authorization permits the *attempt* only — wallet
- * signing and network confirmation remain separate steps.
+ * Decides whether a proposed action may proceed. AI output alone never authorizes a consequential action:
+ * it needs a wallet signature over this exact action and parameters, unexpired, and not previously used.
+ * Authorization permits the *attempt* only; this function never signs, submits, deploys or transfers.
+ * The nonce is consumed only after every other check passes.
  */
-export function authorizeAction(action: ProposedAction, approval?: HumanApproval, now: string = new Date().toISOString()): Result<Authorization> {
+export function authorizeAction(
+  action: ProposedAction,
+  approval: HumanApproval | undefined,
+  options: { now?: string; replayGuard?: ReplayGuard } = {}
+): Result<Authorization> {
   if (!isConsequential(action.type)) return ok({ actionId: action.id, authorizedBy: 'none-required' });
-  if (!approval) return fail('UNAUTHORIZED', `"${action.type}" requires explicit human approval.`);
-  if (approval.actionId !== action.id) return fail('UNAUTHORIZED', 'Approval was issued for a different action.');
-  if (approval.method !== 'wallet-confirmation' || !approval.approvedBy?.trim()) return fail('UNAUTHORIZED', 'Approval is not a valid human approval.');
-  if (!isIsoTimestamp(approval.expiresAt) || Date.parse(approval.expiresAt) <= Date.parse(now)) {
-    return fail('UNAUTHORIZED', 'Approval has expired.');
+  if (!approval) return fail('UNAUTHORIZED', `"${action.type}" requires explicit wallet approval.`);
+  if (!options.replayGuard) return fail('UNAUTHORIZED', 'A replay guard is required to authorize a consequential action.');
+  const now = options.now ?? new Date().toISOString();
+  if (!isIsoTimestamp(approval.approvedAt) || !isIsoTimestamp(approval.expiresAt)) return fail('UNAUTHORIZED', 'Approval timestamps are invalid.');
+  const nowMs = Date.parse(now);
+  if (Date.parse(approval.expiresAt) <= nowMs) return fail('UNAUTHORIZED', 'Approval has expired.');
+  if (Date.parse(approval.approvedAt) > nowMs) return fail('UNAUTHORIZED', 'Approval is dated in the future.');
+  if (Date.parse(approval.expiresAt) - Date.parse(approval.approvedAt) > MAX_APPROVAL_TTL_MS) return fail('UNAUTHORIZED', 'Approval lifetime is too long.');
+  if (!isValidEvmAddress(approval.approvedBy) || typeof approval.signature !== 'string') return fail('UNAUTHORIZED', 'Approval is not a valid wallet approval.');
+
+  let recovered: string;
+  try {
+    recovered = verifyMessage(buildApprovalMessage(action, approval), approval.signature);
+  } catch {
+    return fail('UNAUTHORIZED', 'Approval signature is invalid.');
   }
+  if (recovered.toLowerCase() !== approval.approvedBy.toLowerCase()) {
+    return fail('UNAUTHORIZED', 'Approval was not signed for this exact action by the stated wallet.');
+  }
+  if (!options.replayGuard.consume(approval.nonce, approval.expiresAt)) return fail('UNAUTHORIZED', 'Approval has already been used.');
   return ok({ actionId: action.id, authorizedBy: approval.approvedBy });
 }
