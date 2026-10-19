@@ -119,6 +119,7 @@ export function EurekaLandingPage() {
             <div>
               <p className='el-eyebrow'>Web3 ecosystem · Preview build</p>
               <h1 id='el-hero-title'>The Final Block of the <span>Blockchain</span></h1>
+              <p className='el-tagline'>The New Finance System</p>
               <p className='el-lead'>EUREKA brings wallet connectivity, data-asset proofs and a guarded AI control core into one ecosystem. Everything on this page is a preview: no live listings, prices or on-chain activity are shown.</p>
               <div className='el-actions'>
                 <Link className='el-btn el-btn-primary' to='/dashboard'>Explore the app</Link>

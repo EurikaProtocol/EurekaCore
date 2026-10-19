@@ -1,5 +1,5 @@
 .el-root{--bg:#030814;--panel:#0a1630;--cy:#5df2ff;--bl:#2a6bff;--tx:#e8f1ff;--mu:#9db0d0;
-  min-height:100vh;color:var(--tx);background:radial-gradient(ellipse at 80% 0%,rgba(42,107,255,.25),transparent 50%),radial-gradient(ellipse at 0% 30%,rgba(93,242,255,.10),transparent 45%),var(--bg);
+  min-height:100vh;color:var(--tx);background:radial-gradient(ellipse at 80% 0%,rgba(42,107,255,.25),transparent 50%),radial-gradient(ellipse at 0% 30%,rgba(139,92,246,.18),transparent 45%),radial-gradient(ellipse at 100% 75%,rgba(139,92,246,.14),transparent 40%),var(--bg);
   font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;overflow-x:clip}
 .el-wrap{width:100%;max-width:1200px;margin:0 auto;padding:0 20px}
 .el-header{position:sticky;top:0;z-index:50;background:rgba(3,8,20,.8);backdrop-filter:blur(14px);border-bottom:1px solid rgba(93,242,255,.14)}
@@ -67,3 +67,10 @@
 .el-footer nav a:hover{color:#fff}
 .el-muted{color:var(--mu);font-size:13px}
 .el-copy{margin-top:32px;margin-bottom:0}
+
+.el-tagline{margin:14px 0 0;color:var(--cy);letter-spacing:.08em;font-size:1rem}
+.el-hero::before,.el-hero::after{content:"";position:absolute;top:0;bottom:0;width:22%;pointer-events:none;opacity:.55;background:radial-gradient(ellipse at 0% 50%,rgba(139,92,246,.45),transparent 70%)}
+.el-hero::after{right:0;background:radial-gradient(ellipse at 100% 50%,rgba(139,92,246,.45),transparent 70%)}
+.el-hero::before{left:0}
+.el-asset-art{display:grid;place-items:center}
+.el-section,.el-hero{scroll-margin-top:68px}
