@@ -1,0 +1,21 @@
+{
+  "_note": "High/critical advisories triaged and accepted as of the Phase 4 audit. See docs/DEPENDENCY_AUDIT.md. A package NOT listed here fails CI. Removing entries is encouraged; adding requires owner sign-off.",
+  "accepted": [
+    "@react-native/community-cli-plugin",
+    "@react-native/virtualized-lists",
+    "@solana-mobile/mobile-wallet-adapter-protocol",
+    "@solana-mobile/mobile-wallet-adapter-protocol-web3js",
+    "@solana-mobile/wallet-adapter-mobile",
+    "@solana-mobile/wallet-standard-mobile",
+    "braces",
+    "chokidar",
+    "fast-glob",
+    "metro",
+    "metro-config",
+    "metro-file-map",
+    "metro-transform-worker",
+    "micromatch",
+    "react-native",
+    "tailwindcss"
+  ]
+}

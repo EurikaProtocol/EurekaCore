@@ -24,4 +24,4 @@ Snapshot: 2026-10-16. This map separates capabilities already in EurekaCore from
 | Data assets/proofs | `src/core/data-assets.ts`, `src/core/data-asset-store.ts`, `src/pages/DataAssets.tsx` | Browser IndexedDB, local hashing and wallet signatures; not server persistence, public anchoring, legal ownership, or external-action verification. |
 | AI/project UI | `src/pages/TinanStudio.tsx`, `src/pages/TinanProjects.tsx`, `src/services/` | Deterministic local demo/storage only; external TinanAi server is unwired. |
 | Contracts | `Contract/` and root Solidity files | Source artifacts; no current compiler/test harness or audit claim. PR #11 is a draft on a non-main base. |
-| Deployment | `.github/workflows/npm-publish.yml`, `wrangler.toml`, `vercel.json` | Cloudflare Worker deploys only from main; Vercel is a separate config. Provider-side build results and production secret presence are unverified. |
+| Deployment | `.github/workflows/cloudflare-deploy.yml`, `wrangler.toml`, `vercel.json` | Cloudflare Worker deploys only from main; Vercel is a separate config. Provider-side build results and production secret presence are unverified. |

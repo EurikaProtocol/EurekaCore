@@ -1,6 +1,7 @@
 import { EVM_NETWORKS, type EvmNetworkConfig, type SupportedEvmChain } from '../config/networks';
 import { getSolscanAddressUrl } from '../solana/connection';
 import { normalizeSolanaNetwork, type SolanaNetworkName } from '../solana/constants';
+import { CoreError } from '../core/errors';
 import { isValidEvmAddress, isValidSolanaAddress } from '../core/verify';
 
 export interface BlockchainAdapter {
@@ -15,7 +16,9 @@ export class EVMAdapter implements BlockchainAdapter {
   readonly networkName: string;
 
   constructor(chainId: SupportedEvmChain) {
-    this.config = EVM_NETWORKS[chainId];
+    const config = EVM_NETWORKS[chainId];
+    if (!config) throw new CoreError('UNSUPPORTED', `Unsupported EVM chain: ${String(chainId)}`);
+    this.config = config;
     this.networkName = this.config.name;
   }
 

@@ -21,6 +21,12 @@ There is no lint script configured in `package.json`.
 
 The current organization-wide repository inventory, migration decisions, architecture, and blockers are documented in `docs/`.
 
+## Core and SDK
+
+Domain logic lives in `src/core` (entry `src/core/index.ts`) and chain adapters in `src/sdk` (entry `src/sdk/index.ts`). See `docs/CORE_ARCHITECTURE.md` for modules, supported behavior, explicit limitations (no device attestation, no on-chain confirmation, Solana transfers are unsigned proposals only) and the audit decisions in `docs/REPOSITORY_STATE_AUDIT.md`.
+
+EurekaCore is the control core; TinanAi is a separate AI execution agent reached only through the versioned contract in `docs/TINANAI_INTEGRATION_CONTRACT.md`.
+
 ## Product routes
 
 The app includes `/`, `/ai`, `/tokenize`, `/create`, `/projects`, `/project/:id`, `/dashboard`, `/wallet`, `/tokens`, `/tokens/:address`, `/contracts`, `/deploy`, `/verify`, `/community`, `/docs`, `/about`, `/privacy`, `/terms`, and `/settings`. Existing Eureka routes remain available, including `/assets`, `/data-tokenize`, `/proofs`, `/ecosystem`, `/marketplace`, `/explorer`, `/staking`, `/swap`, `/whitepaper`, `/tinan-ai`, `/tinan-ai-token`, and `/pumpfun`.
@@ -48,7 +54,11 @@ External AI API credentials, if added later, must be Cloudflare Worker secrets o
 
 This project deploys as a Cloudflare Worker with static assets, not as a Pages project. Wrangler uses `cloudflare/worker.js`, serves the Vite build from `dist`, and configures `www.tinaneureka.com` as a custom domain in `wrangler.toml`.
 
-The production build command is `npm run build`; its output directory is `dist`. To deploy locally, run `npm ci`, `npm run build`, and `npm run deploy` with Wrangler authenticated. Wrangler is pinned in the lockfile for reproducible installs.
+The production build command is `npm run build`; its output directory is `dist`. The repository contains both `wrangler.toml` (authoritative: Worker script, `ASSETS` binding, custom domain) and `wrangler.jsonc` (assets only, no Worker or route). Wrangler prefers `wrangler.jsonc` when no `--config` is given, so every script passes `--config wrangler.toml` explicitly. To validate without deploying, run `npm ci`, `npm run build`, then `npm run deploy:check` (no credentials needed). To deploy locally, run `npm run deploy` with Wrangler authenticated. Any Cloudflare dashboard Git integration must use build command `npm run build` and deploy command `npm run deploy` (not a bare `wrangler deploy`).
+
+Rollback: Cloudflare dashboard → Workers & Pages → the Worker → Deployments → roll back to a previous version, or revert the commit on `main` and redeploy. Vercel remains a separate fallback and is untouched.
+
+Troubleshooting: `CLOUDFLARE_API_TOKEN` empty means the secret is missing (the workflow preflight fails first with the missing names); `vite/client` type errors mean `npm ci` has not been run; the `eureka-legacy.html` classic-script build warning is known and the legacy page is still bundled. Wrangler is pinned in the lockfile for reproducible installs.
 
 To enable automatic deployment from pushes to `main`:
 

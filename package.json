@@ -8,13 +8,15 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "tsc --noEmit && node --test tests/*.test.mjs && vite build",
-    "deploy": "wrangler deploy"
+    "deploy:check": "wrangler deploy --dry-run --config wrangler.toml --outdir .wrangler/dry-run",
+    "deploy": "wrangler deploy --config wrangler.toml"
   },
   "devDependencies": {
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
     "autoprefixer": "^10.6.1",
+    "esbuild": "^0.28.2",
     "postcss": "^8.5.28",
     "tailwindcss": "^3.4.19",
     "typescript": "^5.9.3",

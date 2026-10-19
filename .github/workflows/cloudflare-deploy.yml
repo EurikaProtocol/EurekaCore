@@ -20,6 +20,14 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+      - name: Dependency audit (fails on new high/critical advisories)
+        run: node scripts/audit-check.mjs
+      - name: Check Cloudflare credentials
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: node scripts/check-deploy-env.mjs
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       - name: Deploy to Cloudflare Workers
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: npm run deploy
