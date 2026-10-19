@@ -1,7 +1,8 @@
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes, useLocation } from 'react-router-dom';
 import { AppShell } from './components/AppShell';
 import { useEvmWallet } from './hooks/useEvmWallet';
 import { ApprovalReviewPage } from './pages/ApprovalReview';
+import { EurekaLandingPage } from './pages/EurekaLanding';
 import { DashboardPage } from './pages/Dashboard';
 import { DataAssetsPage } from './pages/DataAssets';
 import { EcosystemPage } from './pages/Ecosystem';
@@ -32,11 +33,13 @@ import {
 
 export default function App() {
   const evm = useEvmWallet();
+  const { pathname } = useLocation();
+  if (pathname === '/') return <EurekaLandingPage />;
 
   return (
     <AppShell evm={evm}>
       <Routes>
-        <Route element={<HomePage walletAddress={evm.state.address} />} path='/' />
+        <Route element={<HomePage walletAddress={evm.state.address} />} path='/studio-home' />
         <Route element={<DataAssetsPage evm={evm} />} path='/assets' />
         <Route element={<DataAssetsPage evm={evm} view='proofs' />} path='/proofs' />
         <Route element={<DataAssetsPage evm={evm} view='tokenize' />} path='/data-tokenize' />
