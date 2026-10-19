@@ -460,7 +460,7 @@ async function connectWalletConnect() {
   state.activeProviderLabel = "walletconnect";
 
   if (WALLETCONNECT_PROJECT_ID === "PASTE_PROJECT_ID_HERE") {
-    throw new Error("Set WALLETCONNECT_PROJECT_ID in wallet.js to enable WalletConnect.");
+    throw new Error("Set WALLETCONNECT_PROJECT_ID in eureka-legacy-wallet.js to enable WalletConnect.");
   }
 
   const chain = ensureChainSelection("evm");
@@ -648,7 +648,7 @@ addTokenToMetaMaskButton?.addEventListener("click", async () => {
   }
 
   if (!isAddress(EUREKA_TOKEN_ADDRESS)) {
-    setHint("Replace EUREKA_TOKEN_ADDRESS in wallet.js before adding the token.");
+    setHint("Replace EUREKA_TOKEN_ADDRESS in eureka-legacy-wallet.js before adding the token.");
     return;
   }
 
