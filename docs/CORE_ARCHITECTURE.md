@@ -40,3 +40,6 @@ See `docs/TINANAI_INTEGRATION_CONTRACT.md`. EurekaCore works without any AI agen
 
 ## Publishing
 `package.json` is `private: true` and the SDK is internal source, not a published package. The former `npm-publish.yml` never published; it is the Cloudflare deploy workflow and was renamed `cloudflare-deploy.yml`. Making the SDK a package would require a name/scope, `exports`, a build, and an `npm publish --provenance` workflow with a restricted token; that is an owner decision.
+
+## Phase 4 additions
+See `docs/PERSISTENCE.md` (D1 stores, SQLite-verified only), `docs/TINANAI_INTEGRATION_CONTRACT.md` (server-side adapter, unverified live), `docs/DEPENDENCY_AUDIT.md`, and the `/approvals` preview route (EVM only; signing approves, never executes). `src/server/*` is Worker-side code and must not be imported by the browser app.

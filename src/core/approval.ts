@@ -69,12 +69,17 @@ export function prepareApprovalRequest(input: {
 
 /** Single-use guard. `consume` returns false if the nonce was already used. */
 export interface ReplayGuard {
-  consume(nonce: string, expiresAt: string): boolean;
+  /** Whether replay protection survives a process restart. Never report `true` for in-memory guards. */
+  readonly durable: boolean;
+  /** Atomically records the nonce. Resolves false if it was already consumed. Must reject on storage failure. */
+  consume(nonce: string, expiresAt: string): Promise<boolean>;
 }
 
+/** Deterministic guard for unit tests. NOT durable: usage is forgotten on restart, so it gives no production replay protection. */
 export class InMemoryReplayGuard implements ReplayGuard {
+  readonly durable = false;
   private readonly used = new Set<string>();
-  consume(nonce: string): boolean {
+  async consume(nonce: string): Promise<boolean> {
     if (this.used.has(nonce)) return false;
     this.used.add(nonce);
     return true;
@@ -89,11 +94,11 @@ export type Authorization = { actionId: string; authorizedBy: 'none-required' | 
  * Authorization permits the *attempt* only; this function never signs, submits, deploys or transfers.
  * The nonce is consumed only after every other check passes.
  */
-export function authorizeAction(
+export async function authorizeAction(
   action: ProposedAction,
   approval: HumanApproval | undefined,
   options: { now?: string; replayGuard?: ReplayGuard } = {}
-): Result<Authorization> {
+): Promise<Result<Authorization>> {
   if (!isConsequential(action.type)) return ok({ actionId: action.id, authorizedBy: 'none-required' });
   if (!approval) return fail('UNAUTHORIZED', `"${action.type}" requires explicit wallet approval.`);
   if (!options.replayGuard) return fail('UNAUTHORIZED', 'A replay guard is required to authorize a consequential action.');
@@ -114,6 +119,37 @@ export function authorizeAction(
   if (recovered.toLowerCase() !== approval.approvedBy.toLowerCase()) {
     return fail('UNAUTHORIZED', 'Approval was not signed for this exact action by the stated wallet.');
   }
-  if (!options.replayGuard.consume(approval.nonce, approval.expiresAt)) return fail('UNAUTHORIZED', 'Approval has already been used.');
+  let first: boolean;
+  try {
+    first = await options.replayGuard.consume(approval.nonce, approval.expiresAt);
+  } catch {
+    return fail('UNAVAILABLE', 'Replay protection storage failed; the action was not authorized.');
+  }
+  if (!first) return fail('UNAUTHORIZED', 'Approval has already been used.');
   return ok({ actionId: action.id, authorizedBy: approval.approvedBy });
+}
+
+export type ActionReview = {
+  type: ProposedAction['type'];
+  consequential: boolean;
+  description: string;
+  chainId: string | null;
+  target: string | null;
+  parameters: Array<[string, string]>;
+};
+
+/** Plain-data summary of exactly what the approver is about to sign. Parameters are listed in the signed (sorted) order. */
+export function describeActionForReview(action: ProposedAction): ActionReview {
+  const get = (...keys: string[]) => {
+    for (const k of keys) if (action.parameters[k] !== undefined && action.parameters[k] !== null) return String(action.parameters[k]);
+    return null;
+  };
+  return {
+    type: action.type,
+    consequential: isConsequential(action.type),
+    description: action.description,
+    chainId: get('chainId', 'chain'),
+    target: get('to', 'target', 'contract', 'address'),
+    parameters: Object.keys(action.parameters).sort().map((k) => [k, String(action.parameters[k])]),
+  };
 }

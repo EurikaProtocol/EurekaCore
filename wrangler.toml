@@ -11,3 +11,7 @@ routes = [
 directory = "./dist"
 binding = "ASSETS"
 not_found_handling = "single-page-application"
+
+# D1 (durable task/approval state) is intentionally NOT bound: it needs a real database_id from the owner.
+# See docs/PERSISTENCE.md. Note wrangler.jsonc (worker "eurekacore") is unused by scripts, which pin this file;
+# which Worker name is live on Cloudflare is unverified.

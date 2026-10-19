@@ -25,6 +25,8 @@ export function isTerminal(status: TaskStatus): boolean {
 
 /** Persistence boundary. Implementations must be single-writer-safe or enforce `expected` atomically. */
 export interface TaskStore {
+  /** Whether state survives a restart. In-memory stores must report false. */
+  readonly durable: boolean;
   get(id: string): Promise<TaskRecord | null>;
   /** Inserts a new record. Returns false if the id exists. */
   create(record: TaskRecord): Promise<boolean>;
@@ -35,6 +37,7 @@ export interface TaskStore {
 
 /** Deterministic in-memory store for tests and local use. Not durable. */
 export class InMemoryTaskStore implements TaskStore {
+  readonly durable = false;
   private readonly records = new Map<string, TaskRecord>();
   async get(id: string) {
     const r = this.records.get(id);
@@ -57,6 +60,8 @@ export class InMemoryTaskStore implements TaskStore {
 }
 
 export class TaskManager {
+  private readonly running = new Map<string, AbortController>();
+
   constructor(
     private readonly store: TaskStore,
     private readonly clock: () => string = () => new Date().toISOString()
@@ -85,8 +90,10 @@ export class TaskManager {
     return ok(updated);
   }
 
-  cancel(id: string) {
-    return this.move(id, 'cancelled');
+  async cancel(id: string) {
+    const result = await this.move(id, 'cancelled');
+    if (result.ok) this.running.get(id)?.abort(); // tell the provider to stop work / cancel remotely
+    return result;
   }
 
   /**
@@ -96,7 +103,14 @@ export class TaskManager {
   async run(id: string, provider: AgentProvider | undefined, options: { timeoutMs?: number } = {}): Promise<Result<TaskRecord>> {
     const started = await this.move(id, 'running');
     if (!started.ok) return started;
-    const outcome = await dispatchAgentTask(started.value.request, provider, options);
+    const controller = new AbortController();
+    this.running.set(id, controller);
+    let outcome;
+    try {
+      outcome = await dispatchAgentTask(started.value.request, provider, { ...options, signal: controller.signal });
+    } finally {
+      this.running.delete(id);
+    }
     if (!outcome.ok) return this.finish(id, 'failed', { error: outcome.error.message });
     if (outcome.value.status === 'failed') {
       return this.finish(id, 'failed', { result: outcome.value, error: `${outcome.value.error.code}: ${outcome.value.error.message}` });

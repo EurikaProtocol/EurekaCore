@@ -44,6 +44,18 @@ function validateParameters(value: unknown): ActionParameters | null {
   return out;
 }
 
+/** Validates one untrusted proposed action. Unknown fields are dropped. */
+export function parseProposedAction(raw: unknown): Result<ProposedAction> {
+  const a = raw as Record<string, unknown> | null;
+  if (!a || typeof a !== 'object' || typeof a.id !== 'string' || !ID.test(a.id) || typeof a.description !== 'string' || !a.description.trim()
+    || !PROPOSED_ACTION_TYPES.includes(a.type as ProposedActionType)) {
+    return fail('INVALID_INPUT', 'Agent returned a malformed proposed action.');
+  }
+  const parameters = validateParameters(a.parameters);
+  if (!parameters) return fail('INVALID_INPUT', 'Agent returned malformed action parameters.');
+  return ok({ id: a.id, type: a.type as ProposedActionType, description: a.description.slice(0, 1000), parameters });
+}
+
 export type AgentResult =
   | {
       contractVersion: typeof AGENT_CONTRACT_VERSION;
@@ -64,7 +76,8 @@ export type TaskStatus = 'queued' | 'running' | 'completed' | 'failed' | 'cancel
 /** Provider boundary. Real implementations (e.g. a TinanAi HTTP client) live outside the core and browser bundle. */
 export interface AgentProvider {
   readonly name: string;
-  execute(request: AgentTaskRequest): Promise<unknown>;
+  /** `signal` aborts on timeout or cancellation; implementations should stop work and cancel remote tasks. */
+  execute(request: AgentTaskRequest, signal?: AbortSignal): Promise<unknown>;
 }
 
 const ID = /^[A-Za-z0-9._:-]{1,128}$/;
@@ -127,14 +140,10 @@ export function validateAgentResult(request: AgentTaskRequest, raw: unknown): Re
     return fail('INVALID_INPUT', 'Agent proposed actions are malformed or too many.');
   }
   const actions: ProposedAction[] = [];
-  for (const a of rawActions as Array<Record<string, unknown>>) {
-    if (!a || typeof a.id !== 'string' || !ID.test(a.id) || typeof a.description !== 'string' || !a.description.trim()
-      || !PROPOSED_ACTION_TYPES.includes(a.type as ProposedActionType)) {
-      return fail('INVALID_INPUT', 'Agent returned a malformed proposed action.');
-    }
-    const parameters = validateParameters(a.parameters);
-    if (!parameters) return fail('INVALID_INPUT', 'Agent returned malformed action parameters.');
-    actions.push({ id: a.id, type: a.type as ProposedActionType, description: a.description.slice(0, 1000), parameters });
+  for (const a of rawActions) {
+    const parsed = parseProposedAction(a);
+    if (!parsed.ok) return parsed;
+    actions.push(parsed.value);
   }
   const tools = r.toolsUsed ?? [];
   if (!Array.isArray(tools) || tools.some((t) => typeof t !== 'string')) {
@@ -157,23 +166,31 @@ export const DEFAULT_AGENT_TIMEOUT_MS = 30_000;
 export async function dispatchAgentTask(
   request: AgentTaskRequest,
   provider?: AgentProvider,
-  options: { timeoutMs?: number } = {}
+  options: { timeoutMs?: number; signal?: AbortSignal } = {}
 ): Promise<Result<AgentResult>> {
   if (!provider) return fail('UNAVAILABLE', 'No AI agent is configured; the task was not executed.');
   const timeoutMs = options.timeoutMs ?? DEFAULT_AGENT_TIMEOUT_MS;
   let raw: unknown;
   let timer: ReturnType<typeof setTimeout> | undefined;
+  const controller = new AbortController();
+  const onAbort = () => controller.abort();
+  options.signal?.addEventListener('abort', onAbort, { once: true });
+  if (options.signal?.aborted) controller.abort();
   try {
     raw = await Promise.race([
-      provider.execute(request),
+      provider.execute(request, controller.signal),
       new Promise<never>((_, reject) => {
-        timer = setTimeout(() => reject(new Error(`timed out after ${timeoutMs} ms`)), timeoutMs);
+        timer = setTimeout(() => {
+          controller.abort();
+          reject(new Error(`timed out after ${timeoutMs} ms`));
+        }, timeoutMs);
       }),
     ]);
   } catch (error) {
     return fail('UNAVAILABLE', `Agent "${provider.name}" failed: ${error instanceof Error ? error.message : 'unknown error'}`);
   } finally {
     if (timer) clearTimeout(timer);
+    options.signal?.removeEventListener('abort', onAbort);
   }
   return validateAgentResult(request, raw);
 }

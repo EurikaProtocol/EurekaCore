@@ -20,6 +20,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+      - name: Dependency audit (fails on new high/critical advisories)
+        run: node scripts/audit-check.mjs
       - name: Check Cloudflare credentials
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: node scripts/check-deploy-env.mjs

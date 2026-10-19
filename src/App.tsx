@@ -1,6 +1,7 @@
 import { Route, Routes } from 'react-router-dom';
 import { AppShell } from './components/AppShell';
 import { useEvmWallet } from './hooks/useEvmWallet';
+import { ApprovalReviewPage } from './pages/ApprovalReview';
 import { DashboardPage } from './pages/Dashboard';
 import { DataAssetsPage } from './pages/DataAssets';
 import { EcosystemPage } from './pages/Ecosystem';
@@ -68,6 +69,7 @@ export default function App() {
         <Route element={<SettingsPage />} path='/legacy-settings' />
         <Route element={<TinanAiTokenPage />} path='/tinan-ai-token' />
         <Route element={<PumpfunPage />} path='/pumpfun' />
+        <Route element={<ApprovalReviewPage evm={evm} />} path='/approvals' />
         <Route element={<NotFoundPage />} path='*' />
       </Routes>
     </AppShell>
