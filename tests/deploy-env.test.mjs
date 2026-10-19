@@ -11,3 +11,10 @@ test('treats blank values as missing', () => {
 test('passes when set', () => {
   assert.deepEqual(missingDeployEnv({ CLOUDFLARE_API_TOKEN: 'a', CLOUDFLARE_ACCOUNT_ID: 'b' }), []);
 });
+
+import { readFileSync } from 'node:fs';
+test('deploy scripts pin the authoritative wrangler config', () => {
+  const s = JSON.parse(readFileSync(new URL('../package.json', import.meta.url))).scripts;
+  assert.match(s.deploy, /--config wrangler\.toml/);
+  assert.match(s['deploy:check'], /--dry-run --config wrangler\.toml/);
+});

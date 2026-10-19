@@ -48,7 +48,11 @@ External AI API credentials, if added later, must be Cloudflare Worker secrets o
 
 This project deploys as a Cloudflare Worker with static assets, not as a Pages project. Wrangler uses `cloudflare/worker.js`, serves the Vite build from `dist`, and configures `www.tinaneureka.com` as a custom domain in `wrangler.toml`.
 
-The production build command is `npm run build`; its output directory is `dist`. To deploy locally, run `npm ci`, `npm run build`, and `npm run deploy` with Wrangler authenticated. Wrangler is pinned in the lockfile for reproducible installs.
+The production build command is `npm run build`; its output directory is `dist`. The repository contains both `wrangler.toml` (authoritative: Worker script, `ASSETS` binding, custom domain) and `wrangler.jsonc` (assets only, no Worker or route). Wrangler prefers `wrangler.jsonc` when no `--config` is given, so every script passes `--config wrangler.toml` explicitly. To validate without deploying, run `npm ci`, `npm run build`, then `npm run deploy:check` (no credentials needed). To deploy locally, run `npm run deploy` with Wrangler authenticated. Any Cloudflare dashboard Git integration must use build command `npm run build` and deploy command `npm run deploy` (not a bare `wrangler deploy`).
+
+Rollback: Cloudflare dashboard → Workers & Pages → the Worker → Deployments → roll back to a previous version, or revert the commit on `main` and redeploy. Vercel remains a separate fallback and is untouched.
+
+Troubleshooting: `CLOUDFLARE_API_TOKEN` empty means the secret is missing (the workflow preflight fails first with the missing names); `vite/client` type errors mean `npm ci` has not been run; the `eureka-legacy.html` classic-script build warning is known and the legacy page is still bundled. Wrangler is pinned in the lockfile for reproducible installs.
 
 To enable automatic deployment from pushes to `main`:
 
