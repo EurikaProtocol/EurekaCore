@@ -13,6 +13,8 @@ Pure, framework-free domain logic in `src/core/`, usable and testable without a 
 | `data-proof.ts` | Energy-data proof records, structural validation, and the `SUBMITTED → VERIFIED → ANCHORED` transitions. Advancing requires caller-supplied evidence; the module checks nothing on-chain. |
 | `proof.ts` | `verifyProof`: data proofs (SHA-256 match) and action proofs (wallet signature). Knowledge proofs are unsupported. |
 | `device.ts` | Self-reported `DeviceMetadata` validation and a `DeviceAttestationProvider` boundary. |
+| `agent.ts` | Versioned (v1.0) task/result contract for an AI agent, strict result validation, `dispatchAgentTask`. |
+| `approval.ts` | Which actions are consequential and the human-approval check; AI output alone never authorizes them. |
 | `transaction.ts` | Chain-agnostic lifecycle `proposed → submitted → confirmed / failed`. |
 
 SDK (`src/sdk`): `evm.ts`, `solana.ts` (wallet readers), `blockchain-adapter.ts` (`EVMAdapter`, `SolanaAdapter`), plus `../solana/transactions.ts` (unsigned SOL transfer + proposed record) and a re-export of the core. Entry points: `src/core/index.ts` (pure) and `src/sdk/index.ts` (core + chain adapters).
@@ -31,3 +33,9 @@ Dependency direction: `config`/`pages` → `sdk` → `core`; `core` never import
 
 ## Cloudflare
 `wrangler.toml` is authoritative (Worker `eurekacore-v3`, assets in `dist`, route `www.tinaneureka.com`). Remaining owner actions: confirm the live Worker name vs `wrangler.jsonc`, set GitHub secrets `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID`, and verify the custom domain after a deploy. See README.
+
+## Control core and AI agent
+See `docs/TINANAI_INTEGRATION_CONTRACT.md`. EurekaCore works without any AI agent or credentials.
+
+## Publishing
+`package.json` is `private: true` and the SDK is internal source, not a published package. The former `npm-publish.yml` never published; it is the Cloudflare deploy workflow and was renamed `cloudflare-deploy.yml`. Making the SDK a package would require a name/scope, `exports`, a build, and an `npm publish --provenance` workflow with a restricted token; that is an owner decision.

@@ -6,3 +6,5 @@ export * from './proof';
 export * from './device';
 export * from './transaction';
 export * from './verify';
+export * from './agent';
+export * from './approval';

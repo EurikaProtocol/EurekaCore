@@ -2,7 +2,8 @@ export type CoreErrorCode =
   | 'INVALID_INPUT'
   | 'UNSUPPORTED'
   | 'UNAVAILABLE'
-  | 'INVALID_TRANSITION';
+  | 'INVALID_TRANSITION'
+  | 'UNAUTHORIZED';
 
 export class CoreError extends Error {
   readonly code: CoreErrorCode;

@@ -37,7 +37,7 @@ EurekaCore (canonical repository)
 ## Deployment and validation
 
 - `npm test` runs TypeScript checking, Node tests in `tests/*.test.mjs`, and the Vite production build.
-- `.github/workflows/npm-publish.yml` runs install/test for PRs and pushes to main; it deploys with Wrangler on main push using `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
+- `.github/workflows/cloudflare-deploy.yml` runs install/test for PRs and pushes to main; it deploys with Wrangler on main push using `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
 - `wrangler.toml` serves `dist` as Worker assets and configures `www.tinaneureka.com`. This is config evidence, not proof the secret values exist or deployment is healthy.
 - `vercel.json` is a separate supported preview/deployment config; validate it independently.
 - Keep production deployment and DNS unchanged until actual check results and owner approval.

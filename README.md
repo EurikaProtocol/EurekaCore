@@ -25,6 +25,8 @@ The current organization-wide repository inventory, migration decisions, archite
 
 Domain logic lives in `src/core` (entry `src/core/index.ts`) and chain adapters in `src/sdk` (entry `src/sdk/index.ts`). See `docs/CORE_ARCHITECTURE.md` for modules, supported behavior, explicit limitations (no device attestation, no on-chain confirmation, Solana transfers are unsigned proposals only) and the audit decisions in `docs/REPOSITORY_STATE_AUDIT.md`.
 
+EurekaCore is the control core; TinanAi is a separate AI execution agent reached only through the versioned contract in `docs/TINANAI_INTEGRATION_CONTRACT.md`.
+
 ## Product routes
 
 The app includes `/`, `/ai`, `/tokenize`, `/create`, `/projects`, `/project/:id`, `/dashboard`, `/wallet`, `/tokens`, `/tokens/:address`, `/contracts`, `/deploy`, `/verify`, `/community`, `/docs`, `/about`, `/privacy`, `/terms`, and `/settings`. Existing Eureka routes remain available, including `/assets`, `/data-tokenize`, `/proofs`, `/ecosystem`, `/marketplace`, `/explorer`, `/staking`, `/swap`, `/whitepaper`, `/tinan-ai`, `/tinan-ai-token`, and `/pumpfun`.
