@@ -1,14 +1,20 @@
 # EurekaCore in-place state audit
 
-Base: `56846cd` (+ local `ae8beec`). Architecture: Vite + React/TypeScript SPA, deployed as a Cloudflare Worker with static assets (`wrangler.toml` is authoritative; scripts pass `--config wrangler.toml`).
+Base: `56846cd` plus local commits. Architecture: Vite + React/TypeScript SPA deployed as a Cloudflare Worker with static assets.
 
-## Removed (unreferenced anywhere in source, docs, config or tests)
-- `pillow-12.3.0-cp312-...whl` – Python wheel, unrelated to this JS project.
-- `direct_url.json` – pip install metadata pointing at a local iOS path.
+## Audit findings and resolution
 
-## Kept, needs an owner decision
-- `EurekaTinanCore.git (1).zip` – archive containing a `.git` directory and an older EurekaCore copy; possibly a backup, so not deleted.
-- `index (5).html` – differs from `index.html`; purpose unknown.
-- `public/script.js` and `public/styles.css` differ from the root `script.js` / `styles.css`. Root files are bundled via `eureka-legacy.html`; the `public/` copies are shipped verbatim. Determine which is authoritative before deduplicating.
-- `wrangler.jsonc` vs `wrangler.toml` – worker names differ (`eurekacore` vs `eurekacore-v3`); confirm the live Worker.
-- Unreferenced TypeScript modules (not imported anywhere): `src/core/asset.ts`, `data-proof.ts`, `device.ts`, `proof.ts`, `src/sdk/index.ts`, `src/solana/transactions.ts`. They are part of the intended core/SDK surface and were not deleted; wire them into pages/services or remove with owner approval.
+| Finding | Evidence | Resolution |
+|---|---|---|
+| `wrangler.toml` vs `wrangler.jsonc` | `package.json` scripts, the workflow, README and docs only reference `wrangler.toml`; it alone defines `main`, the `ASSETS` binding, the `www.tinaneureka.com` route and worker `eurekacore-v3`. `wrangler.jsonc` (`eurekacore`, assets only) is referenced nowhere. | `wrangler.toml` is authoritative for this repo; scripts pin `--config`. `wrangler.jsonc` is **kept**: Git history is flat, so it cannot be proven that no dashboard/Git integration deploys the Worker named `eurekacore`. **Owner decision:** confirm the live Worker name in the Cloudflare dashboard, then delete the unused config. |
+| `index (5).html` | Unreferenced; 816-line single-file earlier version of the TINAN AI landing page (not identical to `index.html` or `eureka-legacy.html`). | Kept as a user backup; safe to delete once owner confirms. `index.html` is the Vite entry. |
+| Root vs `public/` `script.js`, `styles.css` | `eureka-legacy.html` links `styles.css` (Vite bundles the **root** file into JS) and `<script src="script.js">` (a classic script Vite cannot bundle, so the built page loads **`public/script.js`** at `/script.js`). The two scripts differ: root renders text network marks, `public/` renders icon `<img>`s. | **Not deduplicated.** Deleting either breaks the legacy page (verified: removing `public/script.js` leaves a dead `/script.js` tag). The legacy page currently pairs the `public/` script with the root stylesheet, which may mis-style network icons. **Owner decision / browser test needed:** align the pair (e.g. serve both from `public/`, or make the root script a module). |
+| `eureka-legacy.html` | Second Vite input (`vite.config.ts`), linked from `AppShell.tsx`, README and docs. | Required; unchanged. |
+| `EurekaTinanCore.git (1).zip` | Contains an old `EurekaCore-main` static site (index, styles, script, LICENSE), a `.git` dir, Python site-packages and `EurekaCoreAI` dist-info. | Kept as backup. Nothing unique to port was identified in the static-site files. |
+
+## Removed so far
+- `pillow-12.3.0-…whl` – Python wheel unrelated to the JS app; unreferenced.
+- `direct_url.json` – pip metadata with a local iOS path; unreferenced.
+
+## Core modules (all integrated through `src/core/index.ts` and `src/sdk/index.ts`)
+See `docs/CORE_ARCHITECTURE.md`.
