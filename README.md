@@ -72,7 +72,7 @@ The Worker sets basic browser security headers, avoids caching HTML so deploymen
 
 `VITE_*` settings are compiled into browser assets and must be available to the build process before building; setting them only as Worker runtime variables will not configure the frontend. Use only public-safe values for Vite variables. Configure future private API credentials as Cloudflare Worker secrets only when a server-side Worker integration consumes them; no AI secret is required by the current demo.
 
-Vercel's existing `vercel.json` remains available as a separate deployment configuration.
+Vercel's existing `vercel.json` remains available as a separate deployment configuration. Automatic save and Vercel Preview for `eureka/*` branches: `docs/AUTO_SAVE_PREVIEW.md` (`npm run save`).
 
 ## Production limitations
 
