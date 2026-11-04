@@ -43,3 +43,7 @@ See `docs/TINANAI_INTEGRATION_CONTRACT.md`. EurekaCore works without any AI agen
 
 ## Phase 4 additions
 See `docs/PERSISTENCE.md` (D1 stores, SQLite-verified only), `docs/TINANAI_INTEGRATION_CONTRACT.md` (server-side adapter, unverified live), `docs/DEPENDENCY_AUDIT.md`, and the `/approvals` preview route (EVM only; signing approves, never executes). `src/server/*` is Worker-side code and must not be imported by the browser app.
+
+
+## Orchestration
+Permission tiers, ecosystem registry, audit log and the resumable project workflow engine are documented in `ORCHESTRATION.md`; product integration specs in `ECOSYSTEM_INTEGRATIONS.md`.

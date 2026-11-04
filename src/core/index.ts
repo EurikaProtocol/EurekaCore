@@ -9,3 +9,8 @@ export * from './verify';
 export * from './agent';
 export * from './approval';
 export * from './task';
+export * from './permissions';
+export * from './registry';
+export * from './audit';
+export * from './workflow';
+export * from './agent-stage';

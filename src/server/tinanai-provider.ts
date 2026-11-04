@@ -79,7 +79,7 @@ export class TinanAiProvider implements AgentProvider {
     const checked = parseTinanAiConfig({ TINANAI_BASE_URL: config.baseUrl, TINANAI_USERNAME: config.username, TINANAI_PASSWORD: config.password });
     this.cfg = {
       ...checked,
-      fetch: config.fetch ?? fetch,
+      fetch: config.fetch ?? ((input, init) => fetch(input, init)),
       pollIntervalMs: config.pollIntervalMs ?? 1500,
       requestTimeoutMs: config.requestTimeoutMs ?? 10_000,
       maxResponseBytes: config.maxResponseBytes ?? 256 * 1024,
@@ -94,7 +94,7 @@ export class TinanAiProvider implements AgentProvider {
     let res: Response;
     try {
       res = await this.cfg.fetch(`${this.cfg.baseUrl}${path}`, {
-        method, headers, body: body === undefined ? undefined : JSON.stringify(body), redirect: 'error',
+        method, headers, body: body === undefined ? undefined : JSON.stringify(body), redirect: 'manual',
         signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
       });
     } catch (e) {
