@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "tsc --noEmit && node --test tests/*.test.mjs && vite build",
+    "test:routing": "node --test tests/routing.test.mjs",
+    "test:unit": "tsc --noEmit && node --test $(ls tests/*.test.mjs | grep -v routing.test.mjs)",
+    "test": "rm -rf dist && vite build && npm run test:routing && npm run test:unit",
+    "verify": "npm test && npm run deploy:check",
     "deploy:check": "wrangler deploy --dry-run --config wrangler.toml --outdir .wrangler/dry-run",
     "deploy": "wrangler deploy --config wrangler.toml"
   },
