@@ -80,8 +80,36 @@ const can = (id: Identity, role: Role) => id.roles.includes(role);
 
 async function readBody(request: Request): Promise<Record<string, unknown> | null> {
   if (!(request.headers.get('Content-Type') ?? '').toLowerCase().startsWith('application/json')) return null;
-  const text = await request.text();
-  if (text.length > MAX_BODY) return null;
+  const contentLength = Number(request.headers.get('Content-Length'));
+  if (Number.isFinite(contentLength) && contentLength > MAX_BODY) return null;
+  const reader = request.body?.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  if (reader) {
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        size += value.byteLength;
+        if (size > MAX_BODY) {
+          await reader.cancel();
+          return null;
+        }
+        chunks.push(value);
+      }
+    } catch {
+      return null;
+    } finally {
+      reader.releaseLock();
+    }
+  }
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  const text = new TextDecoder().decode(bytes);
   try {
     const v = JSON.parse(text || '{}');
     return v && typeof v === 'object' && !Array.isArray(v) ? v : null;
