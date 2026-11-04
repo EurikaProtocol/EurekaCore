@@ -68,7 +68,7 @@ To enable automatic deployment from pushes to `main`:
 4. Merge or push to `main`. The workflow runs `npm ci`, `npm test` (TypeScript check, focused data/proof tests, and production build), then deploys the Worker. Wrangler provisions the configured custom domain and its DNS record; do not add a conflicting `www` DNS record manually.
 5. Confirm the `www.tinaneureka.com` custom domain and HTTPS status in the Cloudflare Worker dashboard.
 
-The Worker sets basic browser security headers, avoids caching HTML so deployments become visible promptly, and gives Vite-hashed assets a one-year immutable cache lifetime. `public/_redirects` and Wrangler's single-page-app asset fallback preserve direct navigation to client-side routes.
+The Worker sets basic browser security headers, avoids caching HTML so deployments become visible promptly, and gives Vite-hashed assets a one-year immutable cache lifetime. Wrangler's single-page-app asset fallback (`not_found_handling`) preserves direct navigation to client-side routes.
 
 `VITE_*` settings are compiled into browser assets and must be available to the build process before building; setting them only as Worker runtime variables will not configure the frontend. Use only public-safe values for Vite variables. Configure future private API credentials as Cloudflare Worker secrets only when a server-side Worker integration consumes them; no AI secret is required by the current demo.
 
