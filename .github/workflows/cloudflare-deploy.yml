@@ -32,13 +32,13 @@ jobs:
         run: node scripts/audit-check.mjs
 
   deploy:
-    name: deploy (production, eurekacore-v3)
+    name: deploy (Eureka, eurekacore-v3)
     needs: verify
     # Only the main branch may deploy; PRs, other branches and forks never reach this job.
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    environment: production
+    environment: Eureka
     # One production deployment at a time; a newer run waits instead of cancelling one that is mid-deploy.
     concurrency:
       group: production-deploy-eurekacore-v3

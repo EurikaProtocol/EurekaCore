@@ -8,13 +8,15 @@
 | `verify` (check name `build`) | PRs to `main`, pushes to `main`, manual runs | `npm ci` (Node 22) → `npm run verify` (clean build, routing regression tests, unit/integration tests, `wrangler deploy --dry-run --config wrangler.toml`) → `node scripts/audit-check.mjs`. **No Cloudflare secrets are available to this job**, so PRs and forks cannot deploy or read them. |
 | `deploy` | only `github.ref == refs/heads/main` for `push` or `workflow_dispatch`, after `verify` passes | `npm ci` → credential preflight (prints names only) → `npm run build` → `npm run deploy` (`wrangler deploy --config wrangler.toml`) |
 
-Safeguards: workflow `permissions: contents: read`; `persist-credentials: false`; secrets only referenced by the preflight and deploy steps; `environment: production`; `concurrency: production-deploy-eurekacore-v3` with `cancel-in-progress: false` (a second push waits, and a running deploy is never cancelled); 20-minute timeouts; no `pull_request_target`. Run from a non-`main` branch via "Run workflow" and the `deploy` job is skipped. `tests/workflow.test.mjs` asserts all of this.
+Safeguards: workflow `permissions: contents: read`; `persist-credentials: false`; secrets only referenced by the preflight and deploy steps; `environment: Eureka` (the owner-created GitHub Environment; exact, case-sensitive name); `concurrency: production-deploy-eurekacore-v3` with `cancel-in-progress: false` (a second push waits, and a running deploy is never cancelled); 20-minute timeouts; no `pull_request_target`. Run from a non-`main` branch via "Run workflow" and the `deploy` job is skipped. `tests/workflow.test.mjs` asserts all of this.
 
 ## GitHub setup (owner)
-1. Repo → Settings → Secrets and variables → Actions → New repository secret (or, preferably, add them as *environment* secrets of `production`):
+Observed (read-only API): environment `Eureka` exists with a deployment-branch policy limited to `main` and **no required reviewers**; unrelated environments `Production`, `Preview` and `copilot` also exist and are not used. Secret contents and names could not be read with the available token, so **it is unverified whether the secrets exist**.
+1. Repo → Settings → Environments → `Eureka` → Environment secrets → Add secret:
    - `CLOUDFLARE_API_TOKEN`: the scoped token below.
-   - `CLOUDFLARE_ACCOUNT_ID`: Cloudflare dashboard → Workers & Pages → Account ID (a 32-character hex ID; it is an identifier, not a secret, but is stored as a secret here).
-2. Settings → Environments → `production` (created automatically on first run): add **Required reviewers** (you) so every production deploy needs a click, and restrict *Deployment branches* to `main`.
+   - `CLOUDFLARE_ACCOUNT_ID`: Cloudflare dashboard → Workers & Pages → Account ID (a 32-character hex identifier).
+   Environment secrets are only released to jobs that target `Eureka` on `main`; the `verify` job and PRs never see them.
+2. Same page: add **Required reviewers** (you) if you want every deploy to need a click. Without reviewers, the first push to `main` after the secrets exist deploys immediately (this setting is the owner's choice and was not changed).
 3. Settings → Branches/Rulesets: protect `main` and require the `build` check.
 Never paste token values into issues, PRs, logs or code. Rotate the token if it is ever exposed.
 

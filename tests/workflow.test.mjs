@@ -14,7 +14,8 @@ test('deployment only runs on main and only for push/manual runs', () => {
 
 test('production deploys are serialised and never cancelled mid-flight', () => {
   assert.match(deploy, /concurrency:\s*\n\s*group: production-deploy-eurekacore-v3\s*\n\s*cancel-in-progress: false/);
-  assert.match(deploy, /environment: production/);
+  assert.match(deploy, /^    environment: Eureka$/m); // exact, case-sensitive name of the owner-created GitHub Environment
+  assert.ok(!/environment:\s*[Pp]roduction/.test(wf), 'must not target the unrelated Production environment');
 });
 
 test('verification (build, tests, dry run, audit) gates the deploy and holds no Cloudflare secrets', () => {
@@ -35,4 +36,16 @@ test('deploy builds the commit and uses the pinned wrangler.toml scripts', () =>
   assert.ok(deploy.indexOf('check-deploy-env') < deploy.indexOf('run: npm run build'));
   assert.ok(!/wrangler (deploy|versions)/.test(wf), 'workflow must go through npm run deploy (--config wrangler.toml)');
   assert.match(wf, /^permissions:\s*\n\s*contents: read/m);
+});
+
+test('manual runs are safe: workflow_dispatch has no inputs and deploys only main', () => {
+  assert.match(wf, /workflow_dispatch:\s*\n/);
+  assert.ok(!/workflow_dispatch:\s*\n\s+inputs:/.test(wf), 'no user-controlled inputs');
+  assert.ok(!/\$\{\{\s*(github\.event\.(inputs|head_commit|pull_request)|github\.head_ref)/.test(wf), 'no untrusted expression interpolation');
+});
+
+test('docs name the same environment as the workflow', () => {
+  const doc = readFileSync(new URL('../docs/GITHUB_ACTIONS_DEPLOYMENT.md', import.meta.url), 'utf8');
+  assert.match(doc, /`Eureka`/);
+  assert.ok(!/environment: `?production/i.test(doc));
 });
