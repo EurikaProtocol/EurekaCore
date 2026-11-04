@@ -63,9 +63,9 @@ Troubleshooting: `CLOUDFLARE_API_TOKEN` empty means the secret is missing (the w
 To enable automatic deployment from pushes to `main`:
 
 1. Add `www.tinaneureka.com` to an active Cloudflare DNS zone for `tinaneureka.com`. The zone must be managed by Cloudflare.
-2. Create a Cloudflare API token with Workers Scripts Edit permission for the account and DNS Edit plus Zone Read permissions for the domain's zone.
+2. Create a scoped Cloudflare API token (permissions in `docs/GITHUB_ACTIONS_DEPLOYMENT.md`).
 3. In the GitHub repository, add Actions secrets named `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
-4. Merge or push to `main`. The workflow runs `npm ci`, `npm test` (TypeScript check, focused data/proof tests, and production build), then deploys the Worker. Wrangler provisions the configured custom domain and its DNS record; do not add a conflicting `www` DNS record manually.
+4. Merge or push to `main`. The workflow's `verify` job runs `npm ci`, `npm run verify` (build, routing tests, unit/integration tests, `wrangler deploy --dry-run --config wrangler.toml`) and the dependency audit; only then the `deploy` job builds and runs `npm run deploy`. Wrangler provisions the configured custom domain and its DNS record; do not add a conflicting `www` DNS record manually. See `docs/GITHUB_ACTIONS_DEPLOYMENT.md`.
 5. Confirm the `www.tinaneureka.com` custom domain and HTTPS status in the Cloudflare Worker dashboard.
 
 The Worker sets basic browser security headers, avoids caching HTML so deployments become visible promptly, and gives Vite-hashed assets a one-year immutable cache lifetime. Wrangler's single-page-app asset fallback (`not_found_handling`) preserves direct navigation to client-side routes.
