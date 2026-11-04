@@ -1,65 +1,59 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 
 const root = new URL('../', import.meta.url).pathname;
 const read = (f) => readFileSync(join(root, f), 'utf8');
-const strip = (s) => s.replace(/^\s*\/\/.*$/gm, '').replace(/,(\s*[}\]])/g, '$1');
-const jsonc = JSON.parse(strip(read('wrangler.jsonc')));
 const toml = read('wrangler.toml').replace(/^\s*#.*$/gm, '');
 const tomlVal = (k) => new RegExp(`^${k}\\s*=\\s*"([^"]+)"`, 'm').exec(toml)?.[1];
 
-test('both configs always define a Worker script (never assets-only)', () => {
-  assert.equal(jsonc.main, './cloudflare/worker.js');
-  assert.equal(tomlVal('main'), './cloudflare/worker.js');
+test('wrangler.toml is the only deploy configuration', () => {
+  for (const f of ['wrangler.jsonc', 'wrangler.json']) assert.ok(!existsSync(join(root, f)), `${f} must not exist`);
+  assert.ok(existsSync(join(root, 'wrangler.toml')));
 });
 
-test('assets settings agree between wrangler.jsonc and wrangler.toml', () => {
-  assert.equal(jsonc.assets.directory, './dist');
-  assert.equal(jsonc.assets.binding, 'ASSETS');
-  assert.equal(jsonc.assets.not_found_handling, 'single-page-application');
-  assert.deepEqual(jsonc.assets.run_worker_first, ['/api/*']);
+test('wrangler.toml defines the Worker script, ASSETS binding, SPA fallback and API-first routing', () => {
+  assert.equal(tomlVal('main'), './cloudflare/worker.js');
+  assert.equal(tomlVal('name'), 'eurekacore-v3'); // pinned until the live Worker identity is confirmed by the owner
   assert.match(toml, /^directory\s*=\s*"\.\/dist"/m);
   assert.match(toml, /^binding\s*=\s*"ASSETS"/m);
   assert.equal(tomlVal('not_found_handling'), 'single-page-application');
   assert.match(toml, /^run_worker_first\s*=\s*\["\/api\/\*"\]/m);
+  assert.match(toml, /pattern\s*=\s*"www\.tinaneureka\.com"/);
 });
 
-test('Worker names are pinned (changing them needs owner approval) and no config adds a D1 or Access change', () => {
-  assert.equal(jsonc.name, 'eurekacore');
-  assert.equal(tomlVal('name'), 'eurekacore-v3');
-  assert.ok(!('d1_databases' in jsonc) && !/d1_databases/.test(toml.replace(/^.*D1.*$/gm, '')));
-});
-
-test('all package/CI deploy entry points select wrangler.toml explicitly', () => {
+test('no script, workflow or doc entry point references a second config or a bare wrangler deploy', () => {
   const s = JSON.parse(read('package.json')).scripts;
-  assert.match(s.deploy, /--config wrangler\.toml/);
-  assert.match(s['deploy:check'], /--config wrangler\.toml/);
-  for (const f of ['.github/workflows/cloudflare-deploy.yml']) {
-    for (const line of read(f).split('\n').filter((l) => /wrangler/.test(l) && /run:/.test(l))) assert.match(line, /--config wrangler\.toml|npm run deploy/);
+  for (const [k, v] of Object.entries(s)) {
+    assert.ok(!/wrangler\.jsonc/.test(v), `script ${k}`);
+    if (/wrangler (deploy|versions)/.test(v)) assert.match(v, /--config wrangler\.toml/, `script ${k}`);
+  }
+  assert.match(s.deploy, /wrangler deploy --config wrangler\.toml/);
+  assert.match(s['deploy:check'], /--dry-run --config wrangler\.toml/);
+  for (const line of read('.github/workflows/cloudflare-deploy.yml').split('\n').filter((l) => /wrangler/.test(l) && /run:/.test(l))) {
+    assert.match(line, /--config wrangler\.toml/);
+  }
+  assert.ok(!/wrangler\.jsonc/.test(read('wrangler.toml').replace(/^\s*#.*$/gm, '')));
+});
+
+test('dry run with wrangler.toml and a bare dry run both publish the full Worker, never an assets-only one', () => {
+  const run = (args) => {
+    const out = mkdtempSync(join(tmpdir(), 'wr-'));
+    const log = execFileSync('npx', ['wrangler', 'deploy', '--dry-run', ...args, '--outdir', out], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    return { log, readme: readFileSync(join(out, 'README.md'), 'utf8'), files: readdirSync(out) };
+  };
+  for (const args of [['--config', 'wrangler.toml'], []]) {
+    const r = run(args);
+    assert.match(r.readme, /worker "eurekacore-v3"/);
+    assert.match(r.log, /env\.ASSETS/);
+    assert.ok(r.files.includes('worker.js') && !r.files.includes('no-op-worker.js'));
   }
 });
 
-test('dry runs resolve the expected name, entry, assets binding and route for each selection', () => {
-  const run = (args) => {
-    const out = mkdtempSync(join(tmpdir(), 'wr-'));
-    const log = execFileSync('npx', ['wrangler', 'deploy', '--dry-run', ...args, '--outdir', out], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, WRANGLER_OUTPUT_FILE_DIRECTORY: out } });
-    return { log, readme: readFileSync(join(out, 'README.md'), 'utf8'), files: execFileSync('ls', [out], { encoding: 'utf8' }) };
-  };
-  const auth = run(['--config', 'wrangler.toml']);
-  assert.match(auth.readme, /worker "eurekacore-v3"/);
-  assert.match(auth.log, /env\.ASSETS \(Assets\)|ASSETS/);
-  assert.ok(auth.files.includes('worker.js') && !auth.files.includes('no-op-worker.js'));
-  const dflt = run([]); // what a bare `wrangler deploy` (Cloudflare Git integration) resolves
-  assert.match(dflt.readme, /worker "eurekacore"/);
-  assert.ok(dflt.files.includes('worker.js') && !dflt.files.includes('no-op-worker.js'), 'a bare `wrangler deploy` must never publish the assets-only no-op Worker');
-  assert.match(dflt.log, /ASSETS/);
-});
-
-test('the Worker answers /api/* before any asset, and the SPA fallback is not a redirect rule', () => {
+test('the Worker answers /api/* before any asset', () => {
   const w = read('cloudflare/worker.js');
   assert.ok(w.indexOf('handleApi(') < w.indexOf('env.ASSETS.fetch'));
 });
