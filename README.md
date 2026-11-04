@@ -54,7 +54,7 @@ External AI API credentials, if added later, must be Cloudflare Worker secrets o
 
 This project deploys as a Cloudflare Worker with static assets, not as a Pages project. Wrangler uses `cloudflare/worker.js`, serves the Vite build from `dist`, and configures `www.tinaneureka.com` as a custom domain in `wrangler.toml`.
 
-The production build command is `npm run build`; its output directory is `dist`. The repository contains both `wrangler.toml` (authoritative: Worker script, `ASSETS` binding, custom domain) and `wrangler.jsonc` (assets only, no Worker or route). Wrangler prefers `wrangler.jsonc` when no `--config` is given, so every script passes `--config wrangler.toml` explicitly. To validate without deploying, run `npm ci`, `npm run build`, then `npm run deploy:check` (no credentials needed). To deploy locally, run `npm run deploy` with Wrangler authenticated. Any Cloudflare dashboard Git integration must use build command `npm run build` and deploy command `npm run deploy` (not a bare `wrangler deploy`).
+The production build command is `npm run build`; its output directory is `dist`. `wrangler.toml` is the only Wrangler configuration (Worker script, `ASSETS` binding, `run_worker_first = ["/api/*"]`, custom domain); every script passes `--config wrangler.toml` explicitly. See `docs/SINGLE_WRANGLER_CONFIG.md`. To validate without deploying, run `npm ci`, `npm run build`, then `npm run deploy:check` (no credentials needed). To deploy locally, run `npm run deploy` with Wrangler authenticated. Any Cloudflare dashboard Git integration must use build command `npm run build` and deploy command `npm run deploy` (equivalent to `wrangler deploy --config wrangler.toml`).
 
 Rollback: Cloudflare dashboard → Workers & Pages → the Worker → Deployments → roll back to a previous version, or revert the commit on `main` and redeploy. Vercel remains a separate fallback and is untouched.
 
@@ -68,7 +68,7 @@ To enable automatic deployment from pushes to `main`:
 4. Merge or push to `main`. The workflow runs `npm ci`, `npm test` (TypeScript check, focused data/proof tests, and production build), then deploys the Worker. Wrangler provisions the configured custom domain and its DNS record; do not add a conflicting `www` DNS record manually.
 5. Confirm the `www.tinaneureka.com` custom domain and HTTPS status in the Cloudflare Worker dashboard.
 
-The Worker sets basic browser security headers, avoids caching HTML so deployments become visible promptly, and gives Vite-hashed assets a one-year immutable cache lifetime. `public/_redirects` and Wrangler's single-page-app asset fallback preserve direct navigation to client-side routes.
+The Worker sets basic browser security headers, avoids caching HTML so deployments become visible promptly, and gives Vite-hashed assets a one-year immutable cache lifetime. Wrangler's single-page-app asset fallback (`not_found_handling`) preserves direct navigation to client-side routes.
 
 `VITE_*` settings are compiled into browser assets and must be available to the build process before building; setting them only as Worker runtime variables will not configure the frontend. Use only public-safe values for Vite variables. Configure future private API credentials as Cloudflare Worker secrets only when a server-side Worker integration consumes them; no AI secret is required by the current demo.
 

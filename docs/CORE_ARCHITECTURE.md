@@ -33,7 +33,7 @@ Dependency direction: `config`/`pages` → `sdk` → `core`; `core` never import
 `npm test` = `tsc --noEmit`, Node tests (`tests/*.test.mjs`, TypeScript sources are bundled with esbuild by `tests/helpers/load-src.mjs`), then `vite build`. Tests use no network and no mocks of chains; real signatures are created with random local wallets.
 
 ## Cloudflare
-`wrangler.toml` is authoritative (Worker `eurekacore-v3`, assets in `dist`, route `www.tinaneureka.com`). Remaining owner actions: confirm the live Worker name vs `wrangler.jsonc`, set GitHub secrets `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID`, and verify the custom domain after a deploy. See README.
+`wrangler.toml` is authoritative (Worker `eurekacore-v3`, assets in `dist`, route `www.tinaneureka.com`). Remaining owner actions: confirm the live Worker name (see `docs/SINGLE_WRANGLER_CONFIG.md`), set GitHub secrets `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID`, and verify the custom domain after a deploy. See README.
 
 ## Control core and AI agent
 See `docs/TINANAI_INTEGRATION_CONTRACT.md`. EurekaCore works without any AI agent or credentials.
