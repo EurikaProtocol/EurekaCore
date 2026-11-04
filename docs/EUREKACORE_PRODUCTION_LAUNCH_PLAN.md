@@ -19,11 +19,33 @@ Target: Worker **`eurekacore-v3`** serving **`www.tinaneureka.com`**, configured
 ### Root domain `tinaneureka.com`
 The repo only configures `www`. `index.html` canonical/OG URLs and `js/config.js` use `www.tinaneureka.com`, so **the apex should 301 to `https://www.tinaneureka.com`**. Nothing in the repo does this and it must not be a `_redirects` rule. Recommended (dashboard, not done): a Cloudflare Redirect Rule (Rules → Redirect Rules) for `tinaneureka.com/*` → `https://www.tinaneureka.com/${1}` (301), with a proxied (orange-cloud) apex DNS record. Do not use a Worker route on the apex unless you want a second binding.
 
-### Dependency audit (separate from launch; nothing suppressed)
-`node scripts/audit-check.mjs` fails with 16 high-severity packages reported as NEW. The baseline in `security/audit-baseline.json` is stale (it lists the old Tailwind/Solana/React Native chain, none of which is reported now), and the failure is identical on `main`. Current packages and fixes:
-- Shipped to browsers (frontend): `@walletconnect/ethereum-provider` (direct), `@reown/appkit*`, `zod`, `abitype`, `@coinbase/cdp-sdk`, `follow-redirects`. Fix is a semver-major upgrade of the WalletConnect provider and needs a wallet regression check by the owner.
-- Dev/test tooling only: `miniflare` (direct devDependency), `sharp`, `undici` (via miniflare), `vite` (launch-editor advisory, Windows dev server).
-Recommendation: a dedicated PR to upgrade WalletConnect and Miniflare/Vite, then refresh the baseline. Do not add the new packages to the baseline without sign-off. **Effect:** while the audit step fails, GitHub Actions never reaches the deploy step, so the Actions path cannot launch the site. Launch by the dashboard Git integration or a manual `npm run deploy` (below), or after the audit PR.
+### PR readiness and CI (checked 2026-11-04)
+| PR | Base | State | Checks |
+|---|---|---|---|
+| #28 | `main` | open draft, mergeable | GitHub `build`: **fail** at the dependency-audit step only (`npm ci` and `npm test` pass); `Workers Builds: eurekacore`: pass |
+| #29 | #28's branch | open draft, mergeable, clean | `Workers Builds: eurekacore`: pass (no GitHub Actions run: the workflow only triggers on PRs to `main`) |
+| #30 | #29's branch | open draft, mergeable | `Workers Builds: eurekacore`: **fail** (log not readable from here) |
+| #31 | #30's branch | open draft | dependency fix, see below |
+
+- Branch protection and required reviews could not be read (the token gets HTTP 403 on the protection API): **unverified**. Check Settings → Branches/Rulesets.
+- **Worker identity finding:** the Workers Builds integration is a Worker project named `eurekacore` in the account (its build links point at `.../services/view/eurekacore/...`). A project called `eurekacore` therefore exists, contrary to the assumption of no legacy Worker. The #30 failure is consistent with the expected name mismatch (`wrangler.toml` says `eurekacore-v3`), but the build log is dashboard-only, so the cause is unconfirmed. Do not merge #30 until the owner has read that log or decided how `eurekacore` and `eurekacore-v3` relate (see section 3B).
+- Merging to `main` can trigger (a) GitHub Actions: tests, audit gate (currently failing), then deploy `npm run deploy` only if the audit passes and `CLOUDFLARE_*` secrets exist; (b) the Cloudflare `eurekacore` Git build: whatever its dashboard deploy command is.
+
+### Dependency audit (separate from launch; nothing suppressed, baseline NOT refreshed)
+`node scripts/audit-check.mjs` reports 16 high packages as new because `security/audit-baseline.json` still lists the old Tailwind/Solana/React Native chain. Same on `main`. Draft PR #31 applies the non-breaking `npm audit fix` (vite, follow-redirects: 16 → 14 high); `npm ci` and `npm run verify` pass in Node 22 / npm 10. Every remaining finding:
+
+| Package | Direct? | Exposure | Advisory | Fix / risk |
+|---|---|---|---|---|
+| `@walletconnect/ethereum-provider` | direct (`^2.25.0`) | **production bundle** (wallet connect) | flagged via the Reown AppKit chain (`range >=2.20.0`) | `npm audit` only proposes **2.19.4 (a downgrade)**, which is not a real fix. Needs an upstream release. |
+| `@reown/appkit`, `-controllers`, `-pay`, `-scaffold-ui`, `-ui`, `-utils`, `-wallet` | transitive | production bundle | all inherited from `zod` (below) | resolved only by an upstream bump of the Reown packages |
+| `zod` | transitive | production bundle | GHSA-mrhx-c7xc-m3w5, memory exhaustion on oversized constrained collections (`<4.6.6`) | needs Reown/cdp-sdk to depend on zod ≥ 4.6.6. Mitigating: zod validates app-side inputs, not Worker input |
+| `abitype`, `@coinbase/cdp-sdk` | transitive | production bundle | via `zod` | same |
+| `miniflare` | direct devDependency | **tests only**, not shipped | via `sharp`, `undici` | `^4.20260730.0`; audit proposes an old 2025 version (downgrade). Upgrade when Miniflare ships undici ≥ 7.30.1 |
+| `sharp` | transitive (miniflare) | tests only | GHSA-rgj7-g3m4-5g8c (libheif), GHSA-wq5f-xc86-pv6w (librsvg), image decoding | not used by the Worker or the build |
+| `undici` | transitive (miniflare) | tests only | ~25 advisories (GHSA-8xcm-r25x-g524 and others: desync, DoS, cookie disclosure), fixed in 7.30.1 | only the local test harness uses it; the production Worker runs on workerd, not this undici |
+| `vite`, `follow-redirects` | direct / transitive | build tooling / production-bundle transitive | launch-editor, dev-server file exposure; follow-redirects credential stripping | **fixed by PR #31** |
+
+Risk judgement: the production frontend still ships WalletConnect/Reown. The zod DoS and similar advisories are client-side and need a wallet-stack upgrade that has to be tested by the owner. They should not be hidden. Options: (1) launch with these documented findings after the owner accepts them explicitly and updates the baseline to the *current* 14 names in a reviewed PR; (2) wait for upstream fixes. This plan does not change the baseline. Until one of those happens, the GitHub Actions deploy path stays blocked by design; use the dashboard Git build or `npm run deploy` by the owner.
 
 ## 2. Validation performed (Node 22.23.4 / npm 10.9.9, `node:22` container, clean copy)
 - `npm ci`: exit 0.
