@@ -25,7 +25,17 @@ import { parseTinanAiConfig, type TinanAiConfig } from './tinanai-provider';
  *
  * RUN ONLY IN A WORKER/SERVER. Credentials never leave server-side secrets. UNVERIFIED against a live TINAN AI instance.
  */
-export type TinanAiBuilderConfig = TinanAiConfig & { maxFileResponseBytes?: number };
+export type TinanAiBuilderConfig = TinanAiConfig & {
+  maxFileResponseBytes?: number;
+  /**
+   * Optional per-user delegation (TINAN AI `x-eureka-delegation`, HMAC-SHA256, <= 300 s). `subject` must be a verified, pseudonymous
+   * EurekaCore user id (never browser-supplied). The Basic credential stays mandatory. Requires TINAN_MULTI_USER_ENABLED on TINAN AI.
+   */
+  delegation?: { secret: string; subject: string };
+  /** Bounded retries for idempotent GETs only (network, 503, 429). Default 0 here; the Worker factory uses 2. */
+  getRetries?: number;
+  retryDelayMs?: number;
+};
 
 const UUIDISH = /^[0-9a-f-]{36}$/i;
 const DIGEST = /^0x[0-9a-f]{64}$/;
@@ -41,11 +51,35 @@ function basicAuth(user: string, pass: string): string {
 /** Same derivation as TINAN AI's proxy.ts: SHA-256 of the configured username, lowercase hex. */
 export const deriveServiceOwnerId = (username: string): string => sha256(toUtf8Bytes(username)).slice(2);
 
+/** Same derivation as TINAN AI's lib/delegation.ts `delegatedOwnerId`. */
+export const deriveDelegatedOwnerId = (subject: string): string => sha256(toUtf8Bytes(`tinan-delegated-owner:v1:${subject}`)).slice(2);
+
+const SUBJECT = /^[a-z0-9._@+-]{3,200}$/;
+const b64u = (bytes: Uint8Array) => btoa(Array.from(bytes, (b) => String.fromCharCode(b)).join('')).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const hex = (bytes: Uint8Array) => Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+
+/** Pseudonymous, charset-safe delegation subject for a verified EurekaCore identity (the email never leaves EurekaCore). */
+export const delegationSubjectFor = (email: string): string => `eureka.${sha256(toUtf8Bytes(email.trim().toLowerCase())).slice(2, 42)}`;
+
+export async function signDelegationToken(secret: string, subject: string, nowSeconds: number, ttlSeconds = 120): Promise<string> {
+  if (secret.length < 32) throw new BuilderError('INVALID_INPUT', 'Delegation secret must be at least 32 characters.');
+  if (!SUBJECT.test(subject)) throw new BuilderError('INVALID_INPUT', 'Invalid delegation subject.');
+  const body = `v1.${b64u(new TextEncoder().encode(JSON.stringify({ sub: subject, aud: 'tinan-ai', iat: nowSeconds, exp: nowSeconds + ttlSeconds })))}`;
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  return `${body}.${hex(new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(body))))}`;
+}
+
+const sleepMs = (ms: number, signal?: AbortSignal) => new Promise<void>((resolve, reject) => {
+  const t = setTimeout(resolve, ms);
+  signal?.addEventListener('abort', () => { clearTimeout(t); reject(new BuilderError('ABORTED', 'Request aborted.')); }, { once: true });
+});
+
 export class TinanAiBuilderProvider implements ProjectBuilderProvider {
   readonly name = 'tinanai-builder';
   readonly contractVersion = BUILDER_CONTRACT_VERSION;
   readonly ownerId: string;
-  private readonly cfg: { baseUrl: string; username: string; password: string; fetch: typeof fetch; requestTimeoutMs: number; maxResponseBytes: number; maxFileResponseBytes: number };
+  private readonly cfg: { baseUrl: string; username: string; password: string; fetch: typeof fetch; requestTimeoutMs: number; maxResponseBytes: number; maxFileResponseBytes: number; getRetries: number; retryDelayMs: number };
+  private readonly delegation?: { secret: string; subject: string };
 
   constructor(config: TinanAiBuilderConfig) {
     const checked = parseTinanAiConfig({ TINANAI_BASE_URL: config.baseUrl, TINANAI_USERNAME: config.username, TINANAI_PASSWORD: config.password });
@@ -55,12 +89,47 @@ export class TinanAiBuilderProvider implements ProjectBuilderProvider {
       requestTimeoutMs: config.requestTimeoutMs ?? 10_000,
       maxResponseBytes: config.maxResponseBytes ?? 256 * 1024,
       maxFileResponseBytes: config.maxFileResponseBytes ?? 1024 * 1024,
+      getRetries: Math.min(Math.max(config.getRetries ?? 0, 0), 3),
+      retryDelayMs: config.retryDelayMs ?? 250,
     };
-    this.ownerId = deriveServiceOwnerId(checked.username);
+    if (config.delegation) {
+      if (config.delegation.secret.length < 32 || config.delegation.secret === checked.password || !SUBJECT.test(config.delegation.subject)) {
+        throw new BuilderError('INVALID_INPUT', 'Delegation needs a distinct secret of at least 32 characters and a valid subject.');
+      }
+      this.delegation = config.delegation;
+      this.ownerId = deriveDelegatedOwnerId(config.delegation.subject);
+    } else {
+      this.ownerId = deriveServiceOwnerId(checked.username);
+    }
   }
 
+  /** Idempotent GETs are retried a bounded number of times on transient failures; POSTs are never retried. */
   private async call(method: 'GET' | 'POST', path: string, body: unknown, signal: AbortSignal | undefined, maxBytes: number): Promise<unknown> {
+    const retries = method === 'GET' ? this.cfg.getRetries : 0;
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return await this.callOnce(method, path, body, signal, maxBytes);
+      } catch (e) {
+        const transient = e instanceof BuilderError && (e.code === 'NETWORK' || e.code === 'UNAVAILABLE' || e.code === 'RATE_LIMITED');
+        if (!transient || attempt >= retries) throw e;
+        await sleepMs(this.cfg.retryDelayMs * 2 ** attempt, signal);
+      }
+    }
+  }
+
+  /** Authenticated reachability probe: an unknown task id must answer 404 (authenticated) rather than 401/403/5xx. Creates nothing. */
+  async probe(signal?: AbortSignal): Promise<void> {
+    try {
+      await this.call('GET', '/api/projects/tasks/00000000-0000-4000-8000-000000000000', undefined, signal, this.cfg.maxResponseBytes);
+    } catch (e) {
+      if (e instanceof BuilderError && e.code === 'NOT_FOUND') return;
+      throw e;
+    }
+  }
+
+  private async callOnce(method: 'GET' | 'POST', path: string, body: unknown, signal: AbortSignal | undefined, maxBytes: number): Promise<unknown> {
     const headers: Record<string, string> = { Authorization: basicAuth(this.cfg.username, this.cfg.password), Accept: 'application/json' };
+    if (this.delegation) headers['x-eureka-delegation'] = await signDelegationToken(this.delegation.secret, this.delegation.subject, Math.floor(Date.now() / 1000));
     // TINAN AI refuses non-GET requests whose Origin is not its own.
     if (method === 'POST') { headers['Content-Type'] = 'application/json'; headers.Origin = this.cfg.baseUrl; }
     const timeout = AbortSignal.timeout(this.cfg.requestTimeoutMs);
@@ -73,6 +142,9 @@ export class TinanAiBuilderProvider implements ProjectBuilderProvider {
     } catch (e) {
       if (signal?.aborted) throw new BuilderError('ABORTED', 'Request aborted.');
       throw new BuilderError('NETWORK', `TINAN AI request failed (${e instanceof Error ? e.name : 'error'}).`);
+    }
+    if (res.status === 403 && (await res.clone().json().catch(() => null) as { code?: unknown } | null)?.code === 'MULTI_USER_DISABLED') {
+      throw new BuilderError('AUTH', 'TINAN AI has multi-user delegation disabled (TINAN_MULTI_USER_ENABLED); refusing to serve this user as the shared owner.');
     }
     if (res.status === 401 || res.status === 403) throw new BuilderError('AUTH', `TINAN AI rejected the credentials or origin (HTTP ${res.status}).`);
     if (res.status === 429) throw new BuilderError('RATE_LIMITED', 'TINAN AI rate limit reached; retry later.');

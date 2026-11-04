@@ -16,6 +16,7 @@ import { SettingsPage } from './pages/Settings';
 import { StakingPage } from './pages/Staking';
 import { SwapPage } from './pages/Swap';
 import { TinanAiPage } from './pages/TinanAi';
+import { BuilderHistoryPage, BuilderHomePage, BuilderIntegrationsPage, BuilderProjectPage, BuilderProjectsPage, BuilderTasksPage } from './pages/TinanBuilder';
 import { TinanAiTokenPage } from './pages/TinanAiToken';
 import { WalletPage } from './pages/Wallet';
 import { WhitepaperPage } from './pages/Whitepaper';
@@ -65,6 +66,12 @@ export default function App() {
         <Route element={<TINANInfoPage kind='terms' />} path='/terms' />
         <Route element={<TINANInfoPage address={evm.state.address} kind='settings' network={evm.state.network} />} path='/settings' />
         <Route element={<TinanAiPage />} path='/tinan-ai' />
+        <Route element={<BuilderHomePage />} path='/tinan-ai/builder' />
+        <Route element={<BuilderProjectsPage />} path='/tinan-ai/projects' />
+        <Route element={<BuilderProjectPage />} path='/tinan-ai/projects/:id' />
+        <Route element={<BuilderTasksPage />} path='/tinan-ai/tasks' />
+        <Route element={<BuilderHistoryPage />} path='/tinan-ai/history' />
+        <Route element={<BuilderIntegrationsPage />} path='/tinan-ai/integrations' />
         <Route element={<MarketplacePage />} path='/marketplace' />
         <Route element={<WhitepaperPage />} path='/whitepaper' />
         <Route element={<StakingPage />} path='/staking' />
