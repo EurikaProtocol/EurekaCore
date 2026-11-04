@@ -144,7 +144,7 @@ export function createBuilderDeliveryHandlers(deps: BuilderExecutorDeps): Record
         if (v.status === 'awaiting_approval') {
           // Forward EurekaCore's recorded approval. TINAN AI's own boolean is only a trigger, never the authority.
           if (await ctx.isCancelled()) throw new Error('Cancelled.');
-          v = await builder.forwardApproval(taskId, ctx.signal);
+          v = await builder.forwardApproval(taskId, String(approved.planDigest), ctx.signal);
           assertPlan(v);
         }
         v = await waitFor(ctx, builder, taskId, (t) => t.status === 'completed');
@@ -158,7 +158,13 @@ export function createBuilderDeliveryHandlers(deps: BuilderExecutorDeps): Record
         }
         const entries = buildManifest(files);
         const pd = String(approved.planDigest);
-        return { output: JSON.stringify({ taskId, projectId: v.projectId, planDigest: pd, files: entries, totalBytes: entries.reduce((n, f) => n + f.bytes, 0), manifestDigest: manifestDigest(pd, entries) }) };
+        // The Builder's own manifest must agree with the plan a human approved and with every byte we actually read.
+        const bm = await builder.getManifest(taskId, ctx.signal);
+        const mine = manifestDigest(pd, entries);
+        if (bm.projectId !== v.projectId || bm.planDigest !== pd || bm.manifestDigest !== mine) {
+          throw new Error('The Builder manifest does not match the approved plan and the files read from the Builder; nothing was committed.');
+        }
+        return { output: JSON.stringify({ taskId, projectId: v.projectId, planDigest: pd, files: entries, totalBytes: entries.reduce((n, f) => n + f.bytes, 0), manifestDigest: mine }) };
       },
       async verify(ctx, output) {
         const m = parseManifest(json(output, 'builder-generation'));

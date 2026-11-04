@@ -8,7 +8,7 @@ import { fail, ok, type Result } from './errors';
  * source files. Source generation is a separate capability with its own interface so that a plan summary can never be
  * mistaken for a file proposal.
  */
-export const BUILDER_CONTRACT_VERSION = '1.0' as const;
+export const BUILDER_CONTRACT_VERSION = '1.1' as const;
 
 export const MAX_BUILDER_REQUIREMENTS = 4000;
 export const MAX_BUILDER_FILES = 24;
@@ -48,8 +48,13 @@ export interface ProjectBuilderProvider {
   submitRequirements(requirements: string, signal?: AbortSignal): Promise<BuilderTaskView>;
   /** 2. Retrieve the task, including the generated plan once `awaiting_approval`. */
   getTask(taskId: string, signal?: AbortSignal): Promise<BuilderTaskView>;
-  /** 5-6. Forwards a decision EurekaCore already recorded from a verified human. The Builder starts generating only now. */
-  forwardApproval(taskId: string, signal?: AbortSignal): Promise<BuilderTaskView>;
+  /**
+   * 5-6. Forwards a decision EurekaCore already recorded from a verified human, bound to the approved plan digest. The Builder
+   * refuses (HTTP 409 PLAN_DIGEST_MISMATCH) if its stored plan differs, and starts generating only on a match.
+   */
+  forwardApproval(taskId: string, planDigest: string, signal?: AbortSignal): Promise<BuilderTaskView>;
+  /** 7. Bounded, owner-scoped manifest (paths, byte lengths, SHA-256) of a COMPLETED task. Fails closed if unsupported. */
+  getManifest(taskId: string, signal?: AbortSignal): Promise<BuilderManifest>;
   /** 7. Bounded, authenticated listing of project file paths (no contents). */
   listFiles(projectId: string, signal?: AbortSignal): Promise<string[]>;
   /** 7. Bounded, authenticated read of one file. */
@@ -80,6 +85,7 @@ export const contentDigest = (content: string): string => sha256(toUtf8Bytes(con
 export const byteLength = (content: string): number => new TextEncoder().encode(content).length;
 
 export type ManifestEntry = { path: string; bytes: number; sha256: string };
+export type BuilderManifest = { taskId: string; projectId: string; planDigest: string; files: ManifestEntry[]; totalBytes: number; manifestDigest: string };
 
 /** Digest binding an approval to the exact set of files (paths, sizes and content hashes). */
 export function manifestDigest(planDigestHex: string, files: readonly ManifestEntry[]): string {

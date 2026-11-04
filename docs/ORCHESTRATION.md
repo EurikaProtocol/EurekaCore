@@ -36,7 +36,8 @@ Status labels: **implemented** (code exists), **unit-tested** (in-memory fakes),
 | Area | Status |
 |---|---|
 | `ProjectBuilderProvider` interface separate from `AgentProvider` (`src/core/builder.ts`) | Implemented, unit-tested |
-| TINAN AI Builder adapter (`src/server/tinanai-builder.ts`) | Implemented, contract-tested. **Not live-verified** |
+| TINAN AI Builder adapter (`src/server/tinanai-builder.ts`), contract v1.1: approval carries `planDigest` (409 on mismatch), manifest cross-check, fail closed if TINAN AI lacks the manifest | Implemented, contract-tested. **Not live-verified** (`npm run test:live` is opt-in and skipped by default) |
+| Multi-user ownership (delegated identity) | TinanAi side implemented and disabled by default; EurekaCore side **blocked** on persisting a workflow creator (D1 migration). Single-owner mode only |
 | Builder stage executors, file/path/size/duplicate validation, SHA-256 manifest (`src/server/builder-executors.ts`) | Implemented, unit-tested, contract-tested in the Worker (Miniflare) |
 | Fail closed without a Builder / GitHub / sandbox | Implemented, tested: handlers are not registered and the workflow blocks with a configuration message |
 | Two human gates, digest-bound, expiring (24 h), single-use, audited | Implemented, tested |

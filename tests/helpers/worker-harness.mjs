@@ -115,6 +115,8 @@ export const BUILDER_FILES = ({ failing = false } = {}) => ({
  * TINAN AI Builder stand-in modelled on TinanAi's project routes (task record, files listed by path, one file per request).
  * Contract fake, NOT a live TINAN AI. It rejects non-GET requests whose Origin is not its own, like TinanAi's proxy.
  */
+const planDigestOf = (plan) => '0x' + createHash('sha256').update(JSON.stringify(['eureka.builder-plan.v1', plan.summary, plan.technology, plan.features, plan.steps])).digest('hex');
+
 export function makeFakeBuilder(mode = {}) {
   const state = { status: null, requirements: null, calls: [], approvals: 0, cancels: 0, files: mode.files ?? BUILDER_FILES({ failing: mode.failingTests }), mode };
   const ownerId = mode.ownerId ?? createHash('sha256').update('svc').digest('hex');
@@ -131,9 +133,21 @@ export function makeFakeBuilder(mode = {}) {
     if (req.method === 'POST' && p === `/api/projects/tasks/${BUILDER_TASK_ID}/approval`) {
       const b = await req.json();
       if (b.approved !== true || state.status !== 'awaiting_approval') return j({ error: 'state' }, 409);
+      state.approvalBodies = (state.approvalBodies ?? []).concat(b);
+      const expected = planDigestOf(state.mode.plan ?? BUILDER_PLAN);
+      if (b.planDigest !== expected) return j({ error: 'plan mismatch', code: 'PLAN_DIGEST_MISMATCH' }, 409);
       state.approvals++; state.status = 'completed'; return j({ task: task() }, 202);
     }
     if (req.method === 'POST' && p === `/api/projects/tasks/${BUILDER_TASK_ID}/cancel`) { state.cancels++; state.status = 'cancelled'; return j({ task: task() }); }
+    if (req.method === 'GET' && p === `/api/projects/tasks/${BUILDER_TASK_ID}/manifest`) {
+      if (state.mode.noManifest) return j({ error: 'nf' }, 404);
+      if (state.status !== 'completed') return j({ error: 'not completed', code: 'NOT_COMPLETED' }, 409);
+      const files = Object.entries(state.files).map(([path, c]) => ({ path, bytes: Buffer.byteLength(c), sha256: '0x' + createHash('sha256').update(c).digest('hex') }));
+      const pd = state.mode.manifestPlanDigest ?? planDigestOf(state.mode.plan ?? BUILDER_PLAN);
+      const sorted = [...files].sort((a, b) => (a.path < b.path ? -1 : 1));
+      const md = '0x' + createHash('sha256').update(JSON.stringify(['eureka.builder-manifest.v1', pd, sorted.map((f) => [f.path, f.bytes, f.sha256])])).digest('hex');
+      return j({ manifest: { contractVersion: '1.1', taskId: BUILDER_TASK_ID, projectId: BUILDER_PROJECT_ID, ownerId, planDigest: pd, files, totalBytes: files.reduce((n, f) => n + f.bytes, 0), manifestDigest: md } });
+    }
     if (req.method === 'GET' && p === `/api/projects/${BUILDER_PROJECT_ID}`) return j({ project: { id: BUILDER_PROJECT_ID, ownerId, files: Object.keys(state.files) } });
     if (req.method === 'GET' && p === `/api/projects/${BUILDER_PROJECT_ID}/files`) {
       const path = u.searchParams.get('path');

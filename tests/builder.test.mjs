@@ -25,10 +25,20 @@ function fakeBuilder(over = {}) {
   const s = { status: 'planning', plan: PLAN, files: { ...FILES }, listed: null, projectId: null, cancelled: 0, approvals: 0, submits: 0, throwOn: {}, ...over };
   const view = () => ({ taskId: TID, status: s.status, requirements: s.requirements ?? 'req', projectId: s.projectId, plan: s.status === 'planning' ? null : s.plan, errors: s.errors ?? [] });
   const b = {
-    name: 'fake-builder', contractVersion: '1.0', s,
+    name: 'fake-builder', contractVersion: '1.1', s,
     async submitRequirements(r) { s.submits++; s.requirements = r; return view(); },
     async getTask() { if (s.throwOn.getTask) throw new sdk.BuilderError('OWNERSHIP_MISMATCH', 'foreign'); if (s.status === 'planning') s.status = 'awaiting_approval'; return view(); },
-    async forwardApproval() { s.approvals++; s.status = 'completed'; s.projectId = PID; return view(); },
+    async forwardApproval(_t, digest) {
+      s.approvalDigests = (s.approvalDigests ?? []).concat(digest);
+      if (digest !== sdk.planDigest(s.plan)) throw new sdk.BuilderError('CONFLICT', 'plan digest mismatch');
+      s.approvals++; s.status = 'completed'; s.projectId = PID; return view();
+    },
+    async getManifest() {
+      if (s.manifestMissing) throw new sdk.BuilderError('MANIFEST_UNSUPPORTED', 'no manifest');
+      const files = be.buildManifest(Object.entries(s.files).map(([path, content]) => ({ path, content })));
+      const planDigest = s.manifestPlanDigest ?? sdk.planDigest(s.plan);
+      return { taskId: TID, projectId: PID, planDigest, files, totalBytes: files.reduce((n, f) => n + f.bytes, 0), manifestDigest: s.manifestDigest ?? sdk.manifestDigest(planDigest, files) };
+    },
     async listFiles() { return s.listed ?? Object.keys(s.files); },
     async readFile(_p, path) { if (typeof s.files[path] !== 'string') throw new sdk.BuilderError('NOT_FOUND', 'nf'); return s.files[path]; },
     async cancel() { s.cancelled++; },
@@ -322,12 +332,14 @@ test('adapter contract: ownership of tasks and projects is enforced; foreign ids
 test('adapter contract: wire format, Origin on POST, no overwrite fields, approval is only a trigger, bounded responses', async () => {
   const { p, calls } = adapter((u, i) => (i.method === 'POST' && u.endsWith('/approval') ? jr(rec({ status: 'generating' })) : jr(rec({ projectId: null }))));
   await p.submitRequirements('make a site');
-  await p.forwardApproval(TID);
+  const PD = sdk.planDigest(PLAN);
+  await p.forwardApproval(TID, PD);
   const [submit, approve] = calls;
   assert.equal(new URL(submit.u).pathname, '/api/projects');
   assert.equal(submit.i.headers.Origin, 'https://tinan.example.com');
   assert.deepEqual(JSON.parse(submit.i.body), { requirements: 'make a site' });
-  assert.deepEqual(JSON.parse(approve.i.body), { approved: true });
+  assert.deepEqual(JSON.parse(approve.i.body), { approved: true, planDigest: PD });
+  await assert.rejects(p.forwardApproval(TID, 'nope'), (e) => e.code === 'INVALID_INPUT');
   assert.ok(String(submit.i.headers.Authorization).startsWith('Basic '));
   await assert.rejects(p.submitRequirements(''), (e) => e.code === 'INVALID_INPUT');
   await assert.rejects(p.submitRequirements('x'.repeat(sdk.MAX_BUILDER_REQUIREMENTS + 1)), (e) => e.code === 'INVALID_INPUT');
@@ -340,6 +352,57 @@ test('adapter contract: wire format, Origin on POST, no overwrite fields, approv
   await assert.rejects(file.readFile(PID, 'a.js'), (e) => e.code === 'MALFORMED');
   const auth = adapter(() => new Response('', { status: 401 })).p;
   await assert.rejects(auth.getTask(TID), (e) => e.code === 'AUTH');
+});
+
+test('adapter contract v1.1: approval 409 on plan mismatch is surfaced, never treated as success', async () => {
+  const { p } = adapter(() => jr({ error: 'x', code: 'PLAN_DIGEST_MISMATCH' }, 409));
+  await assert.rejects(p.forwardApproval(TID, sdk.planDigest(PLAN)), (e) => e.code === 'CONFLICT');
+});
+
+test('adapter contract v1.1: manifest is validated, owner-checked and fails closed when absent', async () => {
+  const files = be.buildManifest([{ path: 'a.js', content: 'x' }]);
+  const pd = sdk.planDigest(PLAN);
+  const good = { contractVersion: '1.1', taskId: TID, projectId: PID, ownerId: OWNER, planDigest: pd, files, totalBytes: 1, manifestDigest: sdk.manifestDigest(pd, files) };
+  const ok = await adapter(() => jr({ manifest: good })).p.getManifest(TID);
+  assert.equal(ok.files[0].path, 'a.js');
+  const bad = async (m, code) => assert.rejects(adapter(() => jr({ manifest: m })).p.getManifest(TID), (e) => e.code === code);
+  await bad({ ...good, ownerId: 'f'.repeat(64) }, 'OWNERSHIP_MISMATCH');
+  await bad({ ...good, taskId: '99999999-9999-4999-8999-999999999999' }, 'MALFORMED');
+  await bad({ ...good, contractVersion: '1.0' }, 'MALFORMED');
+  await bad({ ...good, manifestDigest: '0x' + '00'.repeat(32) }, 'MALFORMED');
+  await bad({ ...good, files: [{ ...files[0], sha256: '0x' + '00'.repeat(32) }] }, 'MALFORMED');
+  await bad({ ...good, totalBytes: 99 }, 'MALFORMED');
+  await bad({ ...good, files: [] }, 'MALFORMED');
+  await assert.rejects(adapter(() => jr({}, 404)).p.getManifest(TID), (e) => e.code === 'MANIFEST_UNSUPPORTED');
+});
+
+test('generation forwards the approved plan digest and cross-checks the Builder manifest', async () => {
+  const t = setup();
+  await toPlanGate(t);
+  await approve(t, 'plan-approval');
+  const r = await t.engine.advance('w1', t.handlers);
+  assert.deepEqual(t.builder.s.approvalDigests, [sdk.planDigest(PLAN)]);
+  assert.equal(r.value.status, 'awaiting-approval');
+  assert.equal(stage(r.value, 'builder-generation').status, 'completed');
+  assert.equal(t.gh.mutations.length, 0);
+});
+
+test('a missing, mismatched or tampered Builder manifest blocks before any GitHub write', async () => {
+  const cases = [
+    { manifestMissing: true },
+    { manifestPlanDigest: '0x' + '22'.repeat(32) },
+    { manifestDigest: '0x' + '33'.repeat(32) },
+  ];
+  for (const c of cases) {
+    const t = setup({ builder: fakeBuilder(c) });
+    await toPlanGate(t);
+    await approve(t, 'plan-approval');
+    const r = await t.engine.advance('w1', t.handlers);
+    assert.notEqual(stage(r.value, 'files-approval').status, 'approved', JSON.stringify(c));
+    assert.notEqual(r.value.status, 'awaiting-approval', JSON.stringify(c));
+    assert.equal(t.gh.mutations.length, 0);
+    assert.equal(t.gh.prs.length, 0);
+  }
 });
 
 test('credentials never appear in errors', async () => {
