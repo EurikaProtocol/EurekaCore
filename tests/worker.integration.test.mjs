@@ -87,6 +87,16 @@ test('real D1: migrations 0001+0002 applied; integrations probe reports what is 
   } finally { await w.dispose(); }
 });
 
+test('writes are rate limited per verified identity (429) while reads are not', async () => {
+  const w = await boot();
+  try {
+    let last;
+    for (let i = 0; i < 31; i++) last = await w.call('POST', '/api/workflows', { token: w.t.viewer, body: { id: 'x' } });
+    assert.equal(last.status, 429);
+    assert.equal((await w.call('GET', '/api/session', { token: w.t.viewer })).status, 200);
+  } finally { await w.dispose(); }
+});
+
 test('product permission ceiling is enforced through the API', async () => {
   const w = await boot();
   try {

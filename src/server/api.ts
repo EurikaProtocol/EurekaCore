@@ -7,6 +7,7 @@ import { authenticate, type AuthEnv, type Identity, type Role } from './auth';
 import { D1AuditLog, D1WorkflowStore, type D1DatabaseLike } from './d1';
 import { createPrDeliveryHandlers } from './executors';
 import { GitHubClient, parseGitHubConfig, parseRepo } from './github';
+import { verifySchema } from './schema';
 import { RemoteSandboxClient, parseSandboxConfig, type SandboxRunner } from './sandbox';
 import { TINANAI_MAX_OBJECTIVE, TinanAiProvider, parseTinanAiConfig } from './tinanai-provider';
 
@@ -30,6 +31,19 @@ export type Services = {
 export type ApiOverrides = { fetch?: typeof fetch; now?: () => number; services?: Services };
 
 const MAX_BODY = 16_384;
+const WRITE_LIMIT = 30;
+const WINDOW_MS = 60_000;
+const writeHits = new Map<string, number[]>();
+
+/** Best-effort per-isolate limiter for writes by verified identity; edge-wide limits belong in Cloudflare rate-limiting rules. */
+function limited(email: string, now: number): boolean {
+  const hits = (writeHits.get(email) ?? []).filter((t) => now - t < WINDOW_MS);
+  if (hits.length >= WRITE_LIMIT) { writeHits.set(email, hits); return true; }
+  hits.push(now);
+  writeHits.set(email, hits);
+  if (writeHits.size > 1000) for (const [k, v] of writeHits) if (v.every((t) => now - t >= WINDOW_MS)) writeHits.delete(k);
+  return false;
+}
 
 /** Builds services from server-side bindings only. Missing configuration means the capability is absent; nothing is mocked. */
 export function buildServices(env: ApiEnv, fetchImpl?: typeof fetch): Services {
@@ -82,10 +96,9 @@ async function probeIntegrations(s: Services, env: ApiEnv, nowIso: string) {
   if (!s.db) set('database', 'not-configured', 'No D1 binding "DB".');
   else {
     try {
-      await s.db.prepare('SELECT COUNT(*) AS n FROM workflows').first();
-      await s.db.prepare('SELECT COUNT(*) AS n FROM audit_log').first();
-      await s.db.prepare('SELECT COUNT(*) AS n FROM agent_tasks').first();
-      set('database', 'healthy', 'D1 reachable; migrations 0001 and 0002 tables present.', true);
+      const report = await verifySchema(s.db);
+      if (report.compatible) set('database', 'healthy', 'D1 reachable; schema matches migrations 0001 and 0002.', true);
+      else set('database', 'unhealthy', `Incompatible schema: ${report.problems.slice(0, 5).join('; ')}`, true);
     } catch { set('database', 'unhealthy', 'D1 query failed (binding or migrations missing).', true); }
   }
   if (!s.github) set('github', 'not-configured', 'GITHUB_TOKEN / GITHUB_ALLOWED_REPOS not set.');
@@ -115,6 +128,9 @@ export async function handleApi(request: Request, env: ApiEnv, overrides: ApiOve
     if (request.headers.get('Origin') !== url.origin) return json({ error: 'Cross-origin request refused.' }, 403);
   }
   if (request.method !== 'GET' && request.method !== 'POST') return json({ error: 'Method not allowed.' }, 405);
+  if (isWrite && limited(id.email, (overrides.now ?? Date.now)())) {
+    return new Response(JSON.stringify({ error: 'Too many requests.' }), { status: 429, headers: { 'Content-Type': 'application/json', 'Retry-After': '60', 'Cache-Control': 'no-store' } });
+  }
 
   const path = url.pathname.replace(/\/+$/, '');
   if (path === '/api/session') return json({ email: id.email, roles: id.roles });

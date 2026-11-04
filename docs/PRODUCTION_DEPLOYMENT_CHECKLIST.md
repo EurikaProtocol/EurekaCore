@@ -81,3 +81,8 @@ No other secret names are read by the Worker.
 
 ## 9. Rollback
 Worker → Deployments → roll back to the previous version; or detach the custom domain; or revert on `main`.
+
+## Hardening addendum
+- Run the schema check (`/api/integrations` → `database: healthy`) after applying migrations; see `MIGRATIONS_AND_RECOVERY.md`.
+- Write requests are limited to 30 per minute per verified identity per Worker isolate (best effort, returns 429). Add a Cloudflare rate-limiting rule on `/api/*` for edge-wide enforcement.
+- Workflow creation is idempotent by id (duplicate ids are rejected); approvals are single-use via the durable nonce guard; every state change is written to the hash-chained audit log.
