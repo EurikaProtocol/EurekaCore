@@ -11,7 +11,8 @@ import { PR_DELIVERY_UNAVAILABLE, createPrDeliveryHandlers } from './executors';
 import { GitHubClient, parseGitHubConfig, parseRepo } from './github';
 import { verifySchema } from './schema';
 import { RemoteSandboxClient, parseSandboxConfig, type SandboxRunner } from './sandbox';
-import { TinanAiBuilderProvider } from './tinanai-builder';
+import { BuilderApiError, BuilderProjectService, D1BuilderProjectStore, PROJECT_ID, type BuilderClient } from './builder-service';
+import { TinanAiBuilderProvider, delegationSubjectFor } from './tinanai-builder';
 import { TINANAI_MAX_OBJECTIVE, TinanAiProvider, parseTinanAiConfig } from './tinanai-provider';
 
 export type ApiEnv = AuthEnv & {
@@ -21,6 +22,13 @@ export type ApiEnv = AuthEnv & {
   TINANAI_BUILDER_ENABLED?: string;
   GITHUB_TOKEN?: string; GITHUB_ALLOWED_REPOS?: string;
   SANDBOX_URL?: string; SANDBOX_TOKEN?: string;
+  /**
+   * Optional per-user delegation secret (>= 32 chars, distinct from TINANAI_PASSWORD). When set, EurekaCore signs a short-lived
+   * `x-eureka-delegation` for the verified user so TINAN AI isolates owners itself (needs TINAN_MULTI_USER_ENABLED=true there).
+   */
+  TINANAI_DELEGATION_SECRET?: string;
+  /** Optional Cloudflare Service Binding to the TINAN AI Worker (private Worker-to-Worker transport). Absent => authenticated HTTPS. */
+  TINANAI_SERVICE?: { fetch: typeof fetch };
 };
 
 export type Services = {
@@ -33,6 +41,8 @@ export type Services = {
   builder?: ProjectBuilderProvider;
   sandbox?: SandboxRunner;
   db?: D1DatabaseLike;
+  /** Native Builder workspace (projects, approval, verified files). Absent unless the Builder is enabled and configured. */
+  builderProjects?: BuilderProjectService;
   /** Per pipeline: why a stage has no handler. Appended to the engine's block message. */
   unavailable?: Record<string, Record<string, string>>;
 };
@@ -68,16 +78,42 @@ export function buildServices(env: ApiEnv, fetchImpl?: typeof fetch): Services {
   try { github = new GitHubClient({ ...parseGitHubConfig(env), fetch: fetchImpl }); } catch { /* not configured */ }
   try { sandbox = new RemoteSandboxClient({ ...parseSandboxConfig(env), fetch: fetchImpl }); } catch { /* not configured */ }
   const clock = () => new Date().toISOString();
+  const builderFor = makeBuilderFactory(env, fetchImpl);
   const store = new D1WorkflowStore(env.DB as D1DatabaseLike);
   const audit = new D1AuditLog(env.DB as D1DatabaseLike);
   return {
     engine: new WorkflowEngine(store, audit, registry, clock), registry, github, provider, builder, sandbox, db: env.DB,
+    builderProjects: new BuilderProjectService({
+      store: new D1BuilderProjectStore(env.DB as D1DatabaseLike), audit, builderFor,
+      authMode: env.TINANAI_DELEGATION_SECRET ? 'delegated' : 'single-owner', transport: env.TINANAI_SERVICE ? 'service-binding' : 'https',
+    }),
     handlers: {
       'pr-delivery-v1': createPrDeliveryHandlers({ registry, provider, maxPromptChars: TINANAI_MAX_OBJECTIVE }),
       'builder-delivery-v1': createBuilderDeliveryHandlers({ registry, builder, github, sandbox }),
       'project-v1': {},
     },
     unavailable: { 'pr-delivery-v1': PR_DELIVERY_UNAVAILABLE, 'builder-delivery-v1': builderUnavailable({ builder: !!builder, github: !!github, sandbox: !!sandbox }) },
+  };
+}
+
+/**
+ * Per-user Builder clients for the native workspace. Credentials stay server-side; the user identity passed in is the verified
+ * Access identity. Cloudflare Access headers are never forwarded to TINAN AI. With TINANAI_SERVICE the request travels over a
+ * private Service Binding (the Basic credential and delegation are still sent); otherwise over authenticated HTTPS.
+ */
+export function makeBuilderFactory(env: ApiEnv, fetchImpl?: typeof fetch): (email: string) => BuilderClient | undefined {
+  if (env.TINANAI_BUILDER_ENABLED !== 'true') return () => undefined;
+  const service = env.TINANAI_SERVICE;
+  const transport: typeof fetch | undefined = fetchImpl ?? (service ? ((input, init) => service.fetch(input, init)) as typeof fetch : undefined);
+  let config: ReturnType<typeof parseTinanAiConfig>;
+  try { config = parseTinanAiConfig(env as Record<string, string | undefined>); } catch { return () => undefined; }
+  return (email) => {
+    try {
+      return new TinanAiBuilderProvider({
+        ...config, fetch: transport, getRetries: 2,
+        delegation: env.TINANAI_DELEGATION_SECRET ? { secret: env.TINANAI_DELEGATION_SECRET, subject: delegationSubjectFor(email) } : undefined,
+      });
+    } catch { return undefined; }
   };
 }
 
@@ -172,6 +208,47 @@ async function probeIntegrations(s: Services, env: ApiEnv, nowIso: string) {
   return result;
 }
 
+/**
+ * Native Builder routes. The owner is ALWAYS `id.email` from the verified Access token; no id in the URL, query or body can
+ * select another user's data. Foreign and missing projects both answer 404.
+ */
+async function handleBuilder(bp: BuilderProjectService, request: Request, path: string, url: URL, id: Identity, readBody: (r: Request) => Promise<Record<string, unknown> | null>): Promise<Response> {
+  const write = request.method === 'POST';
+  if (path === '/api/builder/status' && !write) return json({ integration: await bp.status(id.email) });
+  if (path === '/api/builder/history' && !write) return json({ history: await bp.history(id.email) });
+  if (path === '/api/builder/projects' && !write) return json({ projects: await bp.list(id.email) });
+  if (path === '/api/builder/projects' && write) {
+    if (!can(id, 'operator')) return json({ error: 'Operator role required.' }, 403);
+    const b = await readBody(request);
+    if (!b) return json({ error: 'A JSON body up to 16 KB is required.' }, 400);
+    return json({ project: await bp.create(id.email, { name: b.name, requirements: b.requirements }) }, 201);
+  }
+  const m = /^\/api\/builder\/projects\/([A-Za-z0-9-]{1,64})(?:\/([a-z]+))?$/.exec(path);
+  if (!m || !PROJECT_ID.test(m[1])) return json({ error: 'Not found.' }, 404);
+  const [, pid, action] = m;
+  if (!write) {
+    if (!action) return json(await bp.get(id.email, pid));
+    if (action === 'history') return json({ history: await bp.history(id.email, pid) });
+    if (action === 'file') return json({ file: await bp.file(id.email, pid, url.searchParams.get('path')) });
+    if (action === 'export') {
+      const z = await bp.exportZip(id.email, pid);
+      return new Response(z.bytes, { headers: { 'Content-Type': 'application/zip', 'Content-Disposition': `attachment; filename="${z.filename}"`, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } });
+    }
+    return json({ error: 'Not found.' }, 404);
+  }
+  const body = await readBody(request);
+  if (!body) return json({ error: 'A JSON body up to 16 KB is required.' }, 400);
+  // The approver is the verified identity; any identity in the body is ignored.
+  if (action === 'approve') {
+    if (!can(id, 'approver')) return json({ error: 'Approver role required.' }, 403);
+    return json({ project: await bp.approve(id.email, pid, body.planDigest) });
+  }
+  if (!can(id, 'operator')) return json({ error: 'Operator role required.' }, 403);
+  if (action === 'cancel') return json({ project: await bp.cancel(id.email, pid) });
+  if (action === 'retry') return json({ project: await bp.retry(id.email, pid) });
+  return json({ error: 'Not found.' }, 404);
+}
+
 export async function handleApi(request: Request, env: ApiEnv, overrides: ApiOverrides = {}): Promise<Response | null> {
   const url = new URL(request.url);
   if (!url.pathname.startsWith('/api/')) return null;
@@ -201,6 +278,18 @@ export async function handleApi(request: Request, env: ApiEnv, overrides: ApiOve
   const nowIso = new Date((overrides.now ?? Date.now)()).toISOString();
 
   try {
+    if (path === '/api/builder' || path.startsWith('/api/builder/')) {
+      const bp = services.builderProjects;
+      if (!bp) return json({ error: 'Builder service is unavailable.', code: 'BUILDER_NOT_CONFIGURED' }, 503);
+      try {
+        return await handleBuilder(bp, request, path, url, id, readBody);
+      } catch (e) {
+        if (e instanceof BuilderApiError) return json({ error: e.message, code: e.code }, e.status);
+        if (e instanceof Error && /no such table/i.test(e.message)) return json({ error: 'Builder storage is not migrated: apply migrations/0003_builder_projects.sql to the D1 database.', code: 'BUILDER_STORAGE_MISSING' }, 503);
+        return json({ error: 'Internal error.' }, 500);
+      }
+    }
+
     if (path === '/api/integrations' && request.method === 'GET') return json({ integrations: await probeIntegrations(services, env, nowIso) });
 
     if (path === '/api/workflows' && request.method === 'GET') return json({ workflows: (await engine.list()).map(view) });

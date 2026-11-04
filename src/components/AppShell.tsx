@@ -9,6 +9,7 @@ import { WalletButton } from './WalletButton';
 const HEADER_NAVIGATION = [
   ['/ai', 'AI'],
   ['/tokenize', 'Tokenize'],
+  ['/tinan-ai/builder', 'TINAN Builder'],
   ['/projects', 'Projects'],
   ['/dashboard', 'Dashboard'],
   ['/tokens', 'Tokens'],
