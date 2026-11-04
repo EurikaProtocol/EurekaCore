@@ -76,6 +76,17 @@ test('API is closed (503) when Access is not configured', async () => {
   try { assert.equal((await w.call('GET', '/api/products', { token: w.t.op })).status, 503); } finally { await w.dispose(); }
 });
 
+test('rejects request bodies exceeding the 16 KB byte limit', async () => {
+  const w = await boot();
+  try {
+    const r = await w.call('POST', '/api/workflows', {
+      token: w.t.op,
+      body: { id: 'large-body', objective: 'Build a tiny utility', extra: '😀'.repeat(5000) },
+    });
+    assert.equal(r.status, 400);
+  } finally { await w.dispose(); }
+});
+
 test('real D1: migrations 0001+0002 applied; integrations probe reports what is real', async () => {
   const w = await boot();
   try {
