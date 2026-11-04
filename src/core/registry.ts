@@ -117,9 +117,9 @@ export class ProductRegistry {
  */
 export const DEFAULT_PRODUCTS: Product[] = [
   {
-    id: 'tinan-ai', name: 'TINAN AI', description: 'Independent AI builder platform: project planning, code generation and editing, preview and export.',
+    id: 'tinan-ai', name: 'TINAN AI', description: 'Independent AI builder platform: project planning, code generation and editing, preview and export. Level 3 covers GitHub dev branches and draft PRs on its repository; the TinanAi API itself is used for proposals only.',
     repositoryUrl: 'https://github.com/EurikaProtocol/TinanAi', deploymentProvider: null, apiBaseUrl: null, environment: 'unknown',
-    integrationStatus: 'contract-tested', authMethod: 'basic', maxPermissionLevel: 2, version: null,
+    integrationStatus: 'contract-tested', authMethod: 'basic', maxPermissionLevel: 3, version: null,
     health: { status: 'unverified', checkedAt: null }, docs: ['docs/TINANAI_INTEGRATION_CONTRACT.md'],
   },
   {

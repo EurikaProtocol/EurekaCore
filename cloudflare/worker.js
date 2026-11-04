@@ -1,5 +1,10 @@
+import { handleApi } from "../src/server/api";
+
 export default {
   async fetch(request, env) {
+    const apiResponse = await handleApi(request, env);
+    if (apiResponse) return apiResponse;
+
     const response = await env.ASSETS.fetch(request);
     const headers = new Headers(response.headers);
     const pathname = new URL(request.url).pathname;

@@ -1,0 +1,11 @@
+# LOCAL TEST CONFIG ONLY (never deployed). Used by tests/worker.integration.test.mjs to apply the real migrations
+# to a local D1 (workerd/miniflare). The database_id is a placeholder that only names the local sqlite file.
+name = "eurekacore-test"
+main = "./cloudflare/worker.js"
+compatibility_date = "2026-09-17"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "eurekacore-test"
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"

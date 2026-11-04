@@ -37,7 +37,8 @@ test('submits the documented request: Basic auth, same Origin, objective only', 
   assert.equal(init.headers.Origin, BASE);
   assert.match(init.headers.Authorization, /^Basic /);
   assert.deepEqual(JSON.parse(init.body), { objective: 'build a plan' });
-  assert.equal(init.redirect, 'error');
+  assert.equal(init.redirect, 'manual');
+  // workerd rejects redirect:'error'; 'manual' never follows, and a 3xx is not ok so the provider fails it.
 });
 
 test('polls until a terminal state', async () => {
