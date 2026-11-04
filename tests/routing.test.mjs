@@ -35,6 +35,15 @@ test('no _redirects file exists in source or build output', () => {
   assert.deepEqual(stray, [], 'no _redirects file may exist anywhere in public/ or dist/');
 });
 
+test('no file in dist/ carries a wildcard rewrite-to-index rule, and every dist file was inspected', () => {
+  const walk = (d) => readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(join(d, e.name)) : [join(d, e.name)]));
+  const files = walk(p('dist'));
+  assert.ok(files.length > 20, `expected a full build, found ${files.length} files`);
+  const textual = files.filter((f) => /\.(html|txt|json|webmanifest|toml|js|css)$|_headers$|_redirects$/.test(f));
+  assert.ok(textual.length > 10);
+  for (const f of textual) assert.doesNotMatch(readFileSync(f, 'utf8'), /^\s*\/\*\s+\/index(\.html)?\s+\d{3}\s*$/m, `${f} contains a redirect rule that loops`);
+});
+
 test('wrangler.toml: SPA fallback, worker-first /api/*, assets from ./dist', () => {
   const t = readFileSync(p('wrangler.toml'), 'utf8').replace(/^\s*#.*$/gm, '');
   const assets = /\[assets\]([\s\S]*?)(?=\n\[|$)/.exec(t)?.[1];
