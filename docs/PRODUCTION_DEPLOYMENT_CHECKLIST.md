@@ -51,7 +51,7 @@ Before each: confirm base branch, previous PR merged, diff unchanged, CI.
 - [ ] Zero Trust → Access → Applications → self-hosted application covering `www.tinaneureka.com/api/*` (and `/control-center`, if the page itself should be private). Leave `/`, `/pages/*`, `/whitepaper/*` and the SPA public routes outside Access.
 - [ ] Note the team domain (`<team>.cloudflareaccess.com`) and the application **AUD** tag.
 - [ ] Set Worker variables `ACCESS_TEAM_DOMAIN`, `ACCESS_AUD`. The Worker verifies the Access JWT itself; Access in front of it is defence in depth, not a replacement.
-- [ ] Role lists: `EUREKA_VIEWERS`, `EUREKA_OPERATORS`, `EUREKA_APPROVERS` (identity lists of verified Access emails; check `docs/ORCHESTRATION.md` for the exact format). At least one approver is needed to approve gates.
+- [ ] Role lists: `EUREKA_VIEWERS`, `EUREKA_OPERATORS`, `EUREKA_APPROVERS` (lists of Access emails that map to roles in `src/server/auth.ts`; an identity in none of them gets 403; confirm the separator format there). At least one approver is needed to approve gates.
 - Caution: an Access policy on `/api/*` returns Access's own login redirect (HTML) to unauthenticated browsers *before* the Worker. That is expected, and is not an `index.html` fall-through.
 
 ## 5. Secrets and variables (names only; set via dashboard or `wrangler secret put <NAME> --config wrangler.toml`; never in the repo)
