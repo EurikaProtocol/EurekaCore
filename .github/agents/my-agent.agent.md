@@ -107,7 +107,7 @@ Cloudflare deployment
 
 For the existing Next.js/OpenNext project:
 
-* Inspect wrangler.jsonc, open-next.config.ts, package.json, and deployment documentation.
+* Inspect wrangler.toml, open-next.config.ts, package.json, and deployment documentation.
 * Use the repository’s existing Cloudflare build and deployment scripts.
 * Verify that required D1 and R2 resources are configured before deploying.
 * Apply required database migrations deliberately.
