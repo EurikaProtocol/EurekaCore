@@ -4,17 +4,11 @@
 
 Every box is an owner-approved action. Nothing here was executed by the preparation work. Config source: `wrangler.toml` only. See `EUREKACORE_PRODUCTION_LAUNCH_PLAN.md` for evidence and risks.
 
-## 0. Blockers to clear first
-- [ ] Read the failed Cloudflare build log for PR #30 (Workers Builds, project `eurekacore`) and confirm the cause (expected: project name `eurekacore` ≠ config name `eurekacore-v3`).
-- [ ] Decide the Worker identity: a Git-connected project named `eurekacore` already exists in the account. Either create/point a project named **`eurekacore-v3`**, or approve a separate PR to change `name`. Never leave two projects deploying the same repo to different Workers.
-- [ ] Decide on the dependency audit (PR #31 + owner acceptance of the 14 remaining findings, see the launch plan). The GitHub Actions deploy stays blocked until the audit step passes.
-- [ ] Confirm branch protection/required reviews on `main` (could not be read).
-
-## 1. Merge order (explicit approval for each)
-1. PR #28 → `main` (confirm base `main`, checks reviewed). Merging can trigger Actions and the Cloudflare `eurekacore` Git build.
-2. PR #29 (base is #28's branch: retarget to `main` after #28 merges, or let GitHub retarget).
-3. PR #30, then PR #31 (retarget each to `main`; re-run checks).
-Before each: confirm base branch, previous PR merged, diff unchanged, CI.
+## 0. Status (2026-11-04)
+- DONE: PRs #31, #30, #29 merged into the stack, then #28 merged into `main` (`4cdeaa60`). `npm ci`, `npm test` and the dependency audit pass on `main` (baseline refreshed to the 14 current findings with written justification in `docs/DEPENDENCY_AUDIT.md`).
+- Decision recorded: the production Worker is **`eurekacore-v3`**; the legacy Git-connected `eurekacore` project is not reused.
+- Nothing is deployed: the GitHub Actions deploy step stopped at "Check Cloudflare credentials" because `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` are not set as repository secrets. The `Workers Builds: eurekacore` check fails, as expected for the name mismatch; it does not deploy.
+- OWNER-ONLY, still open: sections 2 to 8 below (no Cloudflare credentials are available to the agent).
 
 ## 2. Cloudflare configuration (dashboard values; do not assume they already match)
 | Setting | Value |
