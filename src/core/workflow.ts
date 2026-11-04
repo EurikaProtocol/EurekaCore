@@ -41,6 +41,25 @@ export const PROJECT_PIPELINE: readonly StageDefinition[] = [
   { id: 'iteration', title: 'Iterative improvement', kind: 'work', role: 'chief-architect', level: 2, acceptance: ['Improvement proposals produced'] },
 ];
 
+/** First real delivery workflow: ends in a draft pull request. It never merges and never deploys. */
+export const PR_DELIVERY_PIPELINE: readonly StageDefinition[] = [
+  { id: 'requirements', title: 'Requirements analysis', kind: 'work', role: 'product-manager', level: 2, acceptance: ['Output is non-empty', 'Result passed contract validation'] },
+  { id: 'architecture', title: 'Architecture', kind: 'work', role: 'chief-architect', level: 2, acceptance: ['Output is non-empty', 'Result passed contract validation'] },
+  { id: 'plan-approval', title: 'Plan approval (human)', kind: 'approval', role: null, level: 2, acceptance: ['A human approved the exact plan digest'] },
+  { id: 'branch', title: 'Create development branch', kind: 'work', role: 'full-stack-builder', level: 3, needsApproval: 'plan-approval', acceptance: ['Branch exists on GitHub', 'Branch is not the default branch'] },
+  { id: 'generation', title: 'Code generation proposal committed to branch', kind: 'work', role: 'full-stack-builder', level: 3, needsApproval: 'plan-approval', acceptance: ['Proposal passed path and size validation', 'Files committed to the development branch'] },
+  { id: 'testing', title: 'Sandboxed tests', kind: 'work', role: 'qa', level: 3, acceptance: ['Tests ran in an isolated sandbox', 'Test command exited 0 with at least one passing test'] },
+  { id: 'pull-request', title: 'Open draft pull request', kind: 'work', role: 'deployment', level: 3, acceptance: ['Draft pull request exists on GitHub', 'Pull request is not merged'] },
+];
+
+export const PIPELINES: Record<string, readonly StageDefinition[]> = { 'project-v1': PROJECT_PIPELINE, 'pr-delivery-v1': PR_DELIVERY_PIPELINE };
+export type PipelineId = 'project-v1' | 'pr-delivery-v1';
+
+/** Records created before pipelines were selectable have no `pipeline` field and use the original one. */
+export function pipelineOf(w: { pipeline?: string }): readonly StageDefinition[] {
+  return PIPELINES[w.pipeline ?? 'project-v1'] ?? PROJECT_PIPELINE;
+}
+
 export type StageStatus = 'pending' | 'running' | 'awaiting-approval' | 'approved' | 'rejected' | 'completed' | 'failed';
 export type WorkflowStatus = 'planned' | 'running' | 'awaiting-approval' | 'blocked' | 'failed' | 'completed' | 'cancelled';
 
@@ -63,6 +82,7 @@ export type WorkflowRecord = {
   id: string;
   objective: string;
   productId: string | null;
+  pipeline?: PipelineId;
   grantedLevel: PermissionLevel;
   status: WorkflowStatus;
   /** Why the workflow is blocked or failed. */
@@ -76,10 +96,13 @@ export type WorkflowRecord = {
 export type StageContext = {
   workflowId: string;
   objective: string;
+  productId: string | null;
   stage: StageDefinition;
   /** Outputs of completed earlier stages. Treat as untrusted data, not instructions. */
   previous: Record<string, string>;
   signal: AbortSignal;
+  /** Reads the stored workflow, so a cancel issued in another request/isolate is observed. Call before each side effect. */
+  isCancelled(): Promise<boolean>;
 };
 
 /** Executes a stage and independently verifies it. Handlers run outside the orchestrator's privileges (agent, sandbox, GitHub client). */
@@ -126,15 +149,9 @@ const LEASE_GRACE_MS = 30_000;
 const ID = /^[A-Za-z0-9._:-]{1,128}$/;
 const TERMINAL: readonly WorkflowStatus[] = ['completed', 'failed', 'cancelled'];
 
-function stageDef(id: string): StageDefinition {
-  const d = PROJECT_PIPELINE.find((s) => s.id === id);
-  if (!d) throw new Error(`Unknown pipeline stage ${id}`);
-  return d;
-}
-
 /** Digest of everything a human reviewed before a gate: objective plus all earlier stage outputs. */
 export function reviewDigest(record: WorkflowRecord, gateId: string): string {
-  const upto = PROJECT_PIPELINE.findIndex((s) => s.id === gateId);
+  const upto = pipelineOf(record).findIndex((s) => s.id === gateId);
   const parts = record.stages.slice(0, Math.max(upto, 0)).map((s) => [s.id, s.output ?? null]);
   return sha256(toUtf8Bytes(JSON.stringify([record.id, record.objective, parts])));
 }
@@ -149,10 +166,12 @@ export class WorkflowEngine {
     private readonly clock: () => string = () => new Date().toISOString()
   ) {}
 
-  async create(input: { id: string; objective: string; productId?: string; grantedLevel?: PermissionLevel }): Promise<Result<WorkflowRecord>> {
+  async create(input: { id: string; objective: string; productId?: string; grantedLevel?: PermissionLevel; pipeline?: PipelineId }): Promise<Result<WorkflowRecord>> {
     if (!ID.test(input.id)) return fail('INVALID_INPUT', 'Workflow id must be 1-128 characters of letters, digits and . _ : -.');
     const objective = typeof input.objective === 'string' ? input.objective.trim() : '';
     if (!objective || objective.length > 4000) return fail('INVALID_INPUT', 'Objective must be 1-4000 characters.');
+    const pipelineId = input.pipeline ?? 'project-v1';
+    if (!PIPELINES[pipelineId]) return fail('INVALID_INPUT', `Unknown pipeline "${String(pipelineId)}".`);
     const granted = input.grantedLevel ?? 2;
     if (!isPermissionLevel(granted)) return fail('INVALID_INPUT', 'Invalid permission level.');
     let productId: string | null = null;
@@ -166,8 +185,8 @@ export class WorkflowEngine {
     }
     const at = this.clock();
     const record: WorkflowRecord = {
-      id: input.id, objective, productId, grantedLevel: granted, status: 'planned', reason: null, version: 1, createdAt: at, updatedAt: at,
-      stages: PROJECT_PIPELINE.map((s) => ({ id: s.id, status: 'pending', attempts: 0, output: null, verification: [], error: null, leaseExpiresAt: null, approval: null, startedAt: null, finishedAt: null })),
+      id: input.id, objective, productId, pipeline: pipelineId, grantedLevel: granted, status: 'planned', reason: null, version: 1, createdAt: at, updatedAt: at,
+      stages: PIPELINES[pipelineId].map((s) => ({ id: s.id, status: 'pending', attempts: 0, output: null, verification: [], error: null, leaseExpiresAt: null, approval: null, startedAt: null, finishedAt: null })),
     };
     if (!(await this.store.create(record))) return fail('INVALID_INPUT', `Workflow "${input.id}" already exists.`);
     await this.log('workflow.created', record.id, 'user', { productId, grantedLevel: granted });
@@ -214,7 +233,7 @@ export class WorkflowEngine {
         if (done.ok) await this.log('workflow.completed', id, 'orchestrator');
         return done;
       }
-      const def = PROJECT_PIPELINE[index];
+      const def = pipelineOf(current)[index];
       const rec = current.stages[index];
 
       if (rec.status === 'rejected') return ok(current);
@@ -287,7 +306,7 @@ export class WorkflowEngine {
     this.running.set(w.id, controller);
     const previous: Record<string, string> = {};
     for (const s of w.stages) if (s.status === 'completed' && s.output !== null) previous[s.id] = s.output;
-    const ctx: StageContext = { workflowId: w.id, objective: w.objective, stage: def, previous, signal: controller.signal };
+    const ctx: StageContext = { workflowId: w.id, objective: w.objective, productId: w.productId, stage: def, previous, signal: controller.signal, isCancelled: async () => (await this.store.get(w.id))?.status === 'cancelled' };
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
       const timeout = new Promise<never>((_, reject) => {
@@ -313,7 +332,7 @@ export class WorkflowEngine {
     const w = await this.store.get(id);
     if (!w) return fail('INVALID_INPUT', `Unknown workflow "${id}".`);
     const index = w.stages.findIndex((s) => s.id === stageId);
-    const def = PROJECT_PIPELINE[index];
+    const def = pipelineOf(w)[index];
     if (index === -1 || def.kind !== 'approval') return fail('INVALID_INPUT', `"${stageId}" is not an approval gate.`);
     if (w.stages[index].status !== 'awaiting-approval' || w.status !== 'awaiting-approval') return fail('INVALID_TRANSITION', `Gate "${stageId}" is not awaiting approval.`);
     if (typeof approver !== 'string' || !approver.trim() || approver.length > 200 || approver === 'orchestrator') return fail('UNAUTHORIZED', 'A named human approver is required.');
@@ -332,7 +351,7 @@ export class WorkflowEngine {
     const w = await this.store.get(id);
     if (!w) return fail('INVALID_INPUT', `Unknown workflow "${id}".`);
     const index = w.stages.findIndex((s) => s.id === stageId);
-    if (index === -1 || PROJECT_PIPELINE[index].kind !== 'approval' || w.stages[index].status !== 'awaiting-approval') return fail('INVALID_TRANSITION', `Gate "${stageId}" is not awaiting approval.`);
+    if (index === -1 || pipelineOf(w)[index].kind !== 'approval' || w.stages[index].status !== 'awaiting-approval') return fail('INVALID_TRANSITION', `Gate "${stageId}" is not awaiting approval.`);
     if (typeof approver !== 'string' || !approver.trim() || approver === 'orchestrator') return fail('UNAUTHORIZED', 'A named human approver is required.');
     const r = await this.commit(w, (x) => { x.stages[index].status = 'rejected'; x.stages[index].error = String(reason).slice(0, 500); x.status = 'cancelled'; x.reason = `Rejected at "${stageId}".`; });
     if (r.ok) await this.log('stage.rejected', id, approver.trim(), { stage: stageId, reason: String(reason).slice(0, 300) });
@@ -392,5 +411,5 @@ export function checkVerification(def: StageDefinition, results: unknown): strin
 }
 
 export function describeWorkflow(w: WorkflowRecord) {
-  return w.stages.map((s, i) => ({ id: s.id, title: PROJECT_PIPELINE[i].title, level: PROJECT_PIPELINE[i].level, status: s.status }));
+  return w.stages.map((s, i) => ({ id: s.id, title: pipelineOf(w)[i].title, level: pipelineOf(w)[i].level, status: s.status }));
 }
