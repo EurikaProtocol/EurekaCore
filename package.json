@@ -12,6 +12,8 @@
     "test:live": "node --test tests/live/*.live.test.mjs",
     "test": "rm -rf dist && vite build && npm run test:routing && npm run test:unit",
     "verify": "npm test && npm run deploy:check",
+    "save": "node scripts/save-work.mjs",
+    "scan:secrets": "node scripts/secret-scan.mjs",
     "deploy:check": "wrangler deploy --dry-run --config wrangler.toml --outdir .wrangler/dry-run",
     "deploy": "wrangler deploy --config wrangler.toml"
   },

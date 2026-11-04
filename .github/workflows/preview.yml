@@ -1,0 +1,122 @@
+name: Preview
+
+# Every push to an eureka/* working branch: secret scan, quality gate, Vercel PREVIEW deployment of that exact commit,
+# live checks (desktop + mobile). Never deploys production (no --prod), never touches main, Cloudflare, D1 or DNS.
+# Required repository secrets (names only): VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID.
+# Optional: VERCEL_AUTOMATION_BYPASS_SECRET (if Vercel Deployment Protection is on for previews).
+on:
+  push:
+    branches: ['eureka/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  statuses: write
+
+concurrency:
+  group: preview-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: quality gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # verify = build + routing + unit/integration tests + wrangler dry run (no deploy).
+      - run: npm run verify
+      - run: node scripts/audit-check.mjs
+      - name: Secret scan of the pushed commit
+        run: |
+          git fetch --no-tags --depth=2 origin "$GITHUB_SHA" || true
+          git diff --name-only "$GITHUB_SHA~1" "$GITHUB_SHA" > /tmp/changed.txt || true
+          if grep -E '(^|/)\.env(\..*)?$' /tmp/changed.txt | grep -v '\.env\.example$'; then echo "env file committed"; exit 1; fi
+
+  preview:
+    name: vercel preview
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+    steps:
+      - name: Require Vercel credentials
+        run: |
+          missing=""
+          for n in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID; do
+            if [ -z "$(printenv "$n")" ]; then missing="$missing $n"; fi
+          done
+          if [ -n "$missing" ]; then echo "::error::Missing repository secrets:$missing. See docs/AUTO_SAVE_PREVIEW.md"; exit 1; fi
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Build preview output for this commit
+        run: |
+          npx --yes vercel@latest pull --yes --environment=preview --token="$VERCEL_TOKEN"
+          npx --yes vercel@latest build --token="$VERCEL_TOKEN"
+          printf '{"sha":"%s","branch":"%s","target":"preview","builtAt":"%s"}\n' "$GITHUB_SHA" "$GITHUB_REF_NAME" "$(date -u +%FT%TZ)" > .vercel/output/static/build-info.json
+      - name: Deploy PREVIEW (never production)
+        id: deploy
+        run: |
+          url=$(npx --yes vercel@latest deploy --prebuilt --token="$VERCEL_TOKEN" --meta githubCommitSha="$GITHUB_SHA" --meta githubCommitRef="$GITHUB_REF_NAME")
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Preview URL: $url"
+      - name: Verify the preview serves this commit
+        run: node scripts/preview-check.mjs "${{ steps.deploy.outputs.url }}" "$GITHUB_SHA"
+      - name: Desktop and mobile check
+        run: |
+          mkdir -p /tmp/pw && cd /tmp/pw && npm init -y >/dev/null && npm i playwright >/dev/null && npx playwright install --with-deps chromium >/dev/null
+          cat > check.mjs <<'EOF'
+          import { chromium } from 'playwright';
+          const [url] = process.argv.slice(2);
+          const extra = process.env.VERCEL_AUTOMATION_BYPASS_SECRET ? { 'x-vercel-protection-bypass': process.env.VERCEL_AUTOMATION_BYPASS_SECRET } : {};
+          const browser = await chromium.launch();
+          let bad = false;
+          for (const [name, viewport] of [['desktop', { width: 1366, height: 768 }], ['mobile', { width: 390, height: 844 }]]) {
+            const page = await (await browser.newContext({ viewport, extraHTTPHeaders: extra })).newPage();
+            const errors = [];
+            page.on('pageerror', (e) => errors.push(e.message));
+            const res = await page.goto(url, { waitUntil: 'networkidle' });
+            const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+            const text = (await page.innerText('body')).trim().length;
+            await page.screenshot({ path: `${name}.png`, fullPage: true });
+            const ok = res.status() === 200 && errors.length === 0 && overflow <= 1 && text > 50;
+            console.log(`${ok ? 'PASS' : 'FAIL'} ${name}: status=${res.status()} pageErrors=${errors.length} overflowPx=${overflow} textChars=${text}`);
+            if (!ok) bad = true;
+          }
+          await browser.close();
+          process.exit(bad ? 1 : 0);
+          EOF
+          node check.mjs "${{ steps.deploy.outputs.url }}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: preview-screenshots
+          path: /tmp/pw/*.png
+          if-no-files-found: ignore
+      - name: Publish result (commit SHA, URL, status)
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          URL: ${{ steps.deploy.outputs.url }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          state=failure; [ "$JOB_STATUS" = "success" ] && state=success
+          gh api "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" -f state="$state" -f context="vercel-preview" -f target_url="${URL:-https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID}" -f description="Preview of ${GITHUB_SHA:0:7}: $state"
+          { echo "### Preview ($state)"; echo "- Commit: \`$GITHUB_SHA\`"; echo "- Branch: \`$GITHUB_REF_NAME\`"; echo "- URL: ${URL:-none}"; } >> "$GITHUB_STEP_SUMMARY"
