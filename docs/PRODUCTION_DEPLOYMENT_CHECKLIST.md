@@ -1,3 +1,5 @@
+> Deployment path: **GitHub Actions** (environment `Eureka`, `npm run deploy`). See `GITHUB_ACTIONS_DEPLOYMENT.md` and `CLOUDFLARE_ACCOUNT_AUDIT.md`. The dashboard Git-build rows below apply only if the owner chooses that path instead; do not run both.
+
 # Production Deployment Checklist: Worker `eurekacore-v3` / `www.tinaneureka.com`
 
 Every box is an owner-approved action. Nothing here was executed by the preparation work. Config source: `wrangler.toml` only. See `EUREKACORE_PRODUCTION_LAUNCH_PLAN.md` for evidence and risks.
