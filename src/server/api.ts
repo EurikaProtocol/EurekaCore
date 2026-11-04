@@ -1,19 +1,24 @@
 import type { AgentProvider } from '../core/agent';
+import type { ProjectBuilderProvider } from '../core/builder';
 import { MAX_AUTONOMOUS_LEVEL, isPermissionLevel } from '../core/permissions';
 import { createDefaultRegistry, type ProductRegistry } from '../core/registry';
 import { PIPELINES, WorkflowEngine, pipelineOf, reviewDigest, type PipelineId, type StageHandler, type WorkflowRecord } from '../core/workflow';
 import type { CoreError } from '../core/errors';
 import { authenticate, type AuthEnv, type Identity, type Role } from './auth';
 import { D1AuditLog, D1WorkflowStore, type D1DatabaseLike } from './d1';
-import { createPrDeliveryHandlers } from './executors';
+import { createBuilderDeliveryHandlers } from './builder-executors';
+import { PR_DELIVERY_UNAVAILABLE, createPrDeliveryHandlers } from './executors';
 import { GitHubClient, parseGitHubConfig, parseRepo } from './github';
 import { verifySchema } from './schema';
 import { RemoteSandboxClient, parseSandboxConfig, type SandboxRunner } from './sandbox';
+import { TinanAiBuilderProvider } from './tinanai-builder';
 import { TINANAI_MAX_OBJECTIVE, TinanAiProvider, parseTinanAiConfig } from './tinanai-provider';
 
 export type ApiEnv = AuthEnv & {
   DB?: D1DatabaseLike;
   TINANAI_BASE_URL?: string; TINANAI_USERNAME?: string; TINANAI_PASSWORD?: string;
+  /** Must be exactly "true" to register the TINAN AI Builder generation handlers (operator attestation that the contract was verified). */
+  TINANAI_BUILDER_ENABLED?: string;
   GITHUB_TOKEN?: string; GITHUB_ALLOWED_REPOS?: string;
   SANDBOX_URL?: string; SANDBOX_TOKEN?: string;
 };
@@ -24,8 +29,12 @@ export type Services = {
   handlers: Record<string, Record<string, StageHandler>>;
   github?: GitHubClient;
   provider?: AgentProvider;
+  /** Project-generation provider; deliberately separate from `provider` (agent planning). */
+  builder?: ProjectBuilderProvider;
   sandbox?: SandboxRunner;
   db?: D1DatabaseLike;
+  /** Per pipeline: why a stage has no handler. Appended to the engine's block message. */
+  unavailable?: Record<string, Record<string, string>>;
 };
 
 export type ApiOverrides = { fetch?: typeof fetch; now?: () => number; services?: Services };
@@ -51,16 +60,36 @@ export function buildServices(env: ApiEnv, fetchImpl?: typeof fetch): Services {
   let provider: AgentProvider | undefined;
   let github: GitHubClient | undefined;
   let sandbox: SandboxRunner | undefined;
+  let builder: ProjectBuilderProvider | undefined;
   try { provider = new TinanAiProvider({ ...parseTinanAiConfig(env as Record<string, string | undefined>), fetch: fetchImpl }); } catch { /* not configured */ }
+  if (env.TINANAI_BUILDER_ENABLED === 'true') {
+    try { builder = new TinanAiBuilderProvider({ ...parseTinanAiConfig(env as Record<string, string | undefined>), fetch: fetchImpl }); } catch { /* not configured */ }
+  }
   try { github = new GitHubClient({ ...parseGitHubConfig(env), fetch: fetchImpl }); } catch { /* not configured */ }
   try { sandbox = new RemoteSandboxClient({ ...parseSandboxConfig(env), fetch: fetchImpl }); } catch { /* not configured */ }
   const clock = () => new Date().toISOString();
   const store = new D1WorkflowStore(env.DB as D1DatabaseLike);
   const audit = new D1AuditLog(env.DB as D1DatabaseLike);
   return {
-    engine: new WorkflowEngine(store, audit, registry, clock), registry, github, provider, sandbox, db: env.DB,
-    handlers: { 'pr-delivery-v1': createPrDeliveryHandlers({ registry, provider, github, sandbox, maxPromptChars: TINANAI_MAX_OBJECTIVE }), 'project-v1': {} },
+    engine: new WorkflowEngine(store, audit, registry, clock), registry, github, provider, builder, sandbox, db: env.DB,
+    handlers: {
+      'pr-delivery-v1': createPrDeliveryHandlers({ registry, provider, maxPromptChars: TINANAI_MAX_OBJECTIVE }),
+      'builder-delivery-v1': createBuilderDeliveryHandlers({ registry, builder, github, sandbox }),
+      'project-v1': {},
+    },
+    unavailable: { 'pr-delivery-v1': PR_DELIVERY_UNAVAILABLE, 'builder-delivery-v1': builderUnavailable({ builder: !!builder, github: !!github, sandbox: !!sandbox }) },
   };
+}
+
+/** Clear configuration messages for stages that have no handler. Nothing is generated, committed or simulated meanwhile. */
+export function builderUnavailable(have: { builder: boolean; github: boolean; sandbox: boolean }): Record<string, string> {
+  const out: Record<string, string> = {};
+  const noBuilder = 'TINAN AI Builder generation is not enabled: set TINANAI_BUILDER_ENABLED=true together with TINANAI_BASE_URL, TINANAI_USERNAME and TINANAI_PASSWORD (server-side secrets) once the Builder contract is verified. No files were generated, committed or proposed.';
+  const noGithub = 'GITHUB_TOKEN / GITHUB_ALLOWED_REPOS are not set; nothing was written to GitHub.';
+  if (!have.builder) for (const id of ['builder-submit', 'builder-plan', 'builder-generation', 'commit']) out[id] = noBuilder;
+  if (!have.github) for (const id of ['branch', 'commit', 'pull-request']) out[id] = out[id] ? `${out[id]} ${noGithub}` : noGithub;
+  if (!have.sandbox) out.testing = 'No verified isolated sandbox runner is configured (SANDBOX_URL / SANDBOX_TOKEN). The generated files were not executed and no test result is claimed; the committed branch is a reviewable proposal only.';
+  return out;
 }
 
 const HTTP: Record<string, number> = { INVALID_INPUT: 400, UNSUPPORTED: 400, UNAUTHORIZED: 403, INVALID_TRANSITION: 409, UNAVAILABLE: 503 };
@@ -138,6 +167,7 @@ async function probeIntegrations(s: Services, env: ApiEnv, nowIso: string) {
     } catch (e) { set('github', 'unhealthy', e instanceof Error ? e.message.slice(0, 150) : 'failed', true); }
   }
   set('tinanai', s.provider ? 'configured' : 'not-configured', s.provider ? 'Secrets present; not probed (no health endpoint is documented).' : 'TINANAI_* secrets not set.');
+  set('tinanai-builder', s.builder ? 'configured' : 'not-configured', s.builder ? 'Builder generation enabled; not probed (no health endpoint is documented). Contract unverified live.' : 'TINANAI_BUILDER_ENABLED is not "true" or TINANAI_* secrets are missing; generation is blocked.');
   set('sandbox', s.sandbox ? 'configured' : 'not-configured', s.sandbox ? 'Runner URL/token present; not probed.' : 'SANDBOX_URL / SANDBOX_TOKEN not set.');
   return result;
 }
@@ -191,7 +221,7 @@ export async function handleApi(request: Request, env: ApiEnv, overrides: ApiOve
       const level = b.grantedLevel === undefined ? 2 : b.grantedLevel;
       if (!isPermissionLevel(level) || level > MAX_AUTONOMOUS_LEVEL) return json({ error: `grantedLevel must be 1-${MAX_AUTONOMOUS_LEVEL}.` }, 400);
       if (b.pipeline !== undefined && (typeof b.pipeline !== 'string' || !(b.pipeline in PIPELINES))) return json({ error: 'Unknown pipeline.' }, 400);
-      const r = await engine.create({ id: String(b.id), objective: String(b.objective ?? ''), productId: typeof b.productId === 'string' ? b.productId : undefined, grantedLevel: level, pipeline: b.pipeline as PipelineId | undefined });
+      const r = await engine.create({ id: String(b.id), objective: String(b.objective ?? ''), productId: typeof b.productId === 'string' ? b.productId : undefined, grantedLevel: level, pipeline: b.pipeline as PipelineId | undefined }, id.email);
       return r.ok ? json({ workflow: view(r.value) }, 201) : err(r.error);
     }
 
@@ -219,13 +249,25 @@ export async function handleApi(request: Request, env: ApiEnv, overrides: ApiOve
         : await engine.reject(wid, body.stageId, id.email, String(body.reason ?? '')));
     }
     if (!can(id, 'operator')) return json({ error: 'Operator role required.' }, 403);
-    if (action === 'cancel') return done(await engine.cancel(wid));
-    if (action === 'retry') return done(await engine.retry(wid));
+    if (action === 'cancel') {
+      const before = await engine.get(wid);
+      const r = await engine.cancel(wid, id.email);
+      if (r.ok && before?.pipeline === 'builder-delivery-v1' && services.builder) {
+        // The task id comes only from this workflow's own stored stage output, never from the request.
+        try {
+          const out = before.stages.find((s) => s.id === 'builder-submit')?.output;
+          const taskId = out ? (JSON.parse(out) as { taskId?: unknown }).taskId : undefined;
+          if (typeof taskId === 'string') await services.builder.cancel(taskId);
+        } catch { /* best effort: the workflow is already cancelled and late results are discarded */ }
+      }
+      return done(r);
+    }
+    if (action === 'retry') return done(await engine.retry(wid, id.email));
     if (action === 'recover') return done(await engine.recover(wid));
     if (action === 'advance') {
       const w = await engine.get(wid);
       if (!w) return json({ error: 'Not found.' }, 404);
-      return done(await engine.advance(wid, services.handlers[w.pipeline ?? 'project-v1'] ?? {}, { timeoutMs: 25_000 }));
+      return done(await engine.advance(wid, services.handlers[w.pipeline ?? 'project-v1'] ?? {}, { timeoutMs: 25_000, unavailable: services.unavailable?.[w.pipeline ?? 'project-v1'] }));
     }
     return json({ error: 'Not found.' }, 404);
   } catch {

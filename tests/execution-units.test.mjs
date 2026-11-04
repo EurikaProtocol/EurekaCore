@@ -97,20 +97,6 @@ test('sandbox: remote client authenticates, validates results and fails on bad r
   assert.throws(() => sb.parseSandboxConfig({ SANDBOX_URL: 'http://insecure.example', SANDBOX_TOKEN: 't'.repeat(32) }));
 });
 
-test('executors: generated-file proposals are strictly validated', () => {
-  const prefix = 'generated/w1/';
-  const body = (files) => '```json\n' + JSON.stringify({ files }) + '\n```';
-  const t = { path: `${prefix}a.test.mjs`, content: 'x' };
-  assert.equal(ex.parseGeneratedFiles(body([t]), prefix).length, 1);
-  const rejects = [
-    body([{ path: 'src/evil.js', content: 'x' }, t]), body([{ path: `${prefix}../../x.js`, content: 'x' }, t]),
-    body([{ path: `${prefix}.github/workflows/a.yml`, content: 'x' }, t]), body([{ path: `${prefix}a.js`, content: 'x' }]),
-    body([t, t]), body([]), 'no json here', body([{ path: `${prefix}big.test.mjs`, content: 'x'.repeat(ex.MAX_GENERATED_CHARS + 1) }]),
-    body(Array.from({ length: ex.MAX_GENERATED_FILES + 1 }, (_, i) => ({ path: `${prefix}f${i}.test.mjs`, content: 'x' }))),
-  ];
-  for (const r of rejects) assert.throws(() => ex.parseGeneratedFiles(r, prefix));
-});
-
 test('docker sandbox: real container has no network, cannot write the mount, and is killed on timeout', { skip: !dockerUp && 'docker image node:22-alpine unavailable' }, async () => {
   const runner = new DockerSandboxRunner();
   const file = (content) => [{ path: 'a.test.mjs', content: `import test from 'node:test';import assert from 'node:assert';import fs from 'node:fs';import net from 'node:net';\n${content}` }];

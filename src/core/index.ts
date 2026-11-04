@@ -14,3 +14,4 @@ export * from './registry';
 export * from './audit';
 export * from './workflow';
 export * from './agent-stage';
+export * from './builder';

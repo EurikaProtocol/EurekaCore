@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -101,7 +102,49 @@ export function makeFakeTinan(mode = {}) {
   return { calls, handle, mode };
 }
 
-export async function startWorker({ persist, idp, github, tinan, sandboxRunner, extraBindings = {}, authConfigured = true }) {
+
+export const BUILDER_TASK_ID = '11111111-1111-4111-8111-111111111111';
+export const BUILDER_PROJECT_ID = '22222222-2222-4222-8222-222222222222';
+export const BUILDER_PLAN = { summary: 'A tiny sum utility', technology: ['node'], features: ['sum'], steps: ['write sum.mjs', 'write sum.test.mjs'] };
+export const BUILDER_FILES = ({ failing = false } = {}) => ({
+  'sum.mjs': 'export const sum = (a, b) => a + b;\n',
+  'sum.test.mjs': `import test from 'node:test';\nimport assert from 'node:assert/strict';\nimport { sum } from './sum.mjs';\ntest('sum', () => assert.equal(sum(2, 2), ${failing ? 5 : 4}));\n`,
+});
+
+/**
+ * TINAN AI Builder stand-in modelled on TinanAi's project routes (task record, files listed by path, one file per request).
+ * Contract fake, NOT a live TINAN AI. It rejects non-GET requests whose Origin is not its own, like TinanAi's proxy.
+ */
+export function makeFakeBuilder(mode = {}) {
+  const state = { status: null, requirements: null, calls: [], approvals: 0, cancels: 0, files: mode.files ?? BUILDER_FILES({ failing: mode.failingTests }), mode };
+  const ownerId = mode.ownerId ?? createHash('sha256').update('svc').digest('hex');
+  const j = (b, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { 'content-type': 'application/json' } });
+  const task = () => ({ id: BUILDER_TASK_ID, ownerId, kind: 'project', projectId: state.status === 'completed' ? BUILDER_PROJECT_ID : null, requirements: state.requirements, plan: state.status === 'planning' ? null : (state.mode.plan ?? BUILDER_PLAN), status: state.status, progress: 0, errors: [] });
+  state.handle = async (req) => {
+    const u = new URL(req.url);
+    state.calls.push(`${req.method} ${u.pathname}`);
+    if (!req.headers.get('authorization')?.startsWith('Basic ')) return j({ error: 'auth' }, 401);
+    if (req.method !== 'GET' && req.headers.get('origin') !== 'https://tinan.test') return j({ error: 'origin' }, 403);
+    const p = u.pathname;
+    if (req.method === 'POST' && p === '/api/projects') { const b = await req.json(); state.requirements = b.requirements; state.status = 'planning'; return j({ task: task() }, 202); }
+    if (req.method === 'GET' && p === `/api/projects/tasks/${BUILDER_TASK_ID}`) { if (state.status === 'planning') state.status = 'awaiting_approval'; return j({ task: task() }); }
+    if (req.method === 'POST' && p === `/api/projects/tasks/${BUILDER_TASK_ID}/approval`) {
+      const b = await req.json();
+      if (b.approved !== true || state.status !== 'awaiting_approval') return j({ error: 'state' }, 409);
+      state.approvals++; state.status = 'completed'; return j({ task: task() }, 202);
+    }
+    if (req.method === 'POST' && p === `/api/projects/tasks/${BUILDER_TASK_ID}/cancel`) { state.cancels++; state.status = 'cancelled'; return j({ task: task() }); }
+    if (req.method === 'GET' && p === `/api/projects/${BUILDER_PROJECT_ID}`) return j({ project: { id: BUILDER_PROJECT_ID, ownerId, files: Object.keys(state.files) } });
+    if (req.method === 'GET' && p === `/api/projects/${BUILDER_PROJECT_ID}/files`) {
+      const path = u.searchParams.get('path');
+      return typeof state.files[path] === 'string' ? j({ path, content: state.files[path] }) : j({ error: 'nf' }, 404);
+    }
+    return j({ error: 'not found' }, 404);
+  };
+  return state;
+}
+
+export async function startWorker({ persist, idp, github, tinan, builder, sandboxRunner, extraBindings = {}, authConfigured = true }) {
   const outdir = mkdtempSync(join(tmpdir(), 'eureka-assets-'));
   const outfile = bundleWorker();
   const mf = new Miniflare({
@@ -126,7 +169,7 @@ export async function startWorker({ persist, idp, github, tinan, sandboxRunner, 
       const u = new URL(req.url);
       if (u.hostname === TEAM) return new Response(JSON.stringify(idp.jwks), { headers: { 'content-type': 'application/json' } });
       if (u.hostname === 'api.github.com') return github.handle(req);
-      if (u.hostname === 'tinan.test') return tinan.handle(req);
+      if (u.hostname === 'tinan.test') return builder && u.pathname.startsWith('/api/projects') ? builder.handle(req) : tinan.handle(req);
       if (u.hostname === 'sandbox.test') {
         if (req.headers.get('authorization') !== 'Bearer ' + 's'.repeat(32)) return new Response('no', { status: 401 });
         return new Response(JSON.stringify(await sandboxRunner.run(await req.json())), { headers: { 'content-type': 'application/json' } });

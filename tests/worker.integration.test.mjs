@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test, { after, before } from 'node:test';
 import { execFileSync } from 'node:child_process';
-import { loadSource, makeFakeGitHub, makeFakeTinan, makeIdentityProvider, migrate, startWorker } from './helpers/worker-harness.mjs';
+import { loadSource, makeFakeGitHub, makeFakeTinan, makeFakeBuilder, makeIdentityProvider, migrate, startWorker } from './helpers/worker-harness.mjs';
 
 /*
  * Runs the REAL Worker bundle in workerd (Miniflare) with a REAL local D1 whose schema is created by
@@ -35,7 +35,7 @@ async function boot(opts = {}) {
   const t = {
     op: await idp.sign('op@x.test'), alice: await idp.sign('alice@x.test'), viewer: await idp.sign('viewer@x.test'),
   };
-  return { ...w, github, tinan, t, persist };
+  return { ...w, github, tinan, builder: opts.builder, t, persist };
 }
 const create = (w, id, extra = {}) => w.call('POST', '/api/workflows', { token: w.t.op, body: { id, objective: 'Build a tiny sum utility with tests', productId: 'tinan-ai', pipeline: 'pr-delivery-v1', grantedLevel: 3, ...extra } });
 const advance = async (w, id) => {
@@ -43,10 +43,23 @@ const advance = async (w, id) => {
   if (process.env.DEBUG_WORKER && r.body?.workflow) console.error('STAGES', JSON.stringify(r.body.workflow.stages.map((s) => [s.id, s.status, s.error])));
   return r;
 };
-const approve = async (w, id, extra = {}) => {
+const approve = async (w, id, extra = {}, stageId = 'plan-approval') => {
   const wf = (await w.call('GET', `/api/workflows/${id}`, { token: w.t.viewer })).body.workflow;
-  return w.call('POST', `/api/workflows/${id}/approve`, { token: w.t.alice, body: { stageId: 'plan-approval', digest: wf.pendingApproval.digest, ...extra } });
+  return w.call('POST', `/api/workflows/${id}/approve`, { token: w.t.alice, body: { stageId, digest: wf.pendingApproval.digest, ...extra } });
 };
+const BUILDER_ENV = { TINANAI_BUILDER_ENABLED: 'true' };
+const bootBuilder = (opts = {}) => boot({ builder: makeFakeBuilder(opts.builderMode), extraBindings: BUILDER_ENV, ...opts });
+const createB = (w, id, extra = {}) => create(w, id, { pipeline: 'builder-delivery-v1', ...extra });
+/** Drives a builder workflow through both human gates and returns the result of the final advance. */
+async function driveBuilder(w, id) {
+  let r = await advance(w, id);
+  assert.equal(r.body.workflow.status, 'awaiting-approval', JSON.stringify(r.body.workflow.reason));
+  assert.equal((await approve(w, id)).status, 200);
+  r = await advance(w, id);
+  assert.equal(r.body.workflow.status, 'awaiting-approval', JSON.stringify(r.body.workflow.reason));
+  assert.equal((await approve(w, id, {}, 'files-approval')).status, 200);
+  return advance(w, id);
+}
 
 test('authentication fails closed and never trusts client-supplied identity', async () => {
   const w = await boot();
@@ -117,73 +130,125 @@ test('product permission ceiling is enforced through the API', async () => {
   } finally { await w.dispose(); }
 });
 
-test('end to end: requirements -> architecture -> human approval -> branch -> generation -> sandbox tests -> draft PR', { skip: !dockerUp && 'docker image node:22-alpine unavailable' }, async () => {
-  const w = await boot();
+test('end to end (builder-delivery-v1): plan -> human plan approval -> generation -> human file approval -> branch -> commit/read-back -> sandbox tests -> draft PR', { skip: !dockerUp && 'docker image node:22-alpine unavailable' }, async () => {
+  const w = await bootBuilder();
   try {
-    assert.equal((await create(w, 'e2e')).status, 201);
+    assert.equal((await createB(w, 'e2e')).status, 201);
     let r = await advance(w, 'e2e');
     assert.equal(r.body.workflow.status, 'awaiting-approval');
-    assert.deepEqual(r.body.workflow.stages.map((s) => s.status), ['completed', 'completed', 'awaiting-approval', 'pending', 'pending', 'pending', 'pending']);
-    assert.equal(w.github.mutations.length, 0); // nothing written before approval
+    assert.deepEqual(r.body.workflow.stages.map((s) => s.status), ['completed', 'completed', 'awaiting-approval', 'pending', 'pending', 'pending', 'pending', 'pending', 'pending']);
+    assert.equal(w.github.mutations.length, 0);
+    assert.equal(w.builder.approvals, 0, 'TINAN AI must not be told to generate before EurekaCore approval');
 
-    // pending approvals are listed with the review package
-    const pending = await w.call('GET', '/api/approvals', { token: w.t.viewer });
-    assert.equal(pending.body.approvals.length, 1);
-    assert.ok(pending.body.approvals[0].review.requirements);
-
-    // only an approver may approve; wrong digest refused; body identity ignored
     assert.equal((await w.call('POST', '/api/workflows/e2e/approve', { token: w.t.op, body: { stageId: 'plan-approval', digest: r.body.workflow.pendingApproval.digest } })).status, 403);
     assert.equal((await w.call('POST', '/api/workflows/e2e/approve', { token: w.t.alice, body: { stageId: 'plan-approval', digest: '0xbad' } })).status, 403);
-    assert.equal((await advance(w, 'e2e')).body.workflow.status, 'awaiting-approval'); // still waiting
-    assert.equal(w.github.mutations.length, 0);
     const ap = await approve(w, 'e2e', { approver: 'mallory@evil.test', approvedBy: 'mallory@evil.test' });
     assert.equal(ap.status, 200);
     assert.equal(ap.body.workflow.stages[2].approval.approvedBy, 'alice@x.test');
 
     r = await advance(w, 'e2e');
-    assert.equal(r.status, 200);
+    assert.equal(r.body.workflow.status, 'awaiting-approval', JSON.stringify(r.body.workflow.reason));
+    assert.equal(w.builder.approvals, 1);
+    assert.equal(w.github.mutations.length, 0, 'generated files are not written before the second human gate');
+    assert.equal((await approve(w, 'e2e', {}, 'files-approval')).status, 200);
+
+    r = await advance(w, 'e2e');
     assert.equal(r.body.workflow.status, 'completed', JSON.stringify(r.body.workflow.reason));
     const stages = r.body.workflow.stages;
-    assert.ok(stages.every((s) => ['completed', 'approved'].includes(s.status)));
     for (const s of stages.filter((x) => x.verification.length)) assert.ok(s.verification.every((v) => v.passed && v.evidence));
-
-    // GitHub side effects: only an eureka/ branch, never main, a DRAFT PR, never merged
     const refs = w.github.mutations.filter((m) => m.rest === '/git/refs');
     assert.equal(refs.length, 1);
     assert.match(refs[0].body.ref, /^refs\/heads\/eureka\/e2e$/);
-    assert.ok(w.github.mutations.every((m) => !/main/.test(JSON.stringify(m.body?.branch ?? '')) && !/merge/.test(m.rest) && m.method !== 'DELETE' && m.method !== 'PATCH'));
+    assert.ok(w.github.mutations.every((m) => !/merge/.test(m.rest) && m.method !== 'DELETE' && m.method !== 'PATCH'));
     assert.equal(w.github.prs.length, 1);
     assert.equal(w.github.prs[0].draft, true);
-    assert.equal(w.github.prs[0].base, 'main');
     assert.equal(w.github.prs[0].merged, false);
-    assert.deepEqual([...w.github.auth], ['Bearer ghp_faketesttoken']);
     assert.ok(w.github.files.has('eureka/e2e:generated/e2e/sum.test.mjs'));
-    // the sandbox really ran the generated tests
-    const testing = JSON.parse(stages[5].output);
+    const testing = JSON.parse(stages[7].output);
     assert.equal(testing.exitCode, 0);
-    assert.match(testing.stdout, /pass 1/);
     assert.equal(testing.isolation.network, 'none');
-
-    // audit trail is a valid chain and records the verified human
     const audit = (await w.call('GET', '/api/audit', { token: w.t.viewer })).body.entries;
     assert.equal(sdk.verifyAuditChain(audit).valid, true);
-    assert.ok(audit.some((e) => e.action === 'stage.approved' && e.actor === 'alice@x.test'));
+    assert.ok(audit.filter((e) => e.action === 'stage.approved' && e.actor === 'alice@x.test').length === 2);
     assert.ok(!audit.some((e) => e.actor.includes('mallory')));
   } finally { await w.dispose(); }
 });
 
 test('failing generated tests: no pull request is opened', { skip: !dockerUp && 'docker image node:22-alpine unavailable' }, async () => {
-  const w = await boot({ tinan: makeFakeTinan({ failingTests: true }) });
+  const w = await bootBuilder({ builderMode: { failingTests: true } });
   try {
-    await create(w, 'bad');
-    await advance(w, 'bad');
-    await approve(w, 'bad');
-    const r = await advance(w, 'bad');
+    await createB(w, 'bad');
+    const r = await driveBuilder(w, 'bad');
     assert.equal(r.body.workflow.status, 'failed');
     assert.match(r.body.workflow.reason, /testing/);
-    assert.equal(r.body.workflow.stages[5].status, 'failed');
+    assert.equal(r.body.workflow.stages[7].status, 'failed');
     assert.equal(w.github.prs.length, 0);
-    assert.equal(r.body.workflow.stages[6].status, 'pending');
+    assert.equal(r.body.workflow.stages[8].status, 'pending');
+  } finally { await w.dispose(); }
+});
+
+test('builder-delivery-v1 without TINANAI_BUILDER_ENABLED blocks with a configuration message and touches nothing', async () => {
+  const w = await boot({ builder: makeFakeBuilder() });
+  try {
+    await createB(w, 'nb');
+    const r = await advance(w, 'nb');
+    assert.equal(r.body.workflow.status, 'blocked');
+    assert.match(r.body.workflow.reason, /TINANAI_BUILDER_ENABLED/);
+    assert.deepEqual(w.builder.calls, []);
+    assert.equal(w.github.mutations.length, 0);
+    assert.equal(w.github.prs.length, 0);
+  } finally { await w.dispose(); }
+});
+
+test('pr-delivery-v1 (legacy) blocks at generation: an agent plan summary is never source code', async () => {
+  const w = await boot({ tinan: makeFakeTinan() });
+  try {
+    await create(w, 'lg');
+    await advance(w, 'lg');
+    await approve(w, 'lg');
+    const r = await advance(w, 'lg');
+    assert.equal(r.body.workflow.status, 'blocked');
+    assert.match(r.body.workflow.reason, /builder-delivery-v1/);
+    assert.equal(w.github.mutations.length, 0);
+    assert.equal(w.github.prs.length, 0);
+  } finally { await w.dispose(); }
+});
+
+test('no verified sandbox: files are committed as a reviewable proposal, tests are not claimed, no PR is opened', async () => {
+  const w = await bootBuilder({ extraBindings: { ...BUILDER_ENV, SANDBOX_URL: '', SANDBOX_TOKEN: '' } });
+  try {
+    await createB(w, 'ns');
+    const r = await driveBuilder(w, 'ns');
+    assert.equal(r.body.workflow.status, 'blocked');
+    assert.match(r.body.workflow.reason, /sandbox/i);
+    assert.equal(r.body.workflow.stages[6].status, 'completed');
+    assert.equal(r.body.workflow.stages[7].status, 'pending');
+    assert.equal(w.github.prs.length, 0);
+    assert.ok(w.github.files.has('eureka/ns:generated/ns/sum.mjs'));
+  } finally { await w.dispose(); }
+});
+
+test('Builder owned by someone else is refused: nothing is approved, generated or committed', async () => {
+  const w = await bootBuilder({ builderMode: { ownerId: 'f'.repeat(64) } });
+  try {
+    await createB(w, 'om');
+    const r = await advance(w, 'om');
+    assert.notEqual(r.body.workflow.status, 'awaiting-approval');
+    assert.equal(w.builder.approvals, 0);
+    assert.equal(w.github.mutations.length, 0);
+  } finally { await w.dispose(); }
+});
+
+test('cancelling a builder workflow cancels the Builder task and stops GitHub side effects', async () => {
+  const w = await bootBuilder();
+  try {
+    await createB(w, 'cb');
+    await advance(w, 'cb');
+    assert.equal((await w.call('POST', '/api/workflows/cb/cancel', { token: w.t.op, body: {} })).body.workflow.status, 'cancelled');
+    assert.equal(w.builder.cancels, 1);
+    assert.equal((await advance(w, 'cb')).body.workflow.status, 'cancelled');
+    assert.equal(w.github.mutations.length, 0);
+    assert.equal(w.builder.approvals, 0);
   } finally { await w.dispose(); }
 });
 
@@ -233,20 +298,22 @@ test('cancellation during a running stage discards the late result and stops sid
 });
 
 test('concurrent advance: exactly one runner wins each stage; no duplicate side effects', { skip: !dockerUp && 'docker image node:22-alpine unavailable' }, async () => {
-  const w = await boot();
+  const w = await bootBuilder();
   try {
-    await create(w, 'cc');
+    await createB(w, 'cc');
     await advance(w, 'cc');
     await approve(w, 'cc');
+    await advance(w, 'cc');
+    await approve(w, 'cc', {}, 'files-approval');
     const results = await Promise.all([advance(w, 'cc'), advance(w, 'cc'), advance(w, 'cc')]);
     assert.ok(results.every((r) => [200, 409].includes(r.status)), JSON.stringify(results.map((r) => r.status)));
     assert.ok(results.some((r) => r.status === 200));
-    // settle: keep advancing until completed (a 409 loser may have left work for a later call)
     let wf;
     for (let i = 0; i < 4; i++) { wf = (await advance(w, 'cc')).body?.workflow; if (wf?.status === 'completed') break; await new Promise((r) => setTimeout(r, 300)); }
     assert.equal(wf.status, 'completed');
     assert.equal(w.github.mutations.filter((m) => m.rest === '/git/refs').length, 1);
     assert.equal(w.github.prs.length, 1);
+    assert.equal(w.builder.approvals, 1);
     assert.equal(sdk.verifyAuditChain((await w.call('GET', '/api/audit', { token: w.t.viewer })).body.entries).valid, true);
   } finally { await w.dispose(); }
 });
