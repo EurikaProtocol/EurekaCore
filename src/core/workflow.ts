@@ -52,8 +52,25 @@ export const PR_DELIVERY_PIPELINE: readonly StageDefinition[] = [
   { id: 'pull-request', title: 'Open draft pull request', kind: 'work', role: 'deployment', level: 3, acceptance: ['Draft pull request exists on GitHub', 'Pull request is not merged'] },
 ];
 
-export const PIPELINES: Record<string, readonly StageDefinition[]> = { 'project-v1': PROJECT_PIPELINE, 'pr-delivery-v1': PR_DELIVERY_PIPELINE };
-export type PipelineId = 'project-v1' | 'pr-delivery-v1';
+/**
+ * Delivery workflow backed by the TINAN AI Builder (a project-generation service, not an agent planner). Two separate
+ * human gates: one binds the exact Builder plan, one binds the exact generated file manifest. Files only reach GitHub
+ * after the second gate, on a protected `eureka/*` branch, and are read back and compared byte for byte.
+ */
+export const BUILDER_DELIVERY_PIPELINE: readonly StageDefinition[] = [
+  { id: 'builder-submit', title: 'Submit requirements to TINAN AI Builder', kind: 'work', role: 'product-manager', level: 2, acceptance: ['Builder task created for the submitted requirements', 'Builder task is owned by the EurekaCore service identity'] },
+  { id: 'builder-plan', title: 'Retrieve Builder project plan', kind: 'work', role: 'chief-architect', level: 2, acceptance: ['Builder returned a valid project plan', 'Plan digest recomputed from the retrieved plan'] },
+  { id: 'plan-approval', title: 'Plan approval (human)', kind: 'approval', role: null, level: 2, acceptance: ['A human approved the exact plan digest'] },
+  { id: 'builder-generation', title: 'Generate project files after approval', kind: 'work', role: 'full-stack-builder', level: 3, needsApproval: 'plan-approval', acceptance: ['Plan unchanged since approval', 'Generated file set passed path, size, duplicate and ownership validation'] },
+  { id: 'files-approval', title: 'Generated files approval (human)', kind: 'approval', role: null, level: 2, acceptance: ['A human approved the exact file manifest digest'] },
+  { id: 'branch', title: 'Create development branch', kind: 'work', role: 'full-stack-builder', level: 3, needsApproval: 'files-approval', acceptance: ['Branch exists on GitHub', 'Branch is not the default branch'] },
+  { id: 'commit', title: 'Commit approved files to development branch', kind: 'work', role: 'full-stack-builder', level: 3, needsApproval: 'files-approval', acceptance: ['Builder content matches the approved manifest', 'Files committed to the development branch and read back identical'] },
+  { id: 'testing', title: 'Sandboxed tests', kind: 'work', role: 'qa', level: 3, acceptance: ['Tests ran in an isolated sandbox', 'Test command exited 0 with at least one passing test'] },
+  { id: 'pull-request', title: 'Open draft pull request', kind: 'work', role: 'deployment', level: 3, acceptance: ['Draft pull request exists on GitHub', 'Pull request is not merged'] },
+];
+
+export const PIPELINES: Record<string, readonly StageDefinition[]> = { 'project-v1': PROJECT_PIPELINE, 'pr-delivery-v1': PR_DELIVERY_PIPELINE, 'builder-delivery-v1': BUILDER_DELIVERY_PIPELINE };
+export type PipelineId = 'project-v1' | 'pr-delivery-v1' | 'builder-delivery-v1';
 
 /** Records created before pipelines were selectable have no `pipeline` field and use the original one. */
 export function pipelineOf(w: { pipeline?: string }): readonly StageDefinition[] {
@@ -146,6 +163,8 @@ export const MAX_STAGE_ATTEMPTS = 3;
 export const MAX_OUTPUT_LENGTH = 20_000;
 export const DEFAULT_STAGE_TIMEOUT_MS = 30_000;
 const LEASE_GRACE_MS = 30_000;
+/** A gate can be approved only within this window after it starts waiting; afterwards `advance` re-opens it. */
+export const APPROVAL_TTL_MS = 24 * 60 * 60 * 1000;
 const ID = /^[A-Za-z0-9._:-]{1,128}$/;
 const TERMINAL: readonly WorkflowStatus[] = ['completed', 'failed', 'cancelled'];
 
@@ -166,7 +185,7 @@ export class WorkflowEngine {
     private readonly clock: () => string = () => new Date().toISOString()
   ) {}
 
-  async create(input: { id: string; objective: string; productId?: string; grantedLevel?: PermissionLevel; pipeline?: PipelineId }): Promise<Result<WorkflowRecord>> {
+  async create(input: { id: string; objective: string; productId?: string; grantedLevel?: PermissionLevel; pipeline?: PipelineId }, actor = 'user'): Promise<Result<WorkflowRecord>> {
     if (!ID.test(input.id)) return fail('INVALID_INPUT', 'Workflow id must be 1-128 characters of letters, digits and . _ : -.');
     const objective = typeof input.objective === 'string' ? input.objective.trim() : '';
     if (!objective || objective.length > 4000) return fail('INVALID_INPUT', 'Objective must be 1-4000 characters.');
@@ -189,7 +208,7 @@ export class WorkflowEngine {
       stages: PIPELINES[pipelineId].map((s) => ({ id: s.id, status: 'pending', attempts: 0, output: null, verification: [], error: null, leaseExpiresAt: null, approval: null, startedAt: null, finishedAt: null })),
     };
     if (!(await this.store.create(record))) return fail('INVALID_INPUT', `Workflow "${input.id}" already exists.`);
-    await this.log('workflow.created', record.id, 'user', { productId, grantedLevel: granted });
+    await this.log('workflow.created', record.id, actor, { productId, grantedLevel: granted });
     return ok(record);
   }
 
@@ -219,7 +238,7 @@ export class WorkflowEngine {
    * Advances the workflow until it completes, needs a human, is blocked, or a stage fails.
    * Stops with a reason instead of skipping stages: a stage without a handler blocks the workflow.
    */
-  async advance(id: string, handlers: Record<string, StageHandler>, options: { timeoutMs?: number } = {}): Promise<Result<WorkflowRecord>> {
+  async advance(id: string, handlers: Record<string, StageHandler>, options: { timeoutMs?: number; unavailable?: Record<string, string> } = {}): Promise<Result<WorkflowRecord>> {
     for (;;) {
       const current = await this.store.get(id);
       if (!current) return fail('INVALID_INPUT', `Unknown workflow "${id}".`);
@@ -240,8 +259,14 @@ export class WorkflowEngine {
       if (rec.status === 'failed') return this.block(current, 'failed', `Stage "${def.id}" failed: ${rec.error ?? 'unknown error'}. Call retry() to try again.`);
 
       if (def.kind === 'approval') {
-        if (rec.status === 'awaiting-approval' && current.status === 'awaiting-approval') return ok(current);
-        const waiting = await this.commit(current, (r) => { r.status = 'awaiting-approval'; r.reason = `Waiting for human approval: ${def.title}.`; r.stages[index].status = 'awaiting-approval'; });
+        if (rec.status === 'awaiting-approval' && current.status === 'awaiting-approval') {
+          if (!this.approvalExpired(rec)) return ok(current);
+          // An expired window is never honoured; it is re-opened so a fresh, explicit decision is required.
+          const renewed = await this.commit(current, (r) => { r.stages[index].startedAt = this.clock(); r.reason = `Approval window expired; waiting for a fresh human approval: ${def.title}.`; });
+          if (renewed.ok) await this.log('stage.approval-expired', id, 'orchestrator', { stage: def.id, digest: reviewDigest(renewed.value, def.id) });
+          return renewed;
+        }
+        const waiting = await this.commit(current, (r) => { r.status = 'awaiting-approval'; r.reason = `Waiting for human approval: ${def.title}.`; r.stages[index].status = 'awaiting-approval'; r.stages[index].startedAt = this.clock(); });
         if (waiting.ok) await this.log('stage.awaiting-approval', id, 'orchestrator', { stage: def.id, digest: reviewDigest(waiting.value, def.id) });
         return waiting;
       }
@@ -249,7 +274,7 @@ export class WorkflowEngine {
       const denied = this.permissionDenial(current, def);
       if (denied) return this.block(current, 'blocked', denied);
       const handler = handlers[def.id];
-      if (!handler) return this.block(current, 'blocked', `No executor is configured for stage "${def.id}"; nothing was run or simulated.`);
+      if (!handler) return this.block(current, 'blocked', `No executor is configured for stage "${def.id}"; nothing was run or simulated.${options.unavailable?.[def.id] ? ` ${options.unavailable[def.id]}` : ''}`);
       if (rec.attempts >= MAX_STAGE_ATTEMPTS) return this.block(current, 'failed', `Stage "${def.id}" exhausted ${MAX_STAGE_ATTEMPTS} attempts.`);
 
       const timeoutMs = options.timeoutMs ?? DEFAULT_STAGE_TIMEOUT_MS;
@@ -285,7 +310,16 @@ export class WorkflowEngine {
     return !s.leaseExpiresAt || Date.parse(s.leaseExpiresAt) <= Date.parse(this.clock());
   }
 
+  private approvalExpired(rec: StageRecord): boolean {
+    const since = rec.startedAt ? Date.parse(rec.startedAt) : NaN;
+    return !Number.isFinite(since) || Date.parse(this.clock()) - since > APPROVAL_TTL_MS;
+  }
+
   private permissionDenial(w: WorkflowRecord, def: StageDefinition): string | null {
+    // A named gate must be approved at any level; levels 5-6 additionally can never be covered by a grant.
+    if (def.needsApproval && w.stages.find((s) => s.id === def.needsApproval)?.status !== 'approved') {
+      return `Stage "${def.id}" needs approval from "${def.needsApproval}".`;
+    }
     if (requiresHumanApproval(def.level)) {
       const gate = def.needsApproval ? w.stages.find((s) => s.id === def.needsApproval) : undefined;
       return gate?.status === 'approved' ? null : `Stage "${def.id}" is level ${def.level} and needs approval from "${def.needsApproval}".`;
@@ -336,6 +370,7 @@ export class WorkflowEngine {
     if (index === -1 || def.kind !== 'approval') return fail('INVALID_INPUT', `"${stageId}" is not an approval gate.`);
     if (w.stages[index].status !== 'awaiting-approval' || w.status !== 'awaiting-approval') return fail('INVALID_TRANSITION', `Gate "${stageId}" is not awaiting approval.`);
     if (typeof approver !== 'string' || !approver.trim() || approver.length > 200 || approver === 'orchestrator') return fail('UNAUTHORIZED', 'A named human approver is required.');
+    if (this.approvalExpired(w.stages[index])) return fail('UNAUTHORIZED', 'The approval window expired; advance the workflow to re-open the gate and review it again.');
     if (digest !== reviewDigest(w, stageId)) return fail('UNAUTHORIZED', 'Approval digest does not match the current content; review it again.');
     const at = this.clock();
     const r = await this.commit(w, (x) => {
@@ -359,14 +394,14 @@ export class WorkflowEngine {
   }
 
   /** Re-queues the failed stage (within the attempt limit). */
-  async retry(id: string): Promise<Result<WorkflowRecord>> {
+  async retry(id: string, actor = 'user'): Promise<Result<WorkflowRecord>> {
     const w = await this.store.get(id);
     if (!w) return fail('INVALID_INPUT', `Unknown workflow "${id}".`);
     const index = w.stages.findIndex((s) => s.status === 'failed');
     if (index === -1) return fail('INVALID_TRANSITION', 'No failed stage to retry.');
     if (w.stages[index].attempts >= MAX_STAGE_ATTEMPTS) return fail('INVALID_TRANSITION', `Stage "${w.stages[index].id}" has no attempts left.`);
     const r = await this.commit(w, (x) => { x.stages[index].status = 'pending'; x.status = 'planned'; x.reason = null; });
-    if (r.ok) await this.log('stage.retry', id, 'user', { stage: w.stages[index].id });
+    if (r.ok) await this.log('stage.retry', id, actor, { stage: w.stages[index].id });
     return r;
   }
 
@@ -384,14 +419,14 @@ export class WorkflowEngine {
     return r;
   }
 
-  async cancel(id: string): Promise<Result<WorkflowRecord>> {
+  async cancel(id: string, actor = 'user'): Promise<Result<WorkflowRecord>> {
     const w = await this.store.get(id);
     if (!w) return fail('INVALID_INPUT', `Unknown workflow "${id}".`);
     if (TERMINAL.includes(w.status)) return fail('INVALID_TRANSITION', `Cannot cancel a ${w.status} workflow.`);
     const r = await this.commit(w, (x) => { x.status = 'cancelled'; x.reason = 'Cancelled by user.'; });
     if (r.ok) {
       this.running.get(id)?.abort();
-      await this.log('workflow.cancelled', id, 'user');
+      await this.log('workflow.cancelled', id, actor);
     }
     return r;
   }
