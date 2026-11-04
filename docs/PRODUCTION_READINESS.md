@@ -20,7 +20,7 @@
 
 - `npm ci`: completed (866 packages installed). npm reported 26 advisories (12 moderate, 14 high).
 - `npm run verify`: completed, including production build, routing/unit/integration tests, and `wrangler deploy --dry-run --config wrangler.toml`.
-- Test summary: 119 total, 114 passed, 5 skipped, 0 failed. Docker-dependent worker integration scenarios are skipped when the `node:22-alpine` Docker image is unavailable.
+- Test summary: 119 total, 114 passed, 5 skipped, 0 failed. Four container-backed scenarios are skipped when the `node:22-alpine` Docker image is unavailable; the opt-in live GitHub test was also skipped because it was not enabled.
 - `npm run build`: completed. Vite warns that the classic `<script src="script.js">` in `eureka-legacy.html` cannot be bundled without `type="module"`; it remains a static runtime asset.
 - The CI `node scripts/audit-check.mjs` is a separate workflow step; its latest observed successful run was in workflow `41892935402`. Its allowlisted advisory baseline is not equivalent to a clean npm audit.
 
