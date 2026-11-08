@@ -30,6 +30,23 @@ does not make deployed contract storage secret. If these values are actual
 credentials and this contract/source has been deployed or shared publicly,
 revoke or rotate them. Their values are intentionally not repeated here.
 
+### Second supplied file
+
+The later upload `0_EurikaProtocol_2_1794159137048.txt` is a multi-file
+`EURIKA_PROTOCOL_MONOLITH` package. Its Solidity section declares
+`EurikaRegistry` (Solidity `^0.8.21`), exposing `registerWallet` and
+`pushAnalysis`, not `EurekaToken` or the standard ERC-20 interface. It also
+includes Sepolia-oriented example configuration and transaction-sending
+JavaScript. It is not the candidate's verified `EurekaToken` source and
+does not resolve the source mismatch.
+
+**Critical handling warning:** this upload contains a literal private key.
+Its value is not reproduced in this document, Git commits, or the PR. No
+address was derived from it, no uploaded script was executed, and it was
+not used to authenticate or sign anything. If genuine, treat it as
+compromised. The uploaded file remains excluded from Git; do not share or
+commit the raw package.
+
 ## Read-only on-chain results
 
 | Check | Result |
@@ -174,9 +191,10 @@ addresses intentionally. They are not active configuration.
 
 ## Required before activation
 
-1. Provide the owner's actual `EurekaToken` Solidity source. The uploaded
-   `EurikaTinanLink` source is not the token and cannot pass this gate.
-   Resolve any source differences explicitly before activation.
+1. Provide the owner's actual `EurekaToken` Solidity source, or explicitly
+   approve the exact-match verified Sourcify `EurekaToken` source as the
+   reference. Neither the uploaded `EurikaTinanLink` nor `EurikaRegistry`
+   source is the token. Do not infer approval from another registry upload.
 2. Confirm the desired treatment of the registry's immutable old-token
    reference. Do not deploy a replacement automatically.
 3. Establish a shared-history GitHub application branch before submitting
