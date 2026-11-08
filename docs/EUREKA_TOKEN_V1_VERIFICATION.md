@@ -3,7 +3,7 @@
 **Checked:** 2026-11-08  
 **Candidate:** `0x861a27DBeDcEFc2d0bdFea359431be683D95195b`  
 **Network:** Ethereum Mainnet, chain ID `1`  
-**Activation status:** **BLOCKED — owner-source comparison incomplete.**
+**Activation status:** **STOPPED — supplied owner source is a different contract.**
 
 The latest instruction supersedes the earlier proposal to use
 `0xA34aDeA96853bc696463bde7Aab4Cd71068E930F` as an ERC-20 address. That
@@ -13,15 +13,22 @@ address is the separate EurekaCore Proof-of-Data registry, not the token.
 
 The candidate's verified public source, runtime bytecode, ABI, metadata,
 supply, and constructor allocation match the supplied **specification**.
-However, the uploaded instruction says a Solidity source was supplied and
-requires comparison with it. The available attachment contains instructions
-and a specification, not Solidity source. No owner-supplied `EurekaToken`
-source was found in the available workspace or uploaded files.
+The owner subsequently uploaded `Eurika_Prorocol_token_1794158950598.sol`,
+but that file declares `EurikaTinanLink`, not `EurekaToken`. Its ABI has
+link/metadata getter and update functions, but none of the required ERC-20
+functions. Its `eurikaProtocol` reference is the previous
+`0x4042973c0863CCA0D73F028cA98465F44F0e6F97` address.
 
-An exact comparison against the owner's source therefore remains
-**NOT VERIFIED**. Per the requested verification gate, the application token
-configuration is unchanged. The candidate has not been activated in
-EurekaCore or TINAN AI. This report does not substitute another contract.
+This is a source/contract identity mismatch, so the owner's source does not
+verify the candidate token. Per the explicit verification gate, migration is
+**stopped**: the current token configuration and existing application
+behavior are unchanged. No other contract is substituted.
+
+**Security note:** the uploaded link-registry source contains hard-coded
+unlock/backup-like values in private Solidity storage. Solidity `private`
+does not make deployed contract storage secret. If these values are actual
+credentials and this contract/source has been deployed or shared publicly,
+revoke or rotate them. Their values are intentionally not repeated here.
 
 ## Read-only on-chain results
 
@@ -126,7 +133,7 @@ if the registry must reference V1. No deployment or registry write was made.
 | --- | --- |
 | `0x4042973c0863CCA0D73F028cA98465F44F0e6F97` | Existing application token configuration and current immutable registry reference; preserved |
 | `0xA34aDeA96853bc696463bde7Aab4Cd71068E930F` | EurekaCore registry; must not be configured as the ERC-20 token |
-| `0x861a27DBeDcEFc2d0bdFea359431be683D95195b` | EurekaToken V1 candidate; public verification matches the requested specification; owner-source comparison pending |
+| `0x861a27DBeDcEFc2d0bdFea359431be683D95195b` | EurekaToken V1 candidate; public verification matches the requested specification, but the uploaded owner source is a different contract; not activated |
 
 Historical audit documents and uploaded instructions retain historical
 addresses intentionally. They are not active configuration.
@@ -167,8 +174,9 @@ addresses intentionally. They are not active configuration.
 
 ## Required before activation
 
-1. Obtain the owner's actual Solidity source and compare it with the
-   exact-match verified source above. Resolve any differences explicitly.
+1. Provide the owner's actual `EurekaToken` Solidity source. The uploaded
+   `EurikaTinanLink` source is not the token and cannot pass this gate.
+   Resolve any source differences explicitly before activation.
 2. Confirm the desired treatment of the registry's immutable old-token
    reference. Do not deploy a replacement automatically.
 3. Establish a shared-history GitHub application branch before submitting
