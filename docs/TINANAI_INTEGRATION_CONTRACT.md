@@ -136,3 +136,7 @@ Do not enable multi-user mode until: workflow `createdBy` persisted and checked 
 
 ## TinanAi changes
 Implemented in the companion TinanAi PR (branch `eureka/phase-1-builder-contract`): plan digest and approval 409; manifest endpoint with per-file SHA-256; `bytes`/`sha256` on file reads; owner validation (existing owner-scoped lookups); delegation primitive, disabled by default. Durable task state and cancellation already existed in TinanAi (D1 `project_tasks`; atomic compare-and-set cancel) and are covered by tests there. Still separate and not done: a verified sandbox in TINAN AI, and enabling multi-user mode.
+
+## Native EUREKA CORE integration
+
+See `TINAN_BUILDER_INTEGRATION.md`. EUREKA CORE now persists project ownership and supports signed per-user delegation, which addresses the earlier "EurekaCore side of delegation" blocker. Live verification against TINAN AI is still outstanding.
