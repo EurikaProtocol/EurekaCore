@@ -1,5 +1,10 @@
 # EurekaToken V1 — Ethereum Mainnet verification
 
+> Historical migration investigation. The owner subsequently selected the
+> existing `0x4042973c0863cca0d73f028ca98465f44f0e6f97` token for continued
+> Eureka integration. The V1 candidate remains unactivated. See
+> [active integration](EUREKA_PRIMARY_TOKEN_INTEGRATION.md).
+
 **Checked:** 2026-11-08  
 **Candidate:** `0x861a27DBeDcEFc2d0bdFea359431be683D95195b`  
 **Network:** Ethereum Mainnet, chain ID `1`  
